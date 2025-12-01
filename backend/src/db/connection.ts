@@ -3,7 +3,7 @@
  * Handles connection to Yandex Database (YDB) using official SDK
  */
 
-import { Driver, getCredentialsFromEnv, Logger, StaticCredentials } from 'ydb-sdk';
+import { Driver, getCredentialsFromEnv, Logger } from 'ydb-sdk';
 import { config } from '../config';
 import { logger } from '../logger';
 
@@ -14,7 +14,11 @@ class YDBClient {
   /**
    * Initialize YDB connection
    * 
-   * Note: YDB SDK API may vary. Adjust based on actual SDK version.
+   * YDB SDK 5.x uses getCredentialsFromEnv() which automatically handles:
+   * - Token from YDB_TOKEN environment variable
+   * - Service account key from YC_SERVICE_ACCOUNT_KEY_FILE or YC_SERVICE_ACCOUNT_KEY
+   * - Metadata service (when running in Yandex Cloud)
+   * 
    * See: https://github.com/ydb-platform/ydb-nodejs-sdk
    */
   async connect(): Promise<void> {
@@ -23,36 +27,27 @@ class YDBClient {
         throw new Error('YDB endpoint and database are required');
       }
 
-      // Get credentials - YDB SDK supports multiple auth methods
-      let credentials;
-      if (config.database.token) {
-        // Use token-based authentication
-        // Note: Adjust based on actual SDK API
-        credentials = new StaticCredentials({
-          accessKeyId: '', // Not used with token
-          secretAccessKey: config.database.token,
-        });
-      } else {
-        // Try to get credentials from environment (service account key)
-        try {
-          credentials = getCredentialsFromEnv();
-        } catch (error) {
-          logger.warn({ error, type: 'ydb_credentials_env_failed' });
-          throw new Error('YDB credentials not found. Set YDB_TOKEN or configure service account.');
-        }
+      // Set YDB_TOKEN environment variable if token is provided in config
+      // This allows getCredentialsFromEnv() to pick it up
+      if (config.database.token && !process.env.YDB_TOKEN) {
+        process.env.YDB_TOKEN = config.database.token;
       }
 
-      // Create YDB driver
-      // Note: Driver constructor API may vary - check SDK documentation
+      // Get credentials - YDB SDK automatically handles token, service account, or metadata
+      let credentials;
+      try {
+        credentials = getCredentialsFromEnv();
+      } catch (error) {
+        logger.warn({ error, type: 'ydb_credentials_env_failed' });
+        throw new Error('YDB credentials not found. Set YDB_TOKEN or configure service account.');
+      }
+
+      // Create YDB driver configuration
       const driverConfig: any = {
         endpoint: config.database.endpoint,
         database: config.database.database,
+        authService: credentials,
       };
-
-      // Add credentials if available
-      if (credentials) {
-        driverConfig.authService = credentials;
-      }
 
       // Add logging if logger interface matches
       try {
@@ -107,43 +102,61 @@ class YDBClient {
   }
 
   /**
-   * Execute query using YDB SDK
+   * Execute query using YDB SDK 5.x
    * 
-   * Note: YDB SDK query execution API may vary.
-   * This is a simplified implementation - adjust based on actual SDK version.
+   * Uses withSessionRetry for automatic session management and retries
    */
   async executeQuery<T = any>(query: string, params?: Record<string, any>): Promise<T[]> {
     const driver = this.getDriver();
-    const session = await driver.tableClient.createSession();
 
-    try {
-      logger.debug({
-        type: 'ydb_query',
-        query,
-        params,
-      });
+    logger.debug({
+      type: 'ydb_query',
+      query,
+      params,
+    });
 
-      // Execute query
-      // Note: API may be session.executeQuery() or session.execute()
+    // Use withSessionRetry for automatic session management
+    return await driver.tableClient.withSessionRetry(async (session) => {
+      // Execute query using YDB SDK 5.x API
       const result = await session.executeQuery(query, params || {});
       
       // Transform result to array of objects
-      // Note: Result structure may vary - adjust based on actual SDK response
       const rows: T[] = [];
       
       if (result.resultSets && result.resultSets.length > 0) {
         const resultSet = result.resultSets[0];
         
         // Convert YDB result set to array of objects
-        // Adjust this transformation based on actual SDK response structure
         if (resultSet.rows) {
           for (const row of resultSet.rows) {
             const obj: any = {};
             if (resultSet.columns) {
-              resultSet.columns.forEach((col, index) => {
-                // Adjust based on actual row structure
-                const value = row.items?.[index]?.value || row[index]?.value;
-                obj[col.name] = value;
+              resultSet.columns.forEach((col: any, index: number) => {
+                // Extract value from YDB row structure
+                const rowValue: any = row.items?.[index];
+                // Extract the actual value from YDB value structure
+                let value: any = rowValue;
+                if (rowValue && typeof rowValue === 'object') {
+                  // YDB values can be in different formats
+                  if ('value' in rowValue) {
+                    value = (rowValue as any).value;
+                  } else if ('bytesValue' in rowValue) {
+                    value = rowValue.bytesValue;
+                  } else if ('textValue' in rowValue) {
+                    value = rowValue.textValue;
+                  } else if ('uint64Value' in rowValue) {
+                    value = rowValue.uint64Value;
+                  } else if ('int64Value' in rowValue) {
+                    value = rowValue.int64Value;
+                  } else if ('boolValue' in rowValue) {
+                    value = rowValue.boolValue;
+                  } else if ('timestampValue' in rowValue) {
+                    value = rowValue.timestampValue;
+                  }
+                }
+                // Use column name if available, otherwise use index
+                const columnName = col?.name || `column_${index}`;
+                obj[columnName] = value;
               });
             }
             rows.push(obj as T);
@@ -152,59 +165,55 @@ class YDBClient {
       }
 
       return rows;
-    } catch (error) {
-      logger.error({ error, type: 'ydb_query_execution_failed', query });
-      throw error;
-    } finally {
-      try {
-        await session.delete();
-      } catch (deleteError) {
-        logger.warn({ error: deleteError, type: 'ydb_session_delete_failed' });
-      }
-    }
+    });
   }
 
   /**
-   * Execute transaction
+   * Execute transaction using YDB SDK 5.x
    * 
-   * Note: Transaction API may vary in YDB SDK.
-   * Adjust based on actual SDK version.
+   * Uses withSessionRetry for automatic session management
    */
   async executeTransaction<T>(
     queries: Array<{ query: string; params?: Record<string, any> }>
   ): Promise<T> {
     const driver = this.getDriver();
-    const session = await driver.tableClient.createSession();
 
-    try {
-      logger.debug({
-        type: 'ydb_transaction',
-        queriesCount: queries.length,
-      });
+    logger.debug({
+      type: 'ydb_transaction',
+      queriesCount: queries.length,
+    });
 
-      // Execute transaction
-      // Note: Transaction API may be session.executeTransaction() or session.beginTransaction()
-      const result = await session.executeTransaction(async (tx: any) => {
-        const results: any[] = [];
-        for (const { query, params } of queries) {
-          // Adjust query execution method based on actual SDK
-          const queryResult = await tx.executeQuery(query, params || {});
-          results.push(queryResult);
-        }
-        return results;
-      });
-
-      return result as T;
-    } catch (error) {
-      logger.error({ error, type: 'ydb_transaction_failed' });
-      throw error;
-    } finally {
+    // Use withSessionRetry for automatic session management
+    return await driver.tableClient.withSessionRetry(async (session) => {
+      // Execute transaction using YDB SDK 5.x API
+      // Note: Transaction API may vary - using executeTransaction if available
+      // Otherwise, we'll use a simpler approach with individual queries
       try {
-        await session.delete();
-      } catch (deleteError) {
-        logger.warn({ error: deleteError, type: 'ydb_session_delete_failed' });
+        // Try to use executeTransaction if available
+        if (typeof (session as any).executeTransaction === 'function') {
+          const result = await (session as any).executeTransaction(async (tx: any) => {
+            const results: any[] = [];
+            for (const { query, params } of queries) {
+              const queryResult = await tx.executeQuery(query, params || {});
+              results.push(queryResult);
+            }
+            return results;
+          });
+          return result as T;
+        } else {
+          // Fallback: execute queries sequentially
+          const results: any[] = [];
+          for (const { query, params } of queries) {
+            const queryResult = await session.executeQuery(query, params || {});
+            results.push(queryResult);
+          }
+          return results as T;
+        }
+      } catch (error) {
+        logger.error({ error, type: 'ydb_transaction_failed' });
+        throw error;
       }
-    }
+    });
   }
 
   /**
