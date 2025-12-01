@@ -8,7 +8,7 @@
 
 **Access Key ID:** `YCAJE...
 
-**Secret Access Key:** `YCPGeks_piY5OqWjkw_Gmg8Qx41PK6B7JfMaaWok`
+**Secret Access Key:** `YCPG...` (получите в Yandex Cloud Console)
 
 ---
 
@@ -34,7 +34,7 @@
 # Yandex Object Storage для frontend деплоя
 YANDEX_STORAGE_BUCKET_DEV=telegram-app-frontend
 YANDEX_STORAGE_ACCESS_KEY_DEV=YCAJE...
-YANDEX_STORAGE_SECRET_KEY_DEV=YCPGeks_piY5OqWjkw_Gmg8Qx41PK6B7JfMaaWok
+YANDEX_STORAGE_SECRET_KEY_DEV=YCPG... (ваш секретный ключ)
 OBJECT_STORAGE_URL=https://storage.yandexcloud.net
 ```
 
@@ -80,7 +80,7 @@ npm run deploy:frontend:clear
 **Для Environment: staging (ветка develop):**
 - `YANDEX_STORAGE_BUCKET_DEV` = `telegram-app-frontend`
 - `YANDEX_STORAGE_ACCESS_KEY_DEV` = `YCAJE...
-- `YANDEX_STORAGE_SECRET_KEY_DEV` = `YCPGeks_piY5OqWjkw_Gmg8Qx41PK6B7JfMaaWok`
+- `YANDEX_STORAGE_SECRET_KEY_DEV` = `YCPG...` (ваш секретный ключ)
 
 **Для Environment: production (ветка main):**
 - Можно использовать те же ключи или создать отдельные для production

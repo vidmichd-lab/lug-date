@@ -8,7 +8,7 @@
 
 **Access Key ID:** `YCAJE... (получите в Yandex Cloud Console)
 
-**Secret Access Key:** `YCPGeks_piY5OqWjkw_Gmg8Qx41PK6B7JfMaaWok`
+**Secret Access Key:** `YCPG...` (получите в Yandex Cloud Console)
 
 ---
 
@@ -48,7 +48,7 @@ https://github.com/YOUR_USERNAME/YOUR_REPO/settings/secrets/actions
 ### Secret 3: YANDEX_STORAGE_SECRET_KEY_DEV
 
 1. **Name:** `YANDEX_STORAGE_SECRET_KEY_DEV`
-2. **Secret:** `YCPGeks_piY5OqWjkw_Gmg8Qx41PK6B7JfMaaWok`
+2. **Secret:** `YCPG...
 3. Нажмите **"Add secret"**
 
 **✅ После добавления всех трех secrets для DEV, переходите к следующему шагу**
@@ -74,7 +74,7 @@ https://github.com/YOUR_USERNAME/YOUR_REPO/settings/secrets/actions
 ### Secret 3: FRONTEND_STORAGE_SECRET_KEY_PROD
 
 1. **Name:** `FRONTEND_STORAGE_SECRET_KEY_PROD`
-2. **Secret:** `YCPGeks_piY5OqWjkw_Gmg8Qx41PK6B7JfMaaWok`
+2. **Secret:** `YCPG...
 3. Нажмите **"Add secret"**
 
 **✅ После добавления всех трех secrets для PROD, готово!**
@@ -137,12 +137,12 @@ https://github.com/YOUR_USERNAME/YOUR_REPO/settings/secrets/actions
 ### Для Staging (ветка develop):
 - ✅ `FRONTEND_STORAGE_BUCKET_DEV` = `telegram-app-frontend`
 - ✅ `FRONTEND_STORAGE_ACCESS_KEY_DEV` = `YCAJE...
-- ✅ `FRONTEND_STORAGE_SECRET_KEY_DEV` = `YCPGeks_piY5OqWjkw_Gmg8Qx41PK6B7JfMaaWok`
+- ✅ `FRONTEND_STORAGE_SECRET_KEY_DEV` = `YCPG...
 
 ### Для Production (ветка main):
 - ✅ `FRONTEND_STORAGE_BUCKET_PROD` = `telegram-app-frontend` (или отдельный)
 - ✅ `FRONTEND_STORAGE_ACCESS_KEY_PROD` = `YCAJE...
-- ✅ `FRONTEND_STORAGE_SECRET_KEY_PROD` = `YCPGeks_piY5OqWjkw_Gmg8Qx41PK6B7JfMaaWok`
+- ✅ `FRONTEND_STORAGE_SECRET_KEY_PROD` = `YCPG...
 
 **⚠️ Примечание:** Используем префикс `FRONTEND_` чтобы не конфликтовать с существующими `YANDEX_STORAGE_*` secrets для backend.
 
