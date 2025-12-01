@@ -1,2 +1,2 @@
-export { Namecards } from './Namecards';
-export type { NamecardsProps } from './Namecards.types';
+export { Namecards } from './namecards';
+export type { NamecardsProps } from './namecards.types';

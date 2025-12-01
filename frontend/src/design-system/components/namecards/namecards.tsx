@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Namecards.module.css';
-import { NamecardsProps } from './Namecards.types';
+import styles from './namecards.module.css';
+import { NamecardsProps } from './namecards.types';
 
 /**
  * Namecards component

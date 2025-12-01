@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Namecompany.module.css';
-import { NamecompanyProps } from './Namecompany.types';
+import styles from './namecompany.module.css';
+import { NamecompanyProps } from './namecompany.types';
 
 /**
  * Namecompany component

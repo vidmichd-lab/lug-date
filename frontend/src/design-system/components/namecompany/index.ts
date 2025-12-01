@@ -1,2 +1,2 @@
-export { Namecompany } from './Namecompany';
-export type { NamecompanyProps } from './Namecompany.types';
+export { Namecompany } from './namecompany';
+export type { NamecompanyProps } from './namecompany.types';

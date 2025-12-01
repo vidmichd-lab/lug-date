@@ -1,2 +1,2 @@
-export { Namebookmark } from './Namebookmark';
-export type { NamebookmarkProps } from './Namebookmark.types';
+export { Namebookmark } from './namebookmark';
+export type { NamebookmarkProps } from './namebookmark.types';

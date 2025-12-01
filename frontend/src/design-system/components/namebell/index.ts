@@ -1,2 +1,2 @@
-export { Namebell } from './Namebell';
-export type { NamebellProps } from './Namebell.types';
+export { Namebell } from './namebell';
+export type { NamebellProps } from './namebell.types';

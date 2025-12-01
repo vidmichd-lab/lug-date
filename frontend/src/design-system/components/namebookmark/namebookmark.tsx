@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Namebookmark.module.css';
-import { NamebookmarkProps } from './Namebookmark.types';
+import styles from './namebookmark.module.css';
+import { NamebookmarkProps } from './namebookmark.types';
 
 /**
  * Namebookmark component

@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Namebell.module.css';
-import { NamebellProps } from './Namebell.types';
+import styles from './namebell.module.css';
+import { NamebellProps } from './namebell.types';
 
 /**
  * Namebell component
