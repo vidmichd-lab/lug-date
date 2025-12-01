@@ -1,2 +1,2 @@
-export { Whatbike } from './Whatbike';
-export type { WhatbikeProps } from './Whatbike.types';
+export { Whatbike } from './whatbike';
+export type { WhatbikeProps } from './whatbike.types';

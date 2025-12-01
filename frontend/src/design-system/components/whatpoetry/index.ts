@@ -1,2 +1,2 @@
-export { Whatpoetry } from './Whatpoetry';
-export type { WhatpoetryProps } from './Whatpoetry.types';
+export { Whatpoetry } from './whatpoetry';
+export type { WhatpoetryProps } from './whatpoetry.types';

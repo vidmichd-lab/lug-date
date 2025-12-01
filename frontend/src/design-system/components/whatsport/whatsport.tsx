@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatsport.module.css';
-import { WhatsportProps } from './Whatsport.types';
+import styles from './whatsport.module.css';
+import { WhatsportProps } from './whatsport.types';
 
 /**
  * Whatsport component

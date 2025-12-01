@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './SizemStateactive.module.css';
-import { SizemStateactiveProps } from './SizemStateactive.types';
+import styles from './sizeMstateactive.module.css';
+import { SizemStateactiveProps } from './sizeMstateactive.types';
 
 /**
  * SizemStateactive component

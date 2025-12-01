@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatlang.module.css';
-import { WhatlangProps } from './Whatlang.types';
+import styles from './whatlang.module.css';
+import { WhatlangProps } from './whatlang.types';
 
 /**
  * Whatlang component

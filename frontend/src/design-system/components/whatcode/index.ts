@@ -1,2 +1,2 @@
-export { Whatcode } from './Whatcode';
-export type { WhatcodeProps } from './Whatcode.types';
+export { Whatcode } from './whatcode';
+export type { WhatcodeProps } from './whatcode.types';

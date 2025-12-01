@@ -1,2 +1,2 @@
-export { Whatcook } from './Whatcook';
-export type { WhatcookProps } from './Whatcook.types';
+export { Whatcook } from './whatcook';
+export type { WhatcookProps } from './whatcook.types';

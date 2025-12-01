@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatliterature.module.css';
-import { WhatliteratureProps } from './Whatliterature.types';
+import styles from './whatliterature.module.css';
+import { WhatliteratureProps } from './whatliterature.types';
 
 /**
  * Whatliterature component

@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatspace.module.css';
-import { WhatspaceProps } from './Whatspace.types';
+import styles from './whatspace.module.css';
+import { WhatspaceProps } from './whatspace.types';
 
 /**
  * Whatspace component

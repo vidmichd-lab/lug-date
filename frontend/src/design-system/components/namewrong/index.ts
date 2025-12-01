@@ -1,2 +1,2 @@
-export { Namewrong } from './Namewrong';
-export type { NamewrongProps } from './Namewrong.types';
+export { Namewrong } from './namewrong';
+export type { NamewrongProps } from './namewrong.types';

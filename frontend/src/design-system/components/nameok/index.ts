@@ -1,2 +1,2 @@
-export { Nameok } from './Nameok';
-export type { NameokProps } from './Nameok.types';
+export { Nameok } from './nameok';
+export type { NameokProps } from './nameok.types';

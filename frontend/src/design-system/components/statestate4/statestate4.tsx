@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Statestate4.module.css';
-import { Statestate4Props } from './Statestate4.types';
+import styles from './statestate4.module.css';
+import { Statestate4Props } from './statestate4.types';
 
 /**
  * Statestate4 component

@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Profile.module.css';
-import { ProfileProps } from './Profile.types';
+import styles from './profile.module.css';
+import { ProfileProps } from './profile.types';
 
 /**
  * Profile component

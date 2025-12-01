@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Nameevents.module.css';
-import { NameeventsProps } from './Nameevents.types';
+import styles from './nameevents.module.css';
+import { NameeventsProps } from './nameevents.types';
 
 /**
  * Nameevents component

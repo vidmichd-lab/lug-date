@@ -1,2 +1,2 @@
-export { Whatrun } from './Whatrun';
-export type { WhatrunProps } from './Whatrun.types';
+export { Whatrun } from './whatrun';
+export type { WhatrunProps } from './whatrun.types';

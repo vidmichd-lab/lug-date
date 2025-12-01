@@ -1,2 +1,2 @@
-export { Nameupdate } from './Nameupdate';
-export type { NameupdateProps } from './Nameupdate.types';
+export { Nameupdate } from './nameupdate';
+export type { NameupdateProps } from './nameupdate.types';

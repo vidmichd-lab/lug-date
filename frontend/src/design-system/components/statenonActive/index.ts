@@ -1,2 +1,2 @@
-export { Statenonactive } from './Statenonactive';
-export type { StatenonactiveProps } from './Statenonactive.types';
+export { Statenonactive } from './statenonActive';
+export type { StatenonactiveProps } from './statenonActive.types';

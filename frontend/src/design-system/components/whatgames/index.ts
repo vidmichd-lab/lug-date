@@ -1,2 +1,2 @@
-export { Whatgames } from './Whatgames';
-export type { WhatgamesProps } from './Whatgames.types';
+export { Whatgames } from './whatgames';
+export type { WhatgamesProps } from './whatgames.types';

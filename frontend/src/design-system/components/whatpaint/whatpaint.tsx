@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatpaint.module.css';
-import { WhatpaintProps } from './Whatpaint.types';
+import styles from './whatpaint.module.css';
+import { WhatpaintProps } from './whatpaint.types';
 
 /**
  * Whatpaint component

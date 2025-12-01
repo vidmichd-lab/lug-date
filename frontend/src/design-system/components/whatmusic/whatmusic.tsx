@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatmusic.module.css';
-import { WhatmusicProps } from './Whatmusic.types';
+import styles from './whatmusic.module.css';
+import { WhatmusicProps } from './whatmusic.types';
 
 /**
  * Whatmusic component

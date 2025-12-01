@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatcinema.module.css';
-import { WhatcinemaProps } from './Whatcinema.types';
+import styles from './whatcinema.module.css';
+import { WhatcinemaProps } from './whatcinema.types';
 
 /**
  * Whatcinema component

@@ -1,2 +1,2 @@
-export { TabBottom } from './TabBottom';
-export type { TabBottomProps } from './TabBottom.types';
+export { TabBottom } from './tabbottom';
+export type { TabBottomProps } from './tabbottom.types';

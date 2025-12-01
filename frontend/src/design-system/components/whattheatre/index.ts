@@ -1,2 +1,2 @@
-export { Whattheatre } from './Whattheatre';
-export type { WhattheatreProps } from './Whattheatre.types';
+export { Whattheatre } from './whattheatre';
+export type { WhattheatreProps } from './whattheatre.types';

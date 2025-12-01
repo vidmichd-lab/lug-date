@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Stateactive.module.css';
-import { StateactiveProps } from './Stateactive.types';
+import styles from './stateactive.module.css';
+import { StateactiveProps } from './stateactive.types';
 
 /**
  * Stateactive component

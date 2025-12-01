@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Viewswitch.module.css';
-import { ViewswitchProps } from './Viewswitch.types';
+import styles from './viewswitch.module.css';
+import { ViewswitchProps } from './viewswitch.types';
 
 /**
  * Viewswitch component

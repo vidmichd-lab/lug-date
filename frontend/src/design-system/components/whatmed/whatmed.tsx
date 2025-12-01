@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatmed.module.css';
-import { WhatmedProps } from './Whatmed.types';
+import styles from './whatmed.module.css';
+import { WhatmedProps } from './whatmed.types';
 
 /**
  * Whatmed component

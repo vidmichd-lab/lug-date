@@ -1,2 +1,2 @@
-export { SizelStatedefault } from './SizelStatedefault';
-export type { SizelStatedefaultProps } from './SizelStatedefault.types';
+export { SizelStatedefault } from './sizeLstatedefault';
+export type { SizelStatedefaultProps } from './sizeLstatedefault.types';

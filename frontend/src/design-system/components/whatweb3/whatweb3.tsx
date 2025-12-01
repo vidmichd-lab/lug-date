@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatweb3.module.css';
-import { Whatweb3Props } from './Whatweb3.types';
+import styles from './whatweb3.module.css';
+import { Whatweb3Props } from './whatweb3.types';
 
 /**
  * Whatweb3 component

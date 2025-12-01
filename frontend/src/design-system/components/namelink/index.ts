@@ -1,2 +1,2 @@
-export { Namelink } from './Namelink';
-export type { NamelinkProps } from './Namelink.types';
+export { Namelink } from './namelink';
+export type { NamelinkProps } from './namelink.types';

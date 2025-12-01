@@ -1,2 +1,2 @@
-export { Namejob } from './Namejob';
-export type { NamejobProps } from './Namejob.types';
+export { Namejob } from './namejob';
+export type { NamejobProps } from './namejob.types';

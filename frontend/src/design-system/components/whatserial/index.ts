@@ -1,2 +1,2 @@
-export { Whatserial } from './Whatserial';
-export type { WhatserialProps } from './Whatserial.types';
+export { Whatserial } from './whatserial';
+export type { WhatserialProps } from './whatserial.types';

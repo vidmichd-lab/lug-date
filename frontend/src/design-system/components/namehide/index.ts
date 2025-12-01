@@ -1,2 +1,2 @@
-export { Namehide } from './Namehide';
-export type { NamehideProps } from './Namehide.types';
+export { Namehide } from './namehide';
+export type { NamehideProps } from './namehide.types';

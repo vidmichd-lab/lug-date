@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatanimals.module.css';
-import { WhatanimalsProps } from './Whatanimals.types';
+import styles from './whatanimals.module.css';
+import { WhatanimalsProps } from './whatanimals.types';
 
 /**
  * Whatanimals component

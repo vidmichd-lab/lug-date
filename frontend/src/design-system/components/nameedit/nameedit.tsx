@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Nameedit.module.css';
-import { NameeditProps } from './Nameedit.types';
+import styles from './nameedit.module.css';
+import { NameeditProps } from './nameedit.types';
 
 /**
  * Nameedit component

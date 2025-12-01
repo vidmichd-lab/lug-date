@@ -1,2 +1,2 @@
-export { Whatit } from './Whatit';
-export type { WhatitProps } from './Whatit.types';
+export { Whatit } from './whatit';
+export type { WhatitProps } from './whatit.types';

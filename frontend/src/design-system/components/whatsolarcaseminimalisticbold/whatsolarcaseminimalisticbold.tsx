@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './WhatsolarcaseMinimalisticBold.module.css';
-import { WhatsolarcaseMinimalisticBoldProps } from './WhatsolarcaseMinimalisticBold.types';
+import styles from './whatsolarcaseminimalisticbold.module.css';
+import { WhatsolarcaseMinimalisticBoldProps } from './whatsolarcaseminimalisticbold.types';
 
 /**
  * WhatsolarcaseMinimalisticBold component

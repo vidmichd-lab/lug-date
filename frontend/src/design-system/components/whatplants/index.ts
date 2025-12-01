@@ -1,2 +1,2 @@
-export { Whatplants } from './Whatplants';
-export type { WhatplantsProps } from './Whatplants.types';
+export { Whatplants } from './whatplants';
+export type { WhatplantsProps } from './whatplants.types';

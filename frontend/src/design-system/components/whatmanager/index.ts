@@ -1,2 +1,2 @@
-export { Whatmanager } from './Whatmanager';
-export type { WhatmanagerProps } from './Whatmanager.types';
+export { Whatmanager } from './whatmanager';
+export type { WhatmanagerProps } from './whatmanager.types';

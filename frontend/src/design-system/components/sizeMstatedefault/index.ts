@@ -1,2 +1,2 @@
-export { SizemStatedefault } from './SizemStatedefault';
-export type { SizemStatedefaultProps } from './SizemStatedefault.types';
+export { SizemStatedefault } from './sizeMstatedefault';
+export type { SizemStatedefaultProps } from './sizeMstatedefault.types';

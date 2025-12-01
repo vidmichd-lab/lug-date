@@ -1,2 +1,2 @@
-export { Whatphoto } from './Whatphoto';
-export type { WhatphotoProps } from './Whatphoto.types';
+export { Whatphoto } from './whatphoto';
+export type { WhatphotoProps } from './whatphoto.types';

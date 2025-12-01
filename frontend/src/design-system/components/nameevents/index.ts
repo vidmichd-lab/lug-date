@@ -1,2 +1,2 @@
-export { Nameevents } from './Nameevents';
-export type { NameeventsProps } from './Nameevents.types';
+export { Nameevents } from './nameevents';
+export type { NameeventsProps } from './nameevents.types';

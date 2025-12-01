@@ -1,2 +1,2 @@
-export { Nametg } from './Nametg';
-export type { NametgProps } from './Nametg.types';
+export { Nametg } from './nametg';
+export type { NametgProps } from './nametg.types';

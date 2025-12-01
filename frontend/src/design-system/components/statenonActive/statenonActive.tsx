@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Statenonactive.module.css';
-import { StatenonactiveProps } from './Statenonactive.types';
+import styles from './statenonActive.module.css';
+import { StatenonactiveProps } from './statenonActive.types';
 
 /**
  * Statenonactive component

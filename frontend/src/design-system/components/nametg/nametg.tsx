@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Nametg.module.css';
-import { NametgProps } from './Nametg.types';
+import styles from './nametg.module.css';
+import { NametgProps } from './nametg.types';
 
 /**
  * Nametg component

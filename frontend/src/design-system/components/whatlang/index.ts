@@ -1,2 +1,2 @@
-export { Whatlang } from './Whatlang';
-export type { WhatlangProps } from './Whatlang.types';
+export { Whatlang } from './whatlang';
+export type { WhatlangProps } from './whatlang.types';

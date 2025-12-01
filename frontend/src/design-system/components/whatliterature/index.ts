@@ -1,2 +1,2 @@
-export { Whatliterature } from './Whatliterature';
-export type { WhatliteratureProps } from './Whatliterature.types';
+export { Whatliterature } from './whatliterature';
+export type { WhatliteratureProps } from './whatliterature.types';

@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatrun.module.css';
-import { WhatrunProps } from './Whatrun.types';
+import styles from './whatrun.module.css';
+import { WhatrunProps } from './whatrun.types';
 
 /**
  * Whatrun component

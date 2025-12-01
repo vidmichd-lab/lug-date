@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Namewrong.module.css';
-import { NamewrongProps } from './Namewrong.types';
+import styles from './namewrong.module.css';
+import { NamewrongProps } from './namewrong.types';
 
 /**
  * Namewrong component

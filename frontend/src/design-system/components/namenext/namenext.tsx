@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Namenext.module.css';
-import { NamenextProps } from './Namenext.types';
+import styles from './namenext.module.css';
+import { NamenextProps } from './namenext.types';
 
 /**
  * Namenext component

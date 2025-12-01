@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatteach.module.css';
-import { WhatteachProps } from './Whatteach.types';
+import styles from './whatteach.module.css';
+import { WhatteachProps } from './whatteach.types';
 
 /**
  * Whatteach component

@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './SizemStatedefault.module.css';
-import { SizemStatedefaultProps } from './SizemStatedefault.types';
+import styles from './sizeMstatedefault.module.css';
+import { SizemStatedefaultProps } from './sizeMstatedefault.types';
 
 /**
  * SizemStatedefault component

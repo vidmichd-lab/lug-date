@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Namereport.module.css';
-import { NamereportProps } from './Namereport.types';
+import styles from './namereport.module.css';
+import { NamereportProps } from './namereport.types';
 
 /**
  * Namereport component

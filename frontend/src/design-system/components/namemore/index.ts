@@ -1,2 +1,2 @@
-export { Namemore } from './Namemore';
-export type { NamemoreProps } from './Namemore.types';
+export { Namemore } from './namemore';
+export type { NamemoreProps } from './namemore.types';

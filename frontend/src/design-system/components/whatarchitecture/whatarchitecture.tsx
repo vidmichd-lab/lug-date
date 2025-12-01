@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatarchitecture.module.css';
-import { WhatarchitectureProps } from './Whatarchitecture.types';
+import styles from './whatarchitecture.module.css';
+import { WhatarchitectureProps } from './whatarchitecture.types';
 
 /**
  * Whatarchitecture component

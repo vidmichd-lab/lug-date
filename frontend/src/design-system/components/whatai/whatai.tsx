@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatai.module.css';
-import { WhataiProps } from './Whatai.types';
+import styles from './whatai.module.css';
+import { WhataiProps } from './whatai.types';
 
 /**
  * Whatai component

@@ -1,2 +1,2 @@
-export { Whatcamp } from './Whatcamp';
-export type { WhatcampProps } from './Whatcamp.types';
+export { Whatcamp } from './whatcamp';
+export type { WhatcampProps } from './whatcamp.types';

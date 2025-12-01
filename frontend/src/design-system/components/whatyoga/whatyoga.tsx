@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatyoga.module.css';
-import { WhatyogaProps } from './Whatyoga.types';
+import styles from './whatyoga.module.css';
+import { WhatyogaProps } from './whatyoga.types';
 
 /**
  * Whatyoga component

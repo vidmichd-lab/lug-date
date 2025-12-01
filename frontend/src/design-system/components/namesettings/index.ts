@@ -1,2 +1,2 @@
-export { Namesettings } from './Namesettings';
-export type { NamesettingsProps } from './Namesettings.types';
+export { Namesettings } from './namesettings';
+export type { NamesettingsProps } from './namesettings.types';

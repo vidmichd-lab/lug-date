@@ -1,2 +1,2 @@
-export { Whatteach } from './Whatteach';
-export type { WhatteachProps } from './Whatteach.types';
+export { Whatteach } from './whatteach';
+export type { WhatteachProps } from './whatteach.types';

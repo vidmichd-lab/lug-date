@@ -1,2 +1,2 @@
-export { Whatmusic } from './Whatmusic';
-export type { WhatmusicProps } from './Whatmusic.types';
+export { Whatmusic } from './whatmusic';
+export type { WhatmusicProps } from './whatmusic.types';

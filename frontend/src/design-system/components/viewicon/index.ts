@@ -1,2 +1,2 @@
-export { Viewicon } from './Viewicon';
-export type { ViewiconProps } from './Viewicon.types';
+export { Viewicon } from './viewicon';
+export type { ViewiconProps } from './viewicon.types';

@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatfashion.module.css';
-import { WhatfashionProps } from './Whatfashion.types';
+import styles from './whatfashion.module.css';
+import { WhatfashionProps } from './whatfashion.types';
 
 /**
  * Whatfashion component

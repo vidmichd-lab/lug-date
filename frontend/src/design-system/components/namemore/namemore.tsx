@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Namemore.module.css';
-import { NamemoreProps } from './Namemore.types';
+import styles from './namemore.module.css';
+import { NamemoreProps } from './namemore.types';
 
 /**
  * Namemore component

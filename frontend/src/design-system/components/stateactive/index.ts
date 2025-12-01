@@ -1,2 +1,2 @@
-export { Stateactive } from './Stateactive';
-export type { StateactiveProps } from './Stateactive.types';
+export { Stateactive } from './stateactive';
+export type { StateactiveProps } from './stateactive.types';

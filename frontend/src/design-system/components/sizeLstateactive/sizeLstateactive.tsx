@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './SizelStateactive.module.css';
-import { SizelStateactiveProps } from './SizelStateactive.types';
+import styles from './sizeLstateactive.module.css';
+import { SizelStateactiveProps } from './sizeLstateactive.types';
 
 /**
  * SizelStateactive component

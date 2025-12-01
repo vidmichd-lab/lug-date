@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './SizesStatedisabled.module.css';
-import { SizesStatedisabledProps } from './SizesStatedisabled.types';
+import styles from './sizeSstatedisabled.module.css';
+import { SizesStatedisabledProps } from './sizeSstatedisabled.types';
 
 /**
  * SizesStatedisabled component

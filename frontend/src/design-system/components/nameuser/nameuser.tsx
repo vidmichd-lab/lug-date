@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Nameuser.module.css';
-import { NameuserProps } from './Nameuser.types';
+import styles from './nameuser.module.css';
+import { NameuserProps } from './nameuser.types';
 
 /**
  * Nameuser component

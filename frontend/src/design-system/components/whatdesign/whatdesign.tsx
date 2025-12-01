@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatdesign.module.css';
-import { WhatdesignProps } from './Whatdesign.types';
+import styles from './whatdesign.module.css';
+import { WhatdesignProps } from './whatdesign.types';
 
 /**
  * Whatdesign component

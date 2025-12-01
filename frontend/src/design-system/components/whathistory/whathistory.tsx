@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whathistory.module.css';
-import { WhathistoryProps } from './Whathistory.types';
+import styles from './whathistory.module.css';
+import { WhathistoryProps } from './whathistory.types';
 
 /**
  * Whathistory component

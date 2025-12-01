@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatcharity.module.css';
-import { WhatcharityProps } from './Whatcharity.types';
+import styles from './whatcharity.module.css';
+import { WhatcharityProps } from './whatcharity.types';
 
 /**
  * Whatcharity component

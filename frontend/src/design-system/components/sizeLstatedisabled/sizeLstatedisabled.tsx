@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './SizelStatedisabled.module.css';
-import { SizelStatedisabledProps } from './SizelStatedisabled.types';
+import styles from './sizeLstatedisabled.module.css';
+import { SizelStatedisabledProps } from './sizeLstatedisabled.types';
 
 /**
  * SizelStatedisabled component

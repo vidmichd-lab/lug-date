@@ -1,2 +1,2 @@
-export { Statedone } from './Statedone';
-export type { StatedoneProps } from './Statedone.types';
+export { Statedone } from './stateDone';
+export type { StatedoneProps } from './stateDone.types';

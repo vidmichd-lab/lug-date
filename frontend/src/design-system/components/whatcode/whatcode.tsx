@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatcode.module.css';
-import { WhatcodeProps } from './Whatcode.types';
+import styles from './whatcode.module.css';
+import { WhatcodeProps } from './whatcode.types';
 
 /**
  * Whatcode component

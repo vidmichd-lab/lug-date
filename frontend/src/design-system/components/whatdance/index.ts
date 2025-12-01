@@ -1,2 +1,2 @@
-export { Whatdance } from './Whatdance';
-export type { WhatdanceProps } from './Whatdance.types';
+export { Whatdance } from './whatdance';
+export type { WhatdanceProps } from './whatdance.types';

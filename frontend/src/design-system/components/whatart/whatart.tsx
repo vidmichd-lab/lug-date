@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatart.module.css';
-import { WhatartProps } from './Whatart.types';
+import styles from './whatart.module.css';
+import { WhatartProps } from './whatart.types';
 
 /**
  * Whatart component

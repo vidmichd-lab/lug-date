@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Nameok.module.css';
-import { NameokProps } from './Nameok.types';
+import styles from './nameok.module.css';
+import { NameokProps } from './nameok.types';
 
 /**
  * Nameok component

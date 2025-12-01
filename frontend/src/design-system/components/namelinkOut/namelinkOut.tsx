@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Namelinkout.module.css';
-import { NamelinkoutProps } from './Namelinkout.types';
+import styles from './namelinkOut.module.css';
+import { NamelinkoutProps } from './namelinkOut.types';
 
 /**
  * Namelinkout component

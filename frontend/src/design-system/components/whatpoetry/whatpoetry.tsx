@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatpoetry.module.css';
-import { WhatpoetryProps } from './Whatpoetry.types';
+import styles from './whatpoetry.module.css';
+import { WhatpoetryProps } from './whatpoetry.types';
 
 /**
  * Whatpoetry component

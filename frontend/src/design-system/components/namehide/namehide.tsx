@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Namehide.module.css';
-import { NamehideProps } from './Namehide.types';
+import styles from './namehide.module.css';
+import { NamehideProps } from './namehide.types';
 
 /**
  * Namehide component

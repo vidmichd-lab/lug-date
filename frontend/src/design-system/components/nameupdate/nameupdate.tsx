@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Nameupdate.module.css';
-import { NameupdateProps } from './Nameupdate.types';
+import styles from './nameupdate.module.css';
+import { NameupdateProps } from './nameupdate.types';
 
 /**
  * Nameupdate component

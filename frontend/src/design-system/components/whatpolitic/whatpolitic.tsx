@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatpolitic.module.css';
-import { WhatpoliticProps } from './Whatpolitic.types';
+import styles from './whatpolitic.module.css';
+import { WhatpoliticProps } from './whatpolitic.types';
 
 /**
  * Whatpolitic component

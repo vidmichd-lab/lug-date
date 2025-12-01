@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whattheatre.module.css';
-import { WhattheatreProps } from './Whattheatre.types';
+import styles from './whattheatre.module.css';
+import { WhattheatreProps } from './whattheatre.types';
 
 /**
  * Whattheatre component

@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatanalys.module.css';
-import { WhatanalysProps } from './Whatanalys.types';
+import styles from './whatanalys.module.css';
+import { WhatanalysProps } from './whatanalys.types';
 
 /**
  * Whatanalys component

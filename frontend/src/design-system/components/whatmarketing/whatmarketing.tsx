@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatmarketing.module.css';
-import { WhatmarketingProps } from './Whatmarketing.types';
+import styles from './whatmarketing.module.css';
+import { WhatmarketingProps } from './whatmarketing.types';
 
 /**
  * Whatmarketing component

@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatserial.module.css';
-import { WhatserialProps } from './Whatserial.types';
+import styles from './whatserial.module.css';
+import { WhatserialProps } from './whatserial.types';
 
 /**
  * Whatserial component

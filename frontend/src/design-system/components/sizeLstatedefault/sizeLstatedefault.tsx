@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './SizelStatedefault.module.css';
-import { SizelStatedefaultProps } from './SizelStatedefault.types';
+import styles from './sizeLstatedefault.module.css';
+import { SizelStatedefaultProps } from './sizeLstatedefault.types';
 
 /**
  * SizelStatedefault component

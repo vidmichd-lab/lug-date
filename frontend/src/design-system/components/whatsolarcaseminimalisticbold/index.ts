@@ -1,2 +1,2 @@
-export { WhatsolarcaseMinimalisticBold } from './WhatsolarcaseMinimalisticBold';
-export type { WhatsolarcaseMinimalisticBoldProps } from './WhatsolarcaseMinimalisticBold.types';
+export { WhatsolarcaseMinimalisticBold } from './whatsolarcaseminimalisticbold';
+export type { WhatsolarcaseMinimalisticBoldProps } from './whatsolarcaseminimalisticbold.types';

@@ -1,2 +1,2 @@
-export { Nameprofile } from './Nameprofile';
-export type { NameprofileProps } from './Nameprofile.types';
+export { Nameprofile } from './nameprofile';
+export type { NameprofileProps } from './nameprofile.types';

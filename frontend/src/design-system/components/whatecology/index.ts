@@ -1,2 +1,2 @@
-export { Whatecology } from './Whatecology';
-export type { WhatecologyProps } from './Whatecology.types';
+export { Whatecology } from './whatecology';
+export type { WhatecologyProps } from './whatecology.types';

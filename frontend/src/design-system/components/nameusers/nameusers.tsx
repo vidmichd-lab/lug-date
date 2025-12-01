@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Nameusers.module.css';
-import { NameusersProps } from './Nameusers.types';
+import styles from './nameusers.module.css';
+import { NameusersProps } from './nameusers.types';
 
 /**
  * Nameusers component

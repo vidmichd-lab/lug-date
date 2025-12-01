@@ -1,2 +1,2 @@
-export { SizemStateactive } from './SizemStateactive';
-export type { SizemStateactiveProps } from './SizemStateactive.types';
+export { SizemStateactive } from './sizeMstateactive';
+export type { SizemStateactiveProps } from './sizeMstateactive.types';

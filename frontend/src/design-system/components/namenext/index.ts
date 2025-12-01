@@ -1,2 +1,2 @@
-export { Namenext } from './Namenext';
-export type { NamenextProps } from './Namenext.types';
+export { Namenext } from './namenext';
+export type { NamenextProps } from './namenext.types';

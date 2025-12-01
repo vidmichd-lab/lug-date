@@ -1,2 +1,2 @@
-export { Viewswitch } from './Viewswitch';
-export type { ViewswitchProps } from './Viewswitch.types';
+export { Viewswitch } from './viewswitch';
+export type { ViewswitchProps } from './viewswitch.types';

@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatstandup.module.css';
-import { WhatstandupProps } from './Whatstandup.types';
+import styles from './whatstandup.module.css';
+import { WhatstandupProps } from './whatstandup.types';
 
 /**
  * Whatstandup component

@@ -1,2 +1,2 @@
-export { Statedefault } from './Statedefault';
-export type { StatedefaultProps } from './Statedefault.types';
+export { Statedefault } from './statedefault';
+export type { StatedefaultProps } from './statedefault.types';

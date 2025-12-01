@@ -1,2 +1,2 @@
-export { Whatanalys } from './Whatanalys';
-export type { WhatanalysProps } from './Whatanalys.types';
+export { Whatanalys } from './whatanalys';
+export type { WhatanalysProps } from './whatanalys.types';

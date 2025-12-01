@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatphoto.module.css';
-import { WhatphotoProps } from './Whatphoto.types';
+import styles from './whatphoto.module.css';
+import { WhatphotoProps } from './whatphoto.types';
 
 /**
  * Whatphoto component

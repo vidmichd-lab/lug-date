@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Statedefault.module.css';
-import { StatedefaultProps } from './Statedefault.types';
+import styles from './statedefault.module.css';
+import { StatedefaultProps } from './statedefault.types';
 
 /**
  * Statedefault component

@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatcamp.module.css';
-import { WhatcampProps } from './Whatcamp.types';
+import styles from './whatcamp.module.css';
+import { WhatcampProps } from './whatcamp.types';
 
 /**
  * Whatcamp component

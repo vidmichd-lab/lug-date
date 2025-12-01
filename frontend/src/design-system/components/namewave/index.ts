@@ -1,2 +1,2 @@
-export { Namewave } from './Namewave';
-export type { NamewaveProps } from './Namewave.types';
+export { Namewave } from './namewave';
+export type { NamewaveProps } from './namewave.types';

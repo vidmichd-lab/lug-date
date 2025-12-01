@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Nameeye.module.css';
-import { NameeyeProps } from './Nameeye.types';
+import styles from './nameeye.module.css';
+import { NameeyeProps } from './nameeye.types';
 
 /**
  * Nameeye component

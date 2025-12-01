@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Tags.module.css';
-import { TagsProps } from './Tags.types';
+import styles from './tags.module.css';
+import { TagsProps } from './tags.types';
 
 /**
  * Tags component

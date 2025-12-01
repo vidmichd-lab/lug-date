@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Statestate5.module.css';
-import { Statestate5Props } from './Statestate5.types';
+import styles from './statestate5.module.css';
+import { Statestate5Props } from './statestate5.types';
 
 /**
  * Statestate5 component

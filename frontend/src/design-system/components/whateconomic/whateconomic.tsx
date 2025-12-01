@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whateconomic.module.css';
-import { WhateconomicProps } from './Whateconomic.types';
+import styles from './whateconomic.module.css';
+import { WhateconomicProps } from './whateconomic.types';
 
 /**
  * Whateconomic component

@@ -1,2 +1,2 @@
-export { Whatcinema } from './Whatcinema';
-export type { WhatcinemaProps } from './Whatcinema.types';
+export { Whatcinema } from './whatcinema';
+export type { WhatcinemaProps } from './whatcinema.types';

@@ -1,2 +1,2 @@
-export { Whattravel } from './Whattravel';
-export type { WhattravelProps } from './Whattravel.types';
+export { Whattravel } from './whattravel';
+export type { WhattravelProps } from './whattravel.types';

@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Namelink.module.css';
-import { NamelinkProps } from './Namelink.types';
+import styles from './namelink.module.css';
+import { NamelinkProps } from './namelink.types';
 
 /**
  * Namelink component

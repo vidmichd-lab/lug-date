@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Statedone.module.css';
-import { StatedoneProps } from './Statedone.types';
+import styles from './stateDone.module.css';
+import { StatedoneProps } from './stateDone.types';
 
 /**
  * Statedone component

@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatplants.module.css';
-import { WhatplantsProps } from './Whatplants.types';
+import styles from './whatplants.module.css';
+import { WhatplantsProps } from './whatplants.types';
 
 /**
  * Whatplants component

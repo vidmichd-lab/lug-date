@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatcook.module.css';
-import { WhatcookProps } from './Whatcook.types';
+import styles from './whatcook.module.css';
+import { WhatcookProps } from './whatcook.types';
 
 /**
  * Whatcook component

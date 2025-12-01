@@ -1,2 +1,2 @@
-export { Whatpaint } from './Whatpaint';
-export type { WhatpaintProps } from './Whatpaint.types';
+export { Whatpaint } from './whatpaint';
+export type { WhatpaintProps } from './whatpaint.types';

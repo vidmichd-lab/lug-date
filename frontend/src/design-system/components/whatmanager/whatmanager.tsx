@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatmanager.module.css';
-import { WhatmanagerProps } from './Whatmanager.types';
+import styles from './whatmanager.module.css';
+import { WhatmanagerProps } from './whatmanager.types';
 
 /**
  * Whatmanager component

@@ -1,2 +1,2 @@
-export { Namelinkout } from './Namelinkout';
-export type { NamelinkoutProps } from './Namelinkout.types';
+export { Namelinkout } from './namelinkOut';
+export type { NamelinkoutProps } from './namelinkOut.types';

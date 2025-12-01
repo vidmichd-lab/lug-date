@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatgames.module.css';
-import { WhatgamesProps } from './Whatgames.types';
+import styles from './whatgames.module.css';
+import { WhatgamesProps } from './whatgames.types';
 
 /**
  * Whatgames component

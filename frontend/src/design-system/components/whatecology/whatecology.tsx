@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatecology.module.css';
-import { WhatecologyProps } from './Whatecology.types';
+import styles from './whatecology.module.css';
+import { WhatecologyProps } from './whatecology.types';
 
 /**
  * Whatecology component

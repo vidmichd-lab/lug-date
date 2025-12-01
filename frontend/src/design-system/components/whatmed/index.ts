@@ -1,2 +1,2 @@
-export { Whatmed } from './Whatmed';
-export type { WhatmedProps } from './Whatmed.types';
+export { Whatmed } from './whatmed';
+export type { WhatmedProps } from './whatmed.types';

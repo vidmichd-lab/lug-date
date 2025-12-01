@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Namewave.module.css';
-import { NamewaveProps } from './Namewave.types';
+import styles from './namewave.module.css';
+import { NamewaveProps } from './namewave.types';
 
 /**
  * Namewave component

@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatdance.module.css';
-import { WhatdanceProps } from './Whatdance.types';
+import styles from './whatdance.module.css';
+import { WhatdanceProps } from './whatdance.types';
 
 /**
  * Whatdance component

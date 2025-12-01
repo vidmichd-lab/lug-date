@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatit.module.css';
-import { WhatitProps } from './Whatit.types';
+import styles from './whatit.module.css';
+import { WhatitProps } from './whatit.types';
 
 /**
  * Whatit component

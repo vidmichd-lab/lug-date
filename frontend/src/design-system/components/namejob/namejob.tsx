@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Namejob.module.css';
-import { NamejobProps } from './Namejob.types';
+import styles from './namejob.module.css';
+import { NamejobProps } from './namejob.types';
 
 /**
  * Namejob component

@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Viewicon.module.css';
-import { ViewiconProps } from './Viewicon.types';
+import styles from './viewicon.module.css';
+import { ViewiconProps } from './viewicon.types';
 
 /**
  * Viewicon component

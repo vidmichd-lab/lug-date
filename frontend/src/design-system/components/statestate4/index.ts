@@ -1,2 +1,2 @@
-export { Statestate4 } from './Statestate4';
-export type { Statestate4Props } from './Statestate4.types';
+export { Statestate4 } from './statestate4';
+export type { Statestate4Props } from './statestate4.types';

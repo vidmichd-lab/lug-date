@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Namesettings.module.css';
-import { NamesettingsProps } from './Namesettings.types';
+import styles from './namesettings.module.css';
+import { NamesettingsProps } from './namesettings.types';
 
 /**
  * Namesettings component

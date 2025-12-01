@@ -1,2 +1,2 @@
-export { SizesStatedisabled } from './SizesStatedisabled';
-export type { SizesStatedisabledProps } from './SizesStatedisabled.types';
+export { SizesStatedisabled } from './sizeSstatedisabled';
+export type { SizesStatedisabledProps } from './sizeSstatedisabled.types';

@@ -1,2 +1,2 @@
-export { Nameeye } from './Nameeye';
-export type { NameeyeProps } from './Nameeye.types';
+export { Nameeye } from './nameeye';
+export type { NameeyeProps } from './nameeye.types';

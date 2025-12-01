@@ -1,2 +1,2 @@
-export { Whatstandup } from './Whatstandup';
-export type { WhatstandupProps } from './Whatstandup.types';
+export { Whatstandup } from './whatstandup';
+export type { WhatstandupProps } from './whatstandup.types';

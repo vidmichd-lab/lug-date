@@ -1,2 +1,2 @@
-export { Whatspace } from './Whatspace';
-export type { WhatspaceProps } from './Whatspace.types';
+export { Whatspace } from './whatspace';
+export type { WhatspaceProps } from './whatspace.types';

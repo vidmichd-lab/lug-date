@@ -1,2 +1,2 @@
-export { Stateinprogress } from './Stateinprogress';
-export type { StateinprogressProps } from './Stateinprogress.types';
+export { Stateinprogress } from './stateinProgress';
+export type { StateinprogressProps } from './stateinProgress.types';

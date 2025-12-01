@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whattravel.module.css';
-import { WhattravelProps } from './Whattravel.types';
+import styles from './whattravel.module.css';
+import { WhattravelProps } from './whattravel.types';
 
 /**
  * Whattravel component

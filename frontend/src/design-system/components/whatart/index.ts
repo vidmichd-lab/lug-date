@@ -1,2 +1,2 @@
-export { Whatart } from './Whatart';
-export type { WhatartProps } from './Whatart.types';
+export { Whatart } from './whatart';
+export type { WhatartProps } from './whatart.types';

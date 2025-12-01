@@ -1,2 +1,2 @@
-export { Whatdesign } from './Whatdesign';
-export type { WhatdesignProps } from './Whatdesign.types';
+export { Whatdesign } from './whatdesign';
+export type { WhatdesignProps } from './whatdesign.types';

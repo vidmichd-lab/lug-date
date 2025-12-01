@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Whatbike.module.css';
-import { WhatbikeProps } from './Whatbike.types';
+import styles from './whatbike.module.css';
+import { WhatbikeProps } from './whatbike.types';
 
 /**
  * Whatbike component

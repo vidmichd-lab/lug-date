@@ -1,2 +1,2 @@
-export { Nameusers } from './Nameusers';
-export type { NameusersProps } from './Nameusers.types';
+export { Nameusers } from './nameusers';
+export type { NameusersProps } from './nameusers.types';

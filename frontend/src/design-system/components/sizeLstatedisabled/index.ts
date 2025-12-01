@@ -1,2 +1,2 @@
-export { SizelStatedisabled } from './SizelStatedisabled';
-export type { SizelStatedisabledProps } from './SizelStatedisabled.types';
+export { SizelStatedisabled } from './sizeLstatedisabled';
+export type { SizelStatedisabledProps } from './sizeLstatedisabled.types';

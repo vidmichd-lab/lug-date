@@ -1,2 +1,2 @@
-export { Whatpolitic } from './Whatpolitic';
-export type { WhatpoliticProps } from './Whatpolitic.types';
+export { Whatpolitic } from './whatpolitic';
+export type { WhatpoliticProps } from './whatpolitic.types';

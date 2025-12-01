@@ -1,2 +1,2 @@
-export { Whatsport } from './Whatsport';
-export type { WhatsportProps } from './Whatsport.types';
+export { Whatsport } from './whatsport';
+export type { WhatsportProps } from './whatsport.types';

@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Stateinprogress.module.css';
-import { StateinprogressProps } from './Stateinprogress.types';
+import styles from './stateinProgress.module.css';
+import { StateinprogressProps } from './stateinProgress.types';
 
 /**
  * Stateinprogress component

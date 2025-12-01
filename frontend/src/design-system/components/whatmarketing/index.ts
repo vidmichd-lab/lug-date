@@ -1,2 +1,2 @@
-export { Whatmarketing } from './Whatmarketing';
-export type { WhatmarketingProps } from './Whatmarketing.types';
+export { Whatmarketing } from './whatmarketing';
+export type { WhatmarketingProps } from './whatmarketing.types';

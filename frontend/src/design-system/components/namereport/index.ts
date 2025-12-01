@@ -1,2 +1,2 @@
-export { Namereport } from './Namereport';
-export type { NamereportProps } from './Namereport.types';
+export { Namereport } from './namereport';
+export type { NamereportProps } from './namereport.types';

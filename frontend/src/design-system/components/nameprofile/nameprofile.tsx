@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Nameprofile.module.css';
-import { NameprofileProps } from './Nameprofile.types';
+import styles from './nameprofile.module.css';
+import { NameprofileProps } from './nameprofile.types';
 
 /**
  * Nameprofile component

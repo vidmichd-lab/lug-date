@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './TabBottom.module.css';
-import { TabBottomProps } from './TabBottom.types';
+import styles from './tabbottom.module.css';
+import { TabBottomProps } from './tabbottom.types';
 
 /**
  * TabBottom component
