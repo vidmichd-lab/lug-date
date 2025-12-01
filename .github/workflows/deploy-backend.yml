@@ -66,7 +66,21 @@ jobs:
           FUNCTION_NAME=${{ github.ref == 'refs/heads/main' && 'dating-app-backend-prod' || 'dating-app-backend-staging' }}
           
           # Create function if it doesn't exist
-          yc serverless function create --name $FUNCTION_NAME --description "Dating app backend API" || echo "Function already exists"
+          # Use folder-id from secrets or default from yc config
+          FOLDER_ID="${{ secrets.YC_FOLDER_ID }}"
+          if [ -z "$FOLDER_ID" ]; then
+            FOLDER_ID=$(yc config get folder-id 2>/dev/null || echo "")
+          fi
+          if [ -n "$FOLDER_ID" ]; then
+            yc serverless function create \
+              --name $FUNCTION_NAME \
+              --description "Dating app backend API" \
+              --folder-id $FOLDER_ID || echo "Function already exists"
+          else
+            yc serverless function create \
+              --name $FUNCTION_NAME \
+              --description "Dating app backend API" || echo "Function already exists"
+          fi
           
           # Create new version
           yc serverless function version create \

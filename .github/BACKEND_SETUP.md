@@ -51,16 +51,22 @@
 Функции создадутся автоматически при первом деплое, но можно создать вручную:
 
 ```bash
-# Установите Yandex Cloud CLI если еще не установлен
-# https://cloud.yandex.ru/docs/cli/quickstart
+# Получите folder-id
+yc resource-manager folder list
 
-# Настройте профиль
-yc init
+# Создайте функции (замените <folder-id> на ваш)
+yc serverless function create \
+  --name dating-app-backend-staging \
+  --description "Dating app backend API (staging)" \
+  --folder-id <folder-id>
 
-# Создайте функции
-yc serverless function create --name dating-app-backend-staging
-yc serverless function create --name dating-app-backend-prod
+yc serverless function create \
+  --name dating-app-backend-prod \
+  --description "Dating app backend API (production)" \
+  --folder-id <folder-id>
 ```
+
+**Или добавьте `YC_FOLDER_ID` в GitHub Secrets** - тогда функции создадутся автоматически при деплое.
 
 ### Шаг 3: Запустить деплой
 
