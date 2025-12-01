@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Property1default.module.css';
-import { Property1defaultProps } from './Property1default.types';
+import styles from './Property1Default.module.css';
+import { Property1defaultProps } from './Property1Default.types';
 
 /**
  * Property1default component

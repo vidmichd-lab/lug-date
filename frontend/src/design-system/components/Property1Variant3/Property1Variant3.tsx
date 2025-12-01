@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Property1variant3.module.css';
-import { Property1variant3Props } from './Property1variant3.types';
+import styles from './Property1Variant3.module.css';
+import { Property1variant3Props } from './Property1Variant3.types';
 
 /**
  * Property1variant3 component
