@@ -33,12 +33,15 @@ jobs:
         run: npm run build:frontend
 
       - name: Configure AWS CLI for Yandex Object Storage
+        env:
+          ACCESS_KEY: ${{ github.ref == 'refs/heads/main' && secrets.FRONTEND_STORAGE_ACCESS_KEY_PROD || secrets.FRONTEND_STORAGE_ACCESS_KEY_DEV }}
+          SECRET_KEY: ${{ github.ref == 'refs/heads/main' && secrets.FRONTEND_STORAGE_SECRET_KEY_PROD || secrets.FRONTEND_STORAGE_SECRET_KEY_DEV }}
         run: |
           pip install awscli
           mkdir -p ~/.aws
           echo "[default]" > ~/.aws/credentials
-          echo "aws_access_key_id = ${{ secrets.YANDEX_STORAGE_ACCESS_KEY }}" >> ~/.aws/credentials
-          echo "aws_secret_access_key = ${{ secrets.YANDEX_STORAGE_SECRET_KEY }}" >> ~/.aws/credentials
+          echo "aws_access_key_id = $ACCESS_KEY" >> ~/.aws/credentials
+          echo "aws_secret_access_key = $SECRET_KEY" >> ~/.aws/credentials
 
       - name: Deploy to Yandex Object Storage
         env:
