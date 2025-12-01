@@ -43,10 +43,13 @@ export function SavedEventsPage() {
   const fetchSavedEvents = useCallback(async () => {
     setIsLoading(true);
     try {
-      const category = selectedCategory === 'Все' ? undefined : selectedCategory.toLowerCase();
-      const response = await api.get<GetSavedEventsResponse>('/api/v1/saved-events', {
-        requireAuth: true,
-      });
+      const categoryFilter = selectedCategory === 'Все' ? undefined : selectedCategory.toLowerCase();
+      const response = await api.get<GetSavedEventsResponse>(
+        `/api/v1/saved-events${categoryFilter ? `?category=${categoryFilter}` : ''}`,
+        {
+          requireAuth: true,
+        }
+      );
 
       if (response.success && response.data) {
         setSavedEvents(response.data.events);

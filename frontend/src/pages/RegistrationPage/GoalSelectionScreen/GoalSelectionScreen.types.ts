@@ -4,6 +4,8 @@
 
 import type { Goal } from '../../../stores/registrationStore';
 
+export type { Goal };
+
 export interface GoalOption {
   id: Goal;
   label: string;

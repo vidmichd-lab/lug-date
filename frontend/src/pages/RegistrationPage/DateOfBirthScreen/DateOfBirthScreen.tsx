@@ -10,7 +10,6 @@ import { validateDateOfBirth } from './utils';
 import styles from './DateOfBirthScreen.module.css';
 import type { DateOfBirthScreenProps, DateValidationError } from './DateOfBirthScreen.types';
 
-const CURRENT_YEAR = new Date().getFullYear();
 
 export const DateOfBirthScreen: React.FC<DateOfBirthScreenProps> = ({
   onNext,

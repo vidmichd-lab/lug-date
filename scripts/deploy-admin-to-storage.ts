@@ -32,13 +32,11 @@ function getConfig(): DeployConfig {
   const bucket = process.env.ADMIN_STORAGE_BUCKET_DEV || 
                  process.env.ADMIN_STORAGE_BUCKET || 
                  'lug-admin-deploy'; // Default bucket name from user
-  // Priority: ADMIN_STORAGE_ACCESS_KEY_DEV > ADMIN_STORAGE_ACCESS_KEY > default
+  // Priority: ADMIN_STORAGE_ACCESS_KEY_DEV > ADMIN_STORAGE_ACCESS_KEY > required
   const accessKeyId = process.env.ADMIN_STORAGE_ACCESS_KEY_DEV || 
-                      process.env.ADMIN_STORAGE_ACCESS_KEY || 
-                      'YCAJEgizqc8bY5Q14h1NHXd6R'; // From user - admin-deploy service account
+                      process.env.ADMIN_STORAGE_ACCESS_KEY;
   const secretAccessKey = process.env.ADMIN_STORAGE_SECRET_KEY_DEV || 
-                          process.env.ADMIN_STORAGE_SECRET_KEY || 
-                          'YCMZZX-xGsejY9LZSH6DMY6yPJbegkB5-Csxr8oU'; // From user - admin-deploy service account
+                          process.env.ADMIN_STORAGE_SECRET_KEY;
   // Yandex Object Storage endpoint - must use storage.yandexcloud.net
   const endpoint = process.env.OBJECT_STORAGE_URL || 'https://storage.yandexcloud.net';
   const sourceDir = process.env.ADMIN_DIST_PATH || join(process.cwd(), 'admin', 'dist');
@@ -46,11 +44,12 @@ function getConfig(): DeployConfig {
   if (!accessKeyId || !secretAccessKey) {
     throw new Error(
       'Object Storage credentials not found. Please set:\n' +
-      '  ADMIN_STORAGE_ACCESS_KEY_DEV (or YANDEX_STORAGE_ACCESS_KEY)\n' +
-      '  ADMIN_STORAGE_SECRET_KEY_DEV (or YANDEX_STORAGE_SECRET_KEY)\n' +
+      '  ADMIN_STORAGE_ACCESS_KEY_DEV (or ADMIN_STORAGE_ACCESS_KEY)\n' +
+      '  ADMIN_STORAGE_SECRET_KEY_DEV (or ADMIN_STORAGE_SECRET_KEY)\n' +
       '\n' +
       'Bucket will use: ' + bucket + '\n' +
-      'For GitHub Actions, use ADMIN_STORAGE_* secrets.'
+      'For GitHub Actions, use ADMIN_STORAGE_* secrets.\n' +
+      'See docs/GITHUB_STORAGE_SECRETS.md for setup instructions.'
     );
   }
   

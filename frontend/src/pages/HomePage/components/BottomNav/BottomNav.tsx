@@ -11,7 +11,7 @@ export interface BottomNavProps {
   activeTab?: 'feed' | 'saved' | 'add' | 'chats' | 'profile' | 'notifications';
 }
 
-export const BottomNav: FC<BottomNavProps> = ({ activeTab = 'feed' }) => {
+export const BottomNav: FC<BottomNavProps> = () => {
   const navigate = useNavigate();
   const location = useLocation();
 

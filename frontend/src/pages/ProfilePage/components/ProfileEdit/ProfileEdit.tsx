@@ -7,14 +7,13 @@ import { useState, useCallback, useRef, useEffect, FC } from 'react';
 import { useTranslation } from 'react-i18next';
 import { InputWithIcon } from '../../../../components/InputWithIcon';
 import { INTERESTS_DATA } from '../../../RegistrationPage/InterestsScreen/interestsData';
-import { InterestTag } from '../../../../components/InterestTag';
 import { CitySelectorModal } from '../CitySelectorModal';
 import { InterestsSelectorModal } from '../InterestsSelectorModal';
 import { validateDateOfBirth } from '../../../RegistrationPage/DateOfBirthScreen/utils';
 import { api } from '../../../../api/client';
 import styles from './ProfileEdit.module.css';
 import type { ProfileEditProps } from './ProfileEdit.types';
-import type { Goal, Gender, BirthDate } from '../../ProfilePage.types';
+import type { Goal, Gender } from '../../ProfilePage.types';
 
 const GOAL_OPTIONS = [
   { id: 'find-friends' as Goal, label: 'Найти друзей' },

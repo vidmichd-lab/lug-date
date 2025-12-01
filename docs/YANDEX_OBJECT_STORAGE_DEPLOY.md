@@ -303,12 +303,12 @@ npm run deploy:frontend:clear
 
 **Для Staging (ветка develop):**
 - `FRONTEND_STORAGE_BUCKET_DEV` = `telegram-app-frontend`
-- `FRONTEND_STORAGE_ACCESS_KEY_DEV` = `YCAJEHGGHpv7gmDnfalw4tUSD`
+- `FRONTEND_STORAGE_ACCESS_KEY_DEV` = `YCAJE...
 - `FRONTEND_STORAGE_SECRET_KEY_DEV` = `YCPGeks_piY5OqWjkw_Gmg8Qx41PK6B7JfMaaWok`
 
 **Для Production (ветка main):**
 - `FRONTEND_STORAGE_BUCKET_PROD` = `telegram-app-frontend` (или отдельный)
-- `FRONTEND_STORAGE_ACCESS_KEY_PROD` = `YCAJEHGGHpv7gmDnfalw4tUSD`
+- `FRONTEND_STORAGE_ACCESS_KEY_PROD` = `YCAJE...
 - `FRONTEND_STORAGE_SECRET_KEY_PROD` = `YCPGeks_piY5OqWjkw_Gmg8Qx41PK6B7JfMaaWok`
 
 **⚠️ Важно:** Используем префикс `FRONTEND_` чтобы не конфликтовать с существующими `YANDEX_STORAGE_*` secrets для backend.

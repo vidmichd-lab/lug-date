@@ -6,7 +6,6 @@
 import { FC } from 'react';
 import { useTranslation } from 'react-i18next';
 import { INTERESTS_DATA } from '../../../RegistrationPage/InterestsScreen/interestsData';
-import { InterestTag } from '../../../../components/InterestTag';
 import styles from './ProfileView.module.css';
 import type { ProfileViewProps } from './ProfileView.types';
 

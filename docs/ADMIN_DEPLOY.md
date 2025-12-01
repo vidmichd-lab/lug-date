@@ -37,8 +37,8 @@ npm run deploy:admin:clear
 ### 2. Настройка переменных окружения
 
 Скрипт использует ключи по умолчанию из вашего запроса:
-- **Access Key ID:** `YCAJE9rBN49EzJOqjC9LmT4BS`
-- **Secret Access Key:** `YCPK0EBU7f-IHoh29XkOt_XJ0D3MYRw6RbO6BjTl`
+- **Access Key ID:** `YCAJE...
+- **Secret Access Key:** `YCPK...
 - **Bucket:** `lug-admin-deploy`
 
 Или создайте файл `.env` в корне проекта:
@@ -46,8 +46,8 @@ npm run deploy:admin:clear
 ```env
 # Админка
 ADMIN_STORAGE_BUCKET_DEV=lug-admin-deploy
-ADMIN_STORAGE_ACCESS_KEY_DEV=YCAJE9rBN49EzJOqjC9LmT4BS
-ADMIN_STORAGE_SECRET_KEY_DEV=YCPK0EBU7f-IHoh29XkOt_XJ0D3MYRw6RbO6BjTl
+ADMIN_STORAGE_ACCESS_KEY_DEV=YCAJE...
+ADMIN_STORAGE_SECRET_KEY_DEV=YCPK...
 ```
 
 ## 🚀 Процесс деплоя

@@ -60,7 +60,7 @@ export const NameInputScreen: React.FC<NameInputScreenProps> = ({
     if (value.length >= MIN_LENGTH) {
       // Split by spaces and capitalize each word
       const words = value.split(' ');
-      const capitalizedWords = words.map((word, index) => {
+      const capitalizedWords = words.map((word) => {
         if (word.length === 0) return word;
         return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
       });

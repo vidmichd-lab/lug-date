@@ -231,6 +231,21 @@ class ApiClient {
   }
 
   /**
+   * PATCH request
+   */
+  async patch<T>(
+    endpoint: string,
+    data?: any,
+    options?: RequestOptions
+  ): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      ...options,
+      method: 'PATCH',
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  }
+
+  /**
    * DELETE request
    */
   async delete<T>(endpoint: string, options?: RequestOptions): Promise<ApiResponse<T>> {
@@ -302,6 +317,8 @@ export const api = {
     apiClient.post<T>(endpoint, data, options),
   put: <T>(endpoint: string, data?: any, options?: RequestOptions) =>
     apiClient.put<T>(endpoint, data, options),
+  patch: <T>(endpoint: string, data?: any, options?: RequestOptions) =>
+    apiClient.patch<T>(endpoint, data, options),
   delete: <T>(endpoint: string, options?: RequestOptions) =>
     apiClient.delete<T>(endpoint, options),
   upload: <T>(

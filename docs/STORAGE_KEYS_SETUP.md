@@ -6,7 +6,7 @@
 
 **Имя бакета:** `telegram-app-frontend`
 
-**Access Key ID:** `YCAJEHGGHpv7gmDnfalw4tUSD`
+**Access Key ID:** `YCAJE...
 
 **Secret Access Key:** `YCPGeks_piY5OqWjkw_Gmg8Qx41PK6B7JfMaaWok`
 
@@ -33,7 +33,7 @@
 ```bash
 # Yandex Object Storage для frontend деплоя
 YANDEX_STORAGE_BUCKET_DEV=telegram-app-frontend
-YANDEX_STORAGE_ACCESS_KEY_DEV=YCAJEHGGHpv7gmDnfalw4tUSD
+YANDEX_STORAGE_ACCESS_KEY_DEV=YCAJE...
 YANDEX_STORAGE_SECRET_KEY_DEV=YCPGeks_piY5OqWjkw_Gmg8Qx41PK6B7JfMaaWok
 OBJECT_STORAGE_URL=https://storage.yandexcloud.net
 ```
@@ -79,7 +79,7 @@ npm run deploy:frontend:clear
 
 **Для Environment: staging (ветка develop):**
 - `YANDEX_STORAGE_BUCKET_DEV` = `telegram-app-frontend`
-- `YANDEX_STORAGE_ACCESS_KEY_DEV` = `YCAJEHGGHpv7gmDnfalw4tUSD`
+- `YANDEX_STORAGE_ACCESS_KEY_DEV` = `YCAJE...
 - `YANDEX_STORAGE_SECRET_KEY_DEV` = `YCPGeks_piY5OqWjkw_Gmg8Qx41PK6B7JfMaaWok`
 
 **Для Environment: production (ветка main):**
