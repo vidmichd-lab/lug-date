@@ -1,0 +1,99 @@
+name: Sync Figma Design System
+
+on:
+  schedule:
+    # Запуск каждый день в 9:00 UTC (12:00 МСК)
+    - cron: '0 9 * * *'
+  workflow_dispatch: # Позволяет запускать вручную
+
+jobs:
+  sync-figma:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync from Figma
+        env:
+          FIGMA_TOKEN: ${{ secrets.FIGMA_TOKEN }}
+          FIGMA_FILE_ID: ${{ secrets.FIGMA_FILE_ID }}
+        run: npm run sync:figma
+
+      - name: Check for changes
+        id: check-changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Pull Request
+        if: steps.check-changes.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore: sync design system from Figma'
+          title: '🔄 Sync Design System from Figma'
+          body: |
+            ## 🔄 Автоматическая синхронизация дизайн-системы из Figma
+            
+            Этот PR создан автоматически GitHub Action для синхронизации дизайн-системы.
+            
+            ### 📋 Изменения
+            - Проверьте файл `docs/design-system/CHANGELOG.md` для списка изменений
+            - Проверьте breaking changes, если они есть
+            
+            ### ⚠️ Внимание
+            Если обнаружены breaking changes, проверьте код на совместимость перед мерджем.
+            
+            ---
+            *Автоматически создано GitHub Action*
+          branch: sync/figma-design-system
+          delete-branch: true
+          labels: |
+            design-system
+            automated
+            figma-sync
+
+      - name: Send Telegram notification
+        if: steps.check-changes.outputs.has_changes == 'true'
+        uses: appleboy/telegram-action@v1.0.0
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            🔄 Обновление дизайн-системы из Figma
+            
+            ✅ Синхронизация завершена успешно!
+            
+            📋 Проверьте CHANGELOG.md для списка изменений.
+            
+            🔗 PR: ${{ github.server_url }}/${{ github.repository }}/pulls
+          format: markdown
+
+      - name: Send Telegram notification (no changes)
+        if: steps.check-changes.outputs.has_changes == 'false'
+        uses: appleboy/telegram-action@v1.0.0
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            ✅ Проверка дизайн-системы
+            
+            Нет изменений в Figma файле. Все актуально!
+          format: markdown
+

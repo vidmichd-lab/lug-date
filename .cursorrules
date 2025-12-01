@@ -1,0 +1,90 @@
+# Cursor AI Rules for Dating Telegram Mini App
+
+## Проект: Dating Telegram Mini App
+
+Название: [название вашего приложения]
+
+## Технологический стек
+
+### Frontend
+- React 18 + TypeScript + Vite
+- UI: @telegram-apps/telegram-ui компоненты
+- Стейт: Zustand
+- Запросы: TanStack Query (React Query v5)
+- Роутинг: React Router v6
+- Стили: CSS Modules + CSS Variables
+- i18n: react-i18next
+
+### Backend
+- Node.js + Express + TypeScript
+- База данных: Yandex Managed Service for YDB
+- Хранилище: Yandex Object Storage
+- Деплой: Yandex Cloud Functions (serverless)
+
+## Правила кода
+
+1. Все компоненты — функциональные с TypeScript
+2. Именование файлов: PascalCase для компонентов, camelCase для утилит
+3. Один компонент = один файл Component.tsx + Component.module.css + Component.types.ts
+4. Все данные динамические из API, никаких hardcoded значений
+5. Поддержка i18n с самого начала (react-i18next)
+6. Поддержка light/dark темы через CSS Variables
+7. Responsive дизайн для 375x812 (основа), адаптация до 768px
+8. Все изображения через lazy loading
+9. Error boundaries для всех страниц
+10. Комментарии на русском, код на английском
+
+## Дизайн-система
+
+- Все значения (цвета, отступы, размеры) из Figma Variables
+- Компоненты собираются из атомарных элементов
+- Следовать структуре из Figma Design System
+
+## API
+
+- REST API с префиксом /api/v1
+- Все эндпоинты возвращают { success, data, error }
+- Обработка ошибок через middleware
+- Валидация через Zod
+- JWT для авторизации (но через Telegram initData)
+
+## Yandex Cloud
+
+- Использовать только сервисы Yandex Cloud
+- YDB для базы данных (serverless mode)
+- Object Storage для файлов
+- Cloud Functions для backend
+- API Gateway для роутинга
+- CDN для статики
+
+## Безопасность
+
+- Валидация Telegram initData на backend
+- Sanitize всех пользовательских данных
+- Rate limiting на API
+- Сжатие и проверка изображений перед загрузкой
+
+## Не использовать
+
+- Class components
+- Redux (только Zustand)
+- Styled-components (только CSS Modules)
+- Любые npm пакеты без необходимости
+
+## Структура проекта
+
+- Это монорепозиторий с npm workspaces
+- Frontend: `/frontend` - Telegram Web App
+- Backend: `/backend` - Serverless API
+- Bot: `/bot` - Telegram bot
+- Admin: `/admin` - Админ-панель
+- Shared: `/shared` - Общие TypeScript типы и утилиты
+
+## Best Practices
+
+- Всегда валидировать входные данные
+- Обрабатывать ошибки gracefully
+- Использовать environment variables для конфигурации
+- Держать функции маленькими и сфокусированными
+- Писать тесты для критичной функциональности
+- Использовать shared типы из /shared пакета

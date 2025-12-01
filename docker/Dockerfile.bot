@@ -1,0 +1,37 @@
+# Bot Dockerfile
+FROM node:18-alpine AS base
+
+WORKDIR /app
+
+# Установка зависимостей
+FROM base AS dependencies
+COPY bot/package*.json ./
+COPY shared/package*.json ../shared/
+RUN npm ci --workspace=bot --workspace=../shared
+
+# Development
+FROM base AS development
+COPY --from=dependencies /app/node_modules ./node_modules
+COPY --from=dependencies /app/../shared/node_modules ../shared/node_modules
+COPY bot/ .
+COPY shared/ ../shared/
+CMD ["npm", "run", "dev"]
+
+# Build
+FROM base AS build
+COPY --from=dependencies /app/node_modules ./node_modules
+COPY --from=dependencies /app/../shared/node_modules ../shared/node_modules
+COPY bot/ .
+COPY shared/ ../shared/
+RUN npm run build --workspace=bot
+
+# Production
+FROM node:18-alpine AS production
+WORKDIR /app
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/../shared/dist ../shared/dist
+COPY --from=build /app/../shared/node_modules ../shared/node_modules
+COPY bot/package*.json ./
+CMD ["node", "dist/index.js"]
+

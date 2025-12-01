@@ -1,0 +1,133 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: dating-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-dating_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dating-network
+
+  # Redis (для кеширования и сессий)
+  redis:
+    image: redis:7-alpine
+    container_name: dating-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dating-network
+
+  # Backend API
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+      target: development
+    container_name: dating-backend
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: ${BACKEND_PORT:-4000}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-dating_db}
+      REDIS_URL: redis://redis:6379
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      FIGMA_TOKEN: ${FIGMA_TOKEN}
+      FIGMA_FILE_ID: ${FIGMA_FILE_ID}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-key}
+      API_URL: http://localhost:${BACKEND_PORT:-4000}
+    ports:
+      - "${BACKEND_PORT:-4000}:4000"
+    volumes:
+      - ../backend:/app
+      - /app/node_modules
+      - /app/dist
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - dating-network
+    command: npm run dev
+    restart: unless-stopped
+
+  # Frontend (React App)
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+      target: development
+    container_name: dating-frontend
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      VITE_PORT: 3000
+      VITE_API_URL: http://localhost:${BACKEND_PORT:-4000}
+      VITE_TELEGRAM_BOT_NAME: ${TELEGRAM_BOT_NAME}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+      - /app/dist
+    depends_on:
+      - backend
+    networks:
+      - dating-network
+    command: npm run dev
+    restart: unless-stopped
+
+  # Telegram Bot
+  bot:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.bot
+      target: development
+    container_name: dating-bot
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-dating_db}
+      REDIS_URL: redis://redis:6379
+      API_URL: http://backend:4000
+    volumes:
+      - ../bot:/app
+      - /app/node_modules
+      - /app/dist
+    depends_on:
+      - backend
+      - postgres
+    networks:
+      - dating-network
+    command: npm run dev
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  dating-network:
+    driver: bridge
+

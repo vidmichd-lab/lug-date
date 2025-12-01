@@ -1,0 +1,49 @@
+{
+  "name": "telegram-dating-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Telegram dating application with independent frontend and backend",
+  "workspaces": [
+    "frontend",
+    "backend",
+    "bot",
+    "admin",
+    "shared"
+  ],
+  "scripts": {
+    "dev:all": "npm run dev --workspaces --if-present",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:bot": "npm run dev --workspace=bot",
+    "dev:admin": "npm run dev --workspace=admin",
+    "build:all": "npm run build --workspaces --if-present",
+    "build:frontend": "npm run build --workspace=frontend",
+    "build:backend": "npm run build --workspace=backend",
+    "build:bot": "npm run build --workspace=bot",
+    "build:admin": "npm run build --workspace=admin",
+    "deploy:prod": "npm run deploy --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "clean": "npm run clean --workspaces --if-present && rm -rf node_modules",
+    "import:figma": "tsx scripts/import-figma.ts",
+    "import:figma:mcp": "tsx scripts/import-figma-mcp.ts",
+    "sync:figma": "tsx scripts/sync-figma.ts",
+    "test:figma": "tsx scripts/test-figma-connection.ts",
+    "seed:dev": "NODE_ENV=development tsx scripts/seed.ts"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^8.4.1",
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^20.10.0",
+    "axios": "^1.13.2",
+    "dotenv": "^16.6.1",
+    "fs-extra": "^11.3.2",
+    "prettier": "^3.7.3",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
