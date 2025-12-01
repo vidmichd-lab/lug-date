@@ -9,6 +9,8 @@ import type { FeedTab } from './components';
 import { sortCards } from './utils';
 import type { Card } from './utils';
 import { api } from '../../api/client';
+import { RegistrationModal } from '../../components/RegistrationModal';
+import { useUserStore } from '../../stores';
 import styles from './HomePage.module.css';
 
 // Mock categories for events (TODO: get from API)
@@ -20,6 +22,8 @@ export function HomePage() {
   const [cards, setCards] = useState<Card[]>([]);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+  const { user } = useUserStore();
 
   // Filter cards by type and category
   const filteredCards = useMemo(() => {
@@ -89,11 +93,30 @@ export function HomePage() {
     fetchCards();
   }, [fetchCards]);
 
+  // Check if user is authenticated
+  const isAuthenticated = useCallback(() => {
+    // Check if user exists in store
+    if (user) return true;
+    
+    // Check if Telegram WebApp initData exists
+    if (typeof window !== 'undefined' && window.Telegram?.WebApp?.initData) {
+      return true;
+    }
+    
+    return false;
+  }, [user]);
+
   const handleSwipeLeft = useCallback(async () => {
     if (!currentCard) return;
 
+    // Check authentication before action
+    if (!isAuthenticated()) {
+      setShowRegistrationModal(true);
+      return;
+    }
+
     try {
-      await api.post(
+      const response = await api.post(
         '/api/v1/feed/action',
         {
           cardId: currentCard.id,
@@ -103,19 +126,31 @@ export function HomePage() {
         { requireAuth: true }
       );
 
-      setCurrentCardIndex((prev) => prev + 1);
+      if (response.success) {
+        setCurrentCardIndex((prev) => prev + 1);
+      } else if (response.error?.code === 'UNAUTHORIZED') {
+        setShowRegistrationModal(true);
+      } else {
+        setCurrentCardIndex((prev) => prev + 1);
+      }
     } catch (error) {
       console.error('Failed to record action:', error);
       // Still advance card even if API call fails
       setCurrentCardIndex((prev) => prev + 1);
     }
-  }, [currentCard]);
+  }, [currentCard, isAuthenticated]);
 
   const handleSwipeRight = useCallback(async () => {
     if (!currentCard) return;
 
+    // Check authentication before action
+    if (!isAuthenticated()) {
+      setShowRegistrationModal(true);
+      return;
+    }
+
     try {
-      await api.post(
+      const response = await api.post(
         '/api/v1/feed/action',
         {
           cardId: currentCard.id,
@@ -125,13 +160,19 @@ export function HomePage() {
         { requireAuth: true }
       );
 
-      setCurrentCardIndex((prev) => prev + 1);
+      if (response.success) {
+        setCurrentCardIndex((prev) => prev + 1);
+      } else if (response.error?.code === 'UNAUTHORIZED') {
+        setShowRegistrationModal(true);
+      } else {
+        setCurrentCardIndex((prev) => prev + 1);
+      }
     } catch (error) {
       console.error('Failed to record action:', error);
       // Still advance card even if API call fails
       setCurrentCardIndex((prev) => prev + 1);
     }
-  }, [currentCard]);
+  }, [currentCard, isAuthenticated]);
 
   const handleRefresh = useCallback(() => {
     fetchCards();
@@ -182,6 +223,11 @@ export function HomePage() {
       </div>
 
       <BottomNav activeTab="feed" />
+
+      <RegistrationModal
+        isOpen={showRegistrationModal}
+        onClose={() => setShowRegistrationModal(false)}
+      />
     </div>
   );
 }

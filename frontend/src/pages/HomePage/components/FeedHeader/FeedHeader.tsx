@@ -5,7 +5,6 @@
 
 import { FC, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import styles from './FeedHeader.module.css';
 import type { FeedHeaderProps } from './FeedHeader.types';
 
@@ -18,41 +17,10 @@ export const FeedHeader: FC<FeedHeaderProps> = ({
   showCategories,
 }) => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const categoriesScrollRef = useRef<HTMLDivElement>(null);
-
-  const handleLogoClick = () => {
-    navigate('/');
-  };
 
   return (
     <header className={styles.mainHeader}>
-      <button className={styles.logoButton} onClick={handleLogoClick} type="button" aria-label="Home">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path
-            d="M12 2L2 7L12 12L22 7L12 2Z"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M2 17L12 22L22 17"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M2 12L12 17L22 12"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </button>
-
       <div className={styles.tabSwitcher}>
         <button
           className={`${styles.tabButton} ${activeTab === 'events' ? styles.tabButtonActive : ''}`}
