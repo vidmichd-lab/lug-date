@@ -53,8 +53,12 @@ jobs:
           npm run deploy:frontend
 
       - name: Deployment summary
+        env:
+          BUCKET: ${{ github.ref == 'refs/heads/main' && secrets.FRONTEND_STORAGE_BUCKET_PROD || secrets.FRONTEND_STORAGE_BUCKET_DEV }}
         run: |
-          BUCKET=${{ github.ref == 'refs/heads/main' && secrets.FRONTEND_STORAGE_BUCKET_PROD || secrets.FRONTEND_STORAGE_BUCKET_DEV }}
           echo "✅ Frontend deployed successfully!"
           echo "🌐 Website URL: https://${BUCKET}.website.yandexcloud.net/"
+          echo ""
+          echo "📝 Use this URL in BotFather:"
+          echo "   https://${BUCKET}.website.yandexcloud.net/"
 
