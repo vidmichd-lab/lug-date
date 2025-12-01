@@ -1,0 +1,40 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "close": "Close"
+  },
+  "errors": {
+    "somethingWentWrong": "Something went wrong",
+    "tryAgain": "Try again",
+    "refreshPage": "Refresh page",
+    "networkError": "Network error",
+    "unauthorized": "Authentication required",
+    "forbidden": "Access denied",
+    "notFound": "Resource not found",
+    "rateLimitExceeded": "Too many requests, please try again later"
+  },
+  "pages": {
+    "home": {
+      "title": "Home",
+      "welcome": "Welcome"
+    },
+    "profile": {
+      "title": "Profile",
+      "edit": "Edit profile"
+    },
+    "matches": {
+      "title": "Matches",
+      "noMatches": "You have no matches yet",
+      "newMatch": "New match!"
+    }
+  }
+}
+

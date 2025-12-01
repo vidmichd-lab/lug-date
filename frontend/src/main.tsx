@@ -4,11 +4,12 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import App from './App';
 import './index.css';
+import './i18n/config'; // Initialize i18n
 import { initErrorMonitoring } from './monitoring';
 import { initMetrica } from './utils/metrica';
 import { queryClient } from './lib/queryClient';
 
-// Initialize error monitoring (Yandex AppMetrica + Catcher)
+// Initialize error monitoring (Yandex AppMetrica)
 initErrorMonitoring();
 
 // Initialize Yandex Metrica

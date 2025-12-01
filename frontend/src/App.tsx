@@ -2,6 +2,7 @@ import { useEffect, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { HomePage, ProfilePage, MatchesPage } from './pages';
 import { LoadingFallback } from './components/LoadingFallback';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { initPerformanceMonitoring } from './utils/performance';
 
 function App() {
@@ -17,17 +18,40 @@ function App() {
   }, []);
 
   return (
-    <BrowserRouter>
-      <div className="app">
-        <Suspense fallback={<LoadingFallback />}>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/matches" element={<MatchesPage />} />
-          </Routes>
-        </Suspense>
-      </div>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <div className="app">
+          <Suspense fallback={<LoadingFallback />}>
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  <ErrorBoundary>
+                    <HomePage />
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ErrorBoundary>
+                    <ProfilePage />
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="/matches"
+                element={
+                  <ErrorBoundary>
+                    <MatchesPage />
+                  </ErrorBoundary>
+                }
+              />
+            </Routes>
+          </Suspense>
+        </div>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

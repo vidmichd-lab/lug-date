@@ -9,6 +9,8 @@ declare global {
   }
 }
 
+// Yandex AppMetrica ID
+// Set in .env file as VITE_YANDEX_METRICA_ID=4809916
 const METRICA_ID = import.meta.env.VITE_YANDEX_METRICA_ID;
 
 /**

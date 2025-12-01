@@ -1,14 +1,52 @@
+// Load environment variables FIRST, before any other imports
+import dotenv from 'dotenv';
+import { resolve } from 'path';
+dotenv.config({ path: resolve(process.cwd(), '.env') });
+
 import express from 'express';
 import adminRoutes from './routes/admin';
+import matchesRoutes from './routes/matches';
+import photosRoutes from './routes/photos';
 import { config } from './config';
 import { initErrorMonitoring } from './monitoring';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
+import { generalLimiter, adminLimiter, uploadLimiter } from './middleware/rateLimiter';
+import { sanitizeMiddleware } from './utils/sanitize';
+import { telegramAuthMiddleware } from './middleware/telegramAuth';
 import { logger } from './logger';
 import { sendCriticalAlert } from './alerts';
+import { initYDB } from './db/connection';
+import { runMigrations } from './db/migrations';
+import { initObjectStorage } from './services/objectStorage';
 
 // Initialize error monitoring (Yandex Cloud Logging + Catcher)
 initErrorMonitoring();
+
+// Initialize YDB connection and run migrations
+initYDB()
+  .then(async () => {
+    // Run migrations after successful connection
+    try {
+      await runMigrations();
+    } catch (error) {
+      logger.error({ error, type: 'migrations_failed_on_startup' });
+      // In production, fail if migrations fail
+      if (config.nodeEnv === 'production') {
+        process.exit(1);
+      }
+    }
+  })
+  .catch((error) => {
+    logger.error({ error, type: 'ydb_init_failed_on_startup' });
+    // In development, allow app to start without DB
+    if (config.nodeEnv === 'production') {
+      process.exit(1);
+    }
+  });
+
+// Initialize Object Storage
+initObjectStorage();
 
 const app = express();
 const PORT = config.port;
@@ -16,13 +54,40 @@ const PORT = config.port;
 // Request logging middleware (before routes)
 app.use(requestLogger);
 
+// Apply general rate limiting to all routes
+app.use(generalLimiter);
+
 app.use(express.json());
 
-// CORS для админки
+// Sanitize user input to prevent XSS attacks
+app.use(sanitizeMiddleware);
+
+// CORS configuration
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  
+  // Get allowed origins from environment variable
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
+    : [];
+  
+  // In development, allow all origins for easier testing
+  // In production, only allow configured origins
+  const isDevelopment = config.nodeEnv === 'development';
+  const allowOrigin = isDevelopment
+    ? origin || '*'
+    : origin && allowedOrigins.includes(origin)
+    ? origin
+    : allowedOrigins[0] || null;
+  
+  if (allowOrigin) {
+    res.header('Access-Control-Allow-Origin', allowOrigin);
+  }
+  
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
   if (req.method === 'OPTIONS') {
     res.sendStatus(200);
   } else {
@@ -34,13 +99,13 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'backend' });
 });
 
-// API routes
-app.use('/api/admin', adminRoutes);
-// Example routes (uncomment when implementing)
-// import matchesRoutes from './routes/matches';
-// import photosRoutes from './routes/photos';
-// app.use('/api/v1/matches', matchesRoutes);
-// app.use('/api/v1/photos', photosRoutes);
+// API routes with specific rate limiters and authentication
+// Admin routes - no Telegram auth (may have separate admin auth later)
+app.use('/api/admin', adminLimiter, adminRoutes);
+
+// User API routes - require Telegram authentication
+app.use('/api/v1/matches', telegramAuthMiddleware, matchesRoutes);
+app.use('/api/v1/photos', uploadLimiter, telegramAuthMiddleware, photosRoutes);
 
 // Error handling middleware (must be last)
 app.use(errorHandler);

@@ -29,7 +29,12 @@
     "import:figma:mcp": "tsx scripts/import-figma-mcp.ts",
     "sync:figma": "tsx scripts/sync-figma.ts",
     "test:figma": "tsx scripts/test-figma-connection.ts",
-    "seed:dev": "NODE_ENV=development tsx scripts/seed.ts"
+    "seed:dev": "NODE_ENV=development tsx scripts/seed.ts",
+    "test:storage": "tsx scripts/test-object-storage.ts",
+    "test:alerts": "tsx scripts/test-alerts.ts",
+    "check:github-setup": "tsx scripts/check-github-setup.ts",
+    "migrate": "npm run migrate --workspace=backend",
+    "migrate:status": "npm run migrate:status --workspace=backend"
   },
   "devDependencies": {
     "@faker-js/faker": "^8.4.1",

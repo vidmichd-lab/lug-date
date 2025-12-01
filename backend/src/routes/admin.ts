@@ -1,4 +1,11 @@
 import { Router } from 'express';
+import { validate } from '../validation/validate';
+import {
+  analyticsOverviewQuerySchema,
+  usersChartQuerySchema,
+  eventsTopQuerySchema,
+  recentMatchesQuerySchema,
+} from '../validation/schemas';
 
 const router = Router();
 
@@ -6,7 +13,7 @@ const router = Router();
 // В реальном проекте здесь будут запросы к базе данных
 
 // Общая статистика
-router.get('/analytics/overview', async (req, res) => {
+router.get('/analytics/overview', validate({ query: analyticsOverviewQuerySchema }), async (req, res) => {
   try {
     // TODO: Заменить на реальные данные из БД
     const data = {
@@ -41,10 +48,10 @@ router.get('/analytics/overview', async (req, res) => {
 });
 
 // График регистраций пользователей
-router.get('/analytics/users-chart', async (req, res) => {
+router.get('/analytics/users-chart', validate({ query: usersChartQuerySchema }), async (req, res) => {
   try {
-    const period = req.query.period || '7d';
-    const days = period === '7d' ? 7 : period === '30d' ? 30 : 7;
+    const { period = '7d' } = req.query;
+    const days = period === '7d' ? 7 : 30;
 
     // TODO: Заменить на реальные данные из БД
     const data = Array.from({ length: days }, (_, i) => {
@@ -64,9 +71,9 @@ router.get('/analytics/users-chart', async (req, res) => {
 });
 
 // Топ событий
-router.get('/analytics/events-top', async (req, res) => {
+router.get('/analytics/events-top', validate({ query: eventsTopQuerySchema }), async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit as string) || 10;
+    const { limit = 10 } = req.query;
 
     // TODO: Заменить на реальные данные из БД
     const data = Array.from({ length: limit }, (_, i) => ({
@@ -139,9 +146,9 @@ router.get('/analytics/activity-heatmap', async (req, res) => {
 });
 
 // Последние матчи
-router.get('/analytics/recent-matches', async (req, res) => {
+router.get('/analytics/recent-matches', validate({ query: recentMatchesQuerySchema }), async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit as string) || 10;
+    const { limit = 10 } = req.query;
 
     // TODO: Заменить на реальные данные из БД
     const data = Array.from({ length: limit }, (_, i) => {

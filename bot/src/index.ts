@@ -10,9 +10,28 @@ if (!config.botToken) {
 
 const bot = new Telegraf(config.botToken);
 
+// Log all incoming updates for debugging
+bot.use((ctx, next) => {
+  const message = 'message' in ctx.update ? ctx.update.message : undefined;
+  console.log('📨 Received update:', {
+    type: ctx.updateType,
+    chatId: ctx.chat?.id,
+    userId: ctx.from?.id,
+    username: ctx.from?.username,
+    text: message && 'text' in message ? message.text : undefined,
+  });
+  return next();
+});
+
 // Start command
-bot.start((ctx) => {
-  ctx.reply('Welcome to Dating App! 🎉\n\nUse /help to see available commands.');
+bot.start(async (ctx) => {
+  console.log('✅ /start command received from user:', ctx.from?.id);
+  try {
+    await ctx.reply('Welcome to Dating App! 🎉\n\nUse /help to see available commands.');
+    console.log('✅ Start message sent successfully');
+  } catch (error) {
+    console.error('❌ Error sending start message:', error);
+  }
 });
 
 // Help command
@@ -67,9 +86,25 @@ export async function sendMatchNotification(userId: number, matchData: {
   }
 }
 
-bot.launch();
+// Error handling
+bot.catch((err, ctx) => {
+  console.error('Bot error:', err);
+  ctx.reply('Произошла ошибка. Попробуйте позже.');
+});
 
-console.log(`Bot started in ${config.nodeEnv} mode`);
+// Launch bot (uses polling by default in development)
+bot.launch().then(() => {
+  console.log(`✅ Bot started in ${config.nodeEnv} mode`);
+  // Get bot info
+  bot.telegram.getMe().then((botInfo) => {
+    console.log(`Bot username: @${botInfo.username}`);
+  }).catch((err) => {
+    console.warn('Could not get bot info:', err.message);
+  });
+}).catch((error) => {
+  console.error('❌ Failed to start bot:', error);
+  process.exit(1);
+});
 
 // Graceful stop
 process.once('SIGINT', () => bot.stop('SIGINT'));

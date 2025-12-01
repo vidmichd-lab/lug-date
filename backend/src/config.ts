@@ -1,5 +1,37 @@
 // Configuration for backend based on NODE_ENV
 
+// Load environment variables from .env file FIRST
+import dotenv from 'dotenv';
+import { resolve, dirname } from 'path';
+import { existsSync } from 'fs';
+
+// Find project root by looking for .env file
+function findEnvFile(): string | null {
+  let currentDir = process.cwd();
+  const maxDepth = 5;
+  
+  for (let i = 0; i < maxDepth; i++) {
+    const envPath = resolve(currentDir, '.env');
+    if (existsSync(envPath)) {
+      return envPath;
+    }
+    const parentDir = dirname(currentDir);
+    if (parentDir === currentDir) {
+      break;
+    }
+    currentDir = parentDir;
+  }
+  
+  return null;
+}
+
+const envPath = findEnvFile();
+if (envPath) {
+  dotenv.config({ path: envPath });
+} else {
+  dotenv.config();
+}
+
 export interface DatabaseConfig {
   endpoint: string;
   database: string;

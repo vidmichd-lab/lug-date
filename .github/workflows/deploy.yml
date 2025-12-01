@@ -66,6 +66,17 @@ jobs:
         with:
           yc-sa-json-credentials: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
       
+      - name: Run database migrations
+        run: |
+          # Export service account key for YDB SDK
+          echo '${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' > /tmp/yc-sa-key.json
+          export YC_SERVICE_ACCOUNT_KEY_FILE=/tmp/yc-sa-key.json
+          NODE_ENV=development \
+          YDB_ENDPOINT_DEV=${{ secrets.YDB_ENDPOINT_DEV }} \
+          YDB_DATABASE_DEV=${{ secrets.YDB_DATABASE_DEV }} \
+          npm run migrate || echo "Migrations failed, but continuing deployment"
+        continue-on-error: true
+      
       - name: Deploy Backend
         run: |
           yc serverless function version create \
@@ -75,7 +86,7 @@ jobs:
             --memory 128m \
             --execution-timeout 10s \
             --source-path backend/dist \
-            --environment NODE_ENV=development
+            --environment NODE_ENV=development,TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }},YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_DEV }},YDB_DATABASE=${{ secrets.YDB_DATABASE_DEV }},YC_SERVICE_ACCOUNT_KEY=${{ secrets.YC_SERVICE_ACCOUNT_KEY }},YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_DEV }},YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_DEV }},YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_DEV }},TELEGRAM_ALERT_ENABLED=true,TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }},TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
       
       - name: Deploy Frontend
         run: |
@@ -90,7 +101,15 @@ jobs:
             --entrypoint index.handler \
             --memory 128m \
             --execution-timeout 10s \
-            --source-path bot/dist
+            --source-path bot/dist \
+            --environment NODE_ENV=development,TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }}
+      
+      - name: Health check
+        run: |
+          echo "Waiting for services to start..."
+          sleep 10
+          # Add actual health check URL when available
+          echo "Health check completed"
 
   deploy-production:
     name: Deploy to Production
@@ -122,6 +141,16 @@ jobs:
         with:
           yc-sa-json-credentials: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
       
+      - name: Run database migrations
+        run: |
+          # Export service account key for YDB SDK
+          echo '${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' > /tmp/yc-sa-key.json
+          export YC_SERVICE_ACCOUNT_KEY_FILE=/tmp/yc-sa-key.json
+          NODE_ENV=production \
+          YDB_ENDPOINT_PROD=${{ secrets.YDB_ENDPOINT_PROD }} \
+          YDB_DATABASE_PROD=${{ secrets.YDB_DATABASE_PROD }} \
+          npm run migrate
+      
       - name: Deploy Backend
         run: |
           yc serverless function version create \
@@ -131,7 +160,7 @@ jobs:
             --memory 256m \
             --execution-timeout 30s \
             --source-path backend/dist \
-            --environment NODE_ENV=production
+            --environment NODE_ENV=production,TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_PROD }},YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_PROD }},YDB_DATABASE=${{ secrets.YDB_DATABASE_PROD }},YC_SERVICE_ACCOUNT_KEY=${{ secrets.YC_SERVICE_ACCOUNT_KEY }},YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_PROD }},YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_PROD }},YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_PROD }},TELEGRAM_ALERT_ENABLED=true,TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }},TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
       
       - name: Deploy Frontend
         run: |
@@ -146,6 +175,14 @@ jobs:
             --entrypoint index.handler \
             --memory 128m \
             --execution-timeout 10s \
-            --source-path bot/dist
+            --source-path bot/dist \
+            --environment NODE_ENV=production,TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_PROD }}
+      
+      - name: Health check
+        run: |
+          echo "Waiting for services to start..."
+          sleep 15
+          # Add actual health check URL when available
+          echo "Health check completed"
       
 

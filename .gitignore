@@ -64,3 +64,4 @@ scripts/.figma-sync-state.json
 # Docker
 docker/.env
 docker/*.log
+yc-service-account-key.json
