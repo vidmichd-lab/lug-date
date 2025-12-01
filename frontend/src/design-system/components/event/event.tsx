@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Event.module.css';
-import { EventProps } from './Event.types';
+import styles from './event.module.css';
+import { EventProps } from './event.types';
 
 /**
  * Event component

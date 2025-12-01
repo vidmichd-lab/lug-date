@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Namearchive.module.css';
-import { NamearchiveProps } from './Namearchive.types';
+import styles from './namearchive.module.css';
+import { NamearchiveProps } from './namearchive.types';
 
 /**
  * Namearchive component

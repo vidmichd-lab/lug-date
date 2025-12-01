@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Nameadd.module.css';
-import { NameaddProps } from './Nameadd.types';
+import styles from './nameadd.module.css';
+import { NameaddProps } from './nameadd.types';
 
 /**
  * Nameadd component

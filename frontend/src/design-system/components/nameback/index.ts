@@ -1,2 +1,2 @@
-export { Nameback } from './Nameback';
-export type { NamebackProps } from './Nameback.types';
+export { Nameback } from './nameback';
+export type { NamebackProps } from './nameback.types';

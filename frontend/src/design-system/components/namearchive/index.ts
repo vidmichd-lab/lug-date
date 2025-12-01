@@ -1,2 +1,2 @@
-export { Namearchive } from './Namearchive';
-export type { NamearchiveProps } from './Namearchive.types';
+export { Namearchive } from './namearchive';
+export type { NamearchiveProps } from './namearchive.types';

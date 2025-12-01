@@ -1,2 +1,2 @@
-export { Nameadd } from './Nameadd';
-export type { NameaddProps } from './Nameadd.types';
+export { Nameadd } from './nameadd';
+export type { NameaddProps } from './nameadd.types';

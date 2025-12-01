@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './Nameback.module.css';
-import { NamebackProps } from './Nameback.types';
+import styles from './nameback.module.css';
+import { NamebackProps } from './nameback.types';
 
 /**
  * Nameback component
