@@ -66,7 +66,7 @@ export function HomePage() {
       const response = await api.get<{ cards: Card[]; pagination: { total: number } }>(
         `/api/v1/feed?${params.toString()}`,
         {
-          requireAuth: true,
+          requireAuth: false, // Allow guest mode
         }
       );
 
