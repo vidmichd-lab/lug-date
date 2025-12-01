@@ -136,14 +136,20 @@ process.on('unhandledRejection', async (reason, promise) => {
   await sendCriticalAlert('Unhandled Promise Rejection', error);
 });
 
-app.listen(PORT, () => {
-  logger.info({
-    type: 'server_started',
-    port: PORT,
-    environment: config.nodeEnv,
-    database: config.database.database || 'not configured',
+// Export app for serverless handler
+export default app;
+
+// Start server only if not in serverless environment
+if (process.env.SERVERLESS !== 'true' && require.main === module) {
+  app.listen(PORT, () => {
+    logger.info({
+      type: 'server_started',
+      port: PORT,
+      environment: config.nodeEnv,
+      database: config.database.database || 'not configured',
+    });
+    console.log(`Backend server running on port ${PORT} in ${config.nodeEnv} mode`);
+    console.log(`Database: ${config.database.database || 'not configured'}`);
   });
-  console.log(`Backend server running on port ${PORT} in ${config.nodeEnv} mode`);
-  console.log(`Database: ${config.database.database || 'not configured'}`);
-});
+}
 

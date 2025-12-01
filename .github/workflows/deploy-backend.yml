@@ -1,0 +1,113 @@
+name: Deploy Backend to Yandex Cloud Functions
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'backend/**'
+      - 'shared/**'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared package
+        run: npm run build --workspace=shared
+
+      - name: Build backend
+        run: npm run build --workspace=backend
+
+      - name: Configure Yandex Cloud CLI
+        uses: yandex-cloud/actions-yc-cli@v1
+        with:
+          yc-sa-json-credentials: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
+
+      - name: Run database migrations
+        run: |
+          echo '${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' > /tmp/yc-sa-key.json
+          export YC_SERVICE_ACCOUNT_KEY_FILE=/tmp/yc-sa-key.json
+          export NODE_ENV=${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
+          export YDB_ENDPOINT=${{ github.ref == 'refs/heads/main' && secrets.YDB_ENDPOINT_PROD || secrets.YDB_ENDPOINT_DEV }}
+          export YDB_DATABASE=${{ github.ref == 'refs/heads/main' && secrets.YDB_DATABASE_PROD || secrets.YDB_DATABASE_DEV }}
+          export YDB_TOKEN=${{ github.ref == 'refs/heads/main' && secrets.YDB_TOKEN_PROD || secrets.YDB_TOKEN_DEV }}
+          npm run migrate --workspace=backend || echo "Migrations failed, but continuing deployment"
+        continue-on-error: true
+
+      - name: Create deployment package
+        run: |
+          cd backend
+          mkdir -p deploy-package
+          cp -r dist/* deploy-package/
+          cp package.json deploy-package/
+          cp package-lock.json deploy-package/ 2>/dev/null || true
+          cd deploy-package
+          npm ci --production --ignore-scripts
+          cd ..
+          zip -r function.zip deploy-package/
+
+      - name: Deploy to Yandex Cloud Functions
+        run: |
+          FUNCTION_NAME=${{ github.ref == 'refs/heads/main' && 'dating-app-backend-prod' || 'dating-app-backend-staging' }}
+          
+          # Create function if it doesn't exist
+          yc serverless function create --name $FUNCTION_NAME --description "Dating app backend API" || echo "Function already exists"
+          
+          # Create new version
+          yc serverless function version create \
+            --function-name $FUNCTION_NAME \
+            --runtime nodejs18 \
+            --entrypoint index.handler \
+            --memory 512m \
+            --execution-timeout 30s \
+            --source-path backend/function.zip \
+            --environment \
+              NODE_ENV=${{ github.ref == 'refs/heads/main' && 'production' || 'development' }},\
+              PORT=8080,\
+              YDB_ENDPOINT=${{ github.ref == 'refs/heads/main' && secrets.YDB_ENDPOINT_PROD || secrets.YDB_ENDPOINT_DEV }},\
+              YDB_DATABASE=${{ github.ref == 'refs/heads/main' && secrets.YDB_DATABASE_PROD || secrets.YDB_DATABASE_DEV }},\
+              YDB_TOKEN=${{ github.ref == 'refs/heads/main' && secrets.YDB_TOKEN_PROD || secrets.YDB_TOKEN_DEV }},\
+              YC_SERVICE_ACCOUNT_KEY=${{ secrets.YC_SERVICE_ACCOUNT_KEY }},\
+              TELEGRAM_BOT_TOKEN=${{ github.ref == 'refs/heads/main' && secrets.TELEGRAM_BOT_TOKEN_PROD || secrets.TELEGRAM_BOT_TOKEN_DEV }},\
+              YANDEX_STORAGE_BUCKET=${{ github.ref == 'refs/heads/main' && secrets.YANDEX_STORAGE_BUCKET_PROD || secrets.YANDEX_STORAGE_BUCKET_DEV }},\
+              YANDEX_STORAGE_ACCESS_KEY=${{ github.ref == 'refs/heads/main' && secrets.YANDEX_STORAGE_ACCESS_KEY_PROD || secrets.YANDEX_STORAGE_ACCESS_KEY_DEV }},\
+              YANDEX_STORAGE_SECRET_KEY=${{ github.ref == 'refs/heads/main' && secrets.YANDEX_STORAGE_SECRET_KEY_PROD || secrets.YANDEX_STORAGE_SECRET_KEY_DEV }},\
+              TELEGRAM_ALERT_ENABLED=true,\
+              TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }},\
+              TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }},\
+              ALLOWED_ORIGINS=https://dating-app-storage.website.yandexcloud.net,https://lug-admin-deploy.website.yandexcloud.net
+
+      - name: Get function URL
+        id: get-url
+        run: |
+          FUNCTION_NAME=${{ github.ref == 'refs/heads/main' && 'dating-app-backend-prod' || 'dating-app-backend-staging' }}
+          FUNCTION_URL=$(yc serverless function get --name $FUNCTION_NAME --format json | jq -r '.http_invoke_url // empty')
+          if [ -z "$FUNCTION_URL" ]; then
+            FUNCTION_ID=$(yc serverless function get --name $FUNCTION_NAME --format json | jq -r '.id')
+            FUNCTION_URL="https://functions.yandexcloud.net/$FUNCTION_ID"
+          fi
+          echo "url=$FUNCTION_URL" >> $GITHUB_OUTPUT
+          echo "✅ Backend deployed successfully!"
+          echo "🌐 Backend URL: $FUNCTION_URL"
+
+      - name: Deployment summary
+        run: |
+          echo "✅ Backend deployment completed!"
+          echo "🌐 Backend URL: ${{ steps.get-url.outputs.url }}"
+          echo "📝 Update frontend and admin config.js with this URL"
+
