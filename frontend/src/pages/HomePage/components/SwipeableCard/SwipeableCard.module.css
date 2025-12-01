@@ -1,0 +1,22 @@
+.currentCard {
+  position: relative;
+  z-index: 2;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.currentCard:active {
+  cursor: grabbing;
+}
+
+.nextCard {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  pointer-events: none;
+}
+

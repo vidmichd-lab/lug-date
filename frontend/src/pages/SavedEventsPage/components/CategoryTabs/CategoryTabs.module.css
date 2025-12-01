@@ -1,0 +1,41 @@
+.categoryTabs {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 12px 16px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  background: var(--color-bg-primary, #ffffff);
+}
+
+.categoryTabs::-webkit-scrollbar {
+  display: none;
+}
+
+.categoryTab {
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: var(--color-bg-secondary, #f5f5f5);
+  color: var(--color-text-primary, #000000);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  font-family: inherit;
+}
+
+.categoryTab:hover {
+  background: var(--color-bg-tertiary, #e0e0e0);
+}
+
+.categoryTab.active {
+  background: var(--color-text-primary, #000000);
+  color: var(--color-bg-primary, #ffffff);
+}
+
+.categoryTab:active {
+  transform: scale(0.98);
+}
+

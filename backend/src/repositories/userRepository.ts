@@ -78,6 +78,47 @@ export class UserRepository {
   }
 
   /**
+   * Get all users with pagination
+   */
+  async getAllUsers(limit: number = 50, offset: number = 0): Promise<User[]> {
+    try {
+      const query = `
+        SELECT * FROM users 
+        ORDER BY createdAt DESC
+        LIMIT $limit OFFSET $offset;
+      `;
+
+      const results = await ydbClient.executeQuery<User>(query, {
+        limit,
+        offset,
+      });
+
+      return results;
+    } catch (error) {
+      logger.error({ error, type: 'users_get_all_failed' });
+      throw error;
+    }
+  }
+
+  /**
+   * Get total users count
+   */
+  async getUsersCount(): Promise<number> {
+    try {
+      const query = `
+        SELECT COUNT(*) as count FROM users;
+      `;
+
+      const results = await ydbClient.executeQuery<{ count: number }>(query);
+
+      return results[0]?.count || 0;
+    } catch (error) {
+      logger.error({ error, type: 'users_count_failed' });
+      throw error;
+    }
+  }
+
+  /**
    * Update user
    */
   async updateUser(userId: string, updates: Partial<User>): Promise<User> {
@@ -105,6 +146,9 @@ export class UserRepository {
         setClause.push('age = $age');
         params.age = updates.age;
       }
+      // Note: isBanned and isModerated would need to be stored in a JSON field or separate table
+      // For now, we'll skip them in the update query as they're not in the schema
+      // TODO: Add isBanned and isModerated fields to users table schema
 
       setClause.push('updatedAt = $updatedAt');
       params.updatedAt = new Date();

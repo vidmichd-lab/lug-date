@@ -5,8 +5,14 @@ dotenv.config({ path: resolve(process.cwd(), '.env') });
 
 import express from 'express';
 import adminRoutes from './routes/admin';
+import adminManagementRoutes from './routes/admin-management';
 import matchesRoutes from './routes/matches';
 import photosRoutes from './routes/photos';
+import feedRoutes from './routes/feed';
+import savedEventsRoutes from './routes/saved-events';
+import notificationsRoutes from './routes/notifications';
+import userRoutes from './routes/user';
+import eventsRoutes from './routes/events';
 import { config } from './config';
 import { initErrorMonitoring } from './monitoring';
 import { requestLogger } from './middleware/requestLogger';
@@ -102,10 +108,16 @@ app.get('/health', (req, res) => {
 // API routes with specific rate limiters and authentication
 // Admin routes - no Telegram auth (may have separate admin auth later)
 app.use('/api/admin', adminLimiter, adminRoutes);
+app.use('/api/admin/management', adminLimiter, adminManagementRoutes);
 
 // User API routes - require Telegram authentication
 app.use('/api/v1/matches', telegramAuthMiddleware, matchesRoutes);
 app.use('/api/v1/photos', uploadLimiter, telegramAuthMiddleware, photosRoutes);
+app.use('/api/v1', telegramAuthMiddleware, feedRoutes);
+app.use('/api/v1', telegramAuthMiddleware, savedEventsRoutes);
+app.use('/api/v1', telegramAuthMiddleware, notificationsRoutes);
+app.use('/api/v1', telegramAuthMiddleware, userRoutes);
+app.use('/api/v1', telegramAuthMiddleware, eventsRoutes);
 
 // Error handling middleware (must be last)
 app.use(errorHandler);

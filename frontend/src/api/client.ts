@@ -42,9 +42,9 @@ class ApiClient {
    * Build headers for request
    */
   private buildHeaders(options: RequestOptions): HeadersInit {
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...(options.headers as Record<string, string>),
     };
 
     // Add Telegram authentication if required
@@ -83,17 +83,29 @@ class ApiClient {
 
       // Handle specific status codes
       if (response.status === 401) {
-        error.code = 'UNAUTHORIZED';
-        error.message = 'Требуется авторизация';
+        error = {
+          ...error,
+          code: 'UNAUTHORIZED',
+          message: 'Требуется авторизация',
+        };
       } else if (response.status === 403) {
-        error.code = 'FORBIDDEN';
-        error.message = 'Доступ запрещен';
+        error = {
+          ...error,
+          code: 'FORBIDDEN',
+          message: 'Доступ запрещен',
+        };
       } else if (response.status === 404) {
-        error.code = 'NOT_FOUND';
-        error.message = 'Ресурс не найден';
+        error = {
+          ...error,
+          code: 'NOT_FOUND',
+          message: 'Ресурс не найден',
+        };
       } else if (response.status === 429) {
-        error.code = 'RATE_LIMIT_EXCEEDED';
-        error.message = 'Слишком много запросов, попробуйте позже';
+        error = {
+          ...error,
+          code: 'RATE_LIMIT_EXCEEDED',
+          message: 'Слишком много запросов, попробуйте позже',
+        };
       }
 
       return {

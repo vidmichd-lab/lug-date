@@ -25,13 +25,13 @@ export const FunnelChart: React.FC = () => {
           <XAxis type="number" />
           <YAxis dataKey="stage" type="category" width={120} />
           <Tooltip
-            formatter={(value: number, name: string, props: any) => [
+            formatter={(value: number, _name: string, props: any) => [
               `${value.toLocaleString()} (${props.payload.percentage}%)`,
               'Количество',
             ]}
           />
           <Bar dataKey="count" radius={[0, 8, 8, 0]}>
-            {data.map((entry, index) => (
+            {data.map((_entry, index) => (
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Bar>

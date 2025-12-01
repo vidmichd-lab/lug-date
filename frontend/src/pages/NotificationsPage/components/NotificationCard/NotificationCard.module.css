@@ -1,0 +1,140 @@
+.notificationCard {
+  background: var(--color-bg-primary, #ffffff);
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 12px;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.archiveButton {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  color: var(--color-text-tertiary, #9e9e9e);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  border-radius: 50%;
+}
+
+.archiveButton:hover {
+  background: var(--color-bg-secondary, #f5f5f5);
+  color: var(--color-text-secondary, #666666);
+}
+
+.archiveButton:active {
+  transform: scale(0.95);
+}
+
+.dualAvatarContainer {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.userAvatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  object-fit: cover;
+  z-index: 2;
+  flex-shrink: 0;
+}
+
+.eventThumbnail {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  border: 2px solid #ffffff;
+  object-fit: cover;
+  margin-left: -16px;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.notificationTitle {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--color-text-primary, #000000);
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.notificationDescription {
+  font-size: 14.5px;
+  font-weight: 400;
+  color: var(--color-text-primary, #333333);
+  line-height: 1.4;
+  margin-bottom: 16px;
+}
+
+.notificationDescription strong {
+  font-weight: 600;
+  color: var(--color-text-primary, #000000);
+}
+
+.actionButtonsRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.actionButton {
+  width: 42px;
+  height: 42px;
+  background: var(--color-bg-secondary, #f5f5f5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  color: var(--color-text-primary, #000000);
+}
+
+.actionButton:hover {
+  background: var(--color-bg-tertiary, #e0e0e0);
+}
+
+.actionButton:active {
+  transform: scale(0.95);
+}
+
+.actionButtonWrite {
+  flex: 1;
+  max-width: 140px;
+  border-radius: 24px;
+  padding: 10px 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  width: auto;
+  height: auto;
+}
+
+.actionButtonWrite span {
+  white-space: nowrap;
+}
+
+.actionButtonConfirm {
+  background: #4caf50;
+  color: #ffffff;
+}
+
+.actionButtonConfirm:hover {
+  background: #45a049;
+}
+

@@ -1,0 +1,19 @@
+.container {
+  min-height: 100vh;
+  background: var(--color-bg-primary, #ffffff);
+}
+
+.loading,
+.error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  font-size: 16px;
+  color: var(--color-text-secondary, #666666);
+}
+
+.error {
+  color: var(--color-error, #ff0000);
+}
+

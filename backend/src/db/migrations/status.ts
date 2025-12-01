@@ -3,14 +3,14 @@
  * Usage: npm run migrate:status
  */
 
-import { initYDB } from '../connection';
+import { initYDBForMigrations } from '../connection';
 import { getMigrationStatus } from './index';
 import { logger } from '../../logger';
 
 async function main() {
   try {
     console.log('🔄 Initializing YDB connection...');
-    await initYDB();
+    await initYDBForMigrations();
 
     console.log('📊 Checking migration status...');
     const status = await getMigrationStatus();

@@ -1,6 +1,16 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// Get API URL from runtime config or environment variable
+const getApiUrl = (): string => {
+  // Check runtime config (set in config.js or window.ADMIN_CONFIG)
+  if (typeof window !== 'undefined' && (window as any).ADMIN_CONFIG?.API_URL) {
+    return (window as any).ADMIN_CONFIG.API_URL;
+  }
+  // Fallback to environment variable
+  return import.meta.env.VITE_API_URL || 'http://localhost:4000';
+};
+
+const API_BASE_URL = getApiUrl();
 
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api/admin/analytics`,

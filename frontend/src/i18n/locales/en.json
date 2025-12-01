@@ -21,6 +21,120 @@
     "notFound": "Resource not found",
     "rateLimitExceeded": "Too many requests, please try again later"
   },
+  "onboarding": {
+    "slide1": {
+      "title": "Explore events in your city and add them to favorites",
+      "subtitle": "We value openness, let others get to know you better."
+    },
+    "slide2": {
+      "title": "Create a profile and find company for joint visits",
+      "subtitle": "We value openness, let others get to know you better."
+    },
+    "slide3": {
+      "title": "If you both want to meet each other and liked the same event, we will send your Telegram contact to each other",
+      "subtitle": "We value openness, let others get to know you better."
+    },
+    "authSelection": {
+      "telegramAuth": "Sign up with Telegram",
+      "continueGuest": "Continue without registration",
+      "registerPrompt": "Registration is required to perform this action"
+    }
+  },
+  "registration": {
+    "header": {
+      "title": "Profile Creation"
+    },
+    "nameInput": {
+      "title": "What's your name?",
+      "placeholder": "Name",
+      "errors": {
+        "empty": "Please fill in your name",
+        "invalidChars": "Name can only contain letters",
+        "tooLong": "Name must not exceed 24 characters"
+      }
+    },
+    "dateOfBirth": {
+      "title": "Date of Birth",
+      "showAge": "Show my age to everyone",
+      "exit": "Exit",
+      "errors": {
+        "invalidDate": "Please enter a valid date",
+        "underAge": "It seems you are under 18 years old. Please return to registration later",
+        "futureDate": "Date of birth cannot be in the future"
+      }
+    },
+    "citySelection": {
+      "title": "Your City",
+      "helpLink": "Why isn't my city here?",
+      "modal": {
+        "title": "Where is my city?",
+        "description": "Unfortunately, your city is not yet supported. We are constantly expanding the list of available cities",
+        "okay": "Okay"
+      }
+    },
+    "genderSelection": {
+      "title": "Your Gender",
+      "options": {
+        "female": "Female",
+        "male": "Male",
+        "prefer-not-to-say": "Prefer not to say"
+      }
+    },
+    "aboutYou": {
+      "title": "Tell us about yourself",
+      "subtitle": "We value openness, please give others a chance to get to know you better",
+      "jobTitle": {
+        "placeholder": "Job title or specialty"
+      },
+      "company": {
+        "placeholder": "Company or university"
+      },
+      "bio": {
+        "placeholder": "A few words about yourself"
+      },
+      "skip": "Skip"
+    },
+    "interests": {
+      "title": "Your Interests",
+      "subtitle": "This will make it easier to find someone you'll be interested in. You can specify up to 10 interests",
+      "skip": "Skip"
+    },
+    "goalSelection": {
+      "title": "Your Goal",
+      "subtitle": "This will help us better match you with suitable people",
+      "options": {
+        "find-friends": "Find Friends",
+        "networking": "Networking",
+        "dating": "Dating",
+        "serious-relationship": "Serious Relationship",
+        "other": "Other"
+      }
+    },
+    "photoUpload": {
+      "title": "Final Touch",
+      "subtitle": "Upload your photo so other users can see you",
+      "uploadButton": "Upload Photo",
+      "updateButton": "Update"
+    },
+    "profilePreview": {
+      "createButton": "Create Profile"
+    }
+  },
+  "feed": {
+    "tabs": {
+      "events": "Events",
+      "profiles": "Profiles"
+    },
+    "categories": {
+      "all": "All"
+    },
+    "empty": {
+      "title": "That's all for now",
+      "subtitleEvents": "You've seen all events in your city",
+      "subtitleProfiles": "You've seen all people in your city",
+      "refresh": "Refresh"
+    }
+  },
   "pages": {
     "home": {
       "title": "Home",
@@ -35,6 +149,93 @@
       "noMatches": "You have no matches yet",
       "newMatch": "New match!"
     }
+  },
+  "saved": {
+    "title": "Want to Go",
+    "empty": {
+      "title": "No saved events found",
+      "subtitle": "Be bold and mark the events you want to attend"
+    },
+    "confirmRemove": {
+      "title": "Remove event from favorites?",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "openLink": "Open link"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "matchTitle": "It's a match!",
+    "matchDescription": "wants to visit",
+    "matchDescriptionEnd": "with you",
+    "archive": "Archive",
+    "viewProfile": "User profile",
+    "viewEvent": "Event",
+    "write": "Write",
+    "confirmMeeting": "Confirm meeting",
+    "empty": {
+      "title": "No matches yet",
+      "subtitle": "Be bold and mark those you'd like to go with"
+    },
+    "meetingModal": {
+      "title": "Did the meeting take place?",
+      "description": "Once {{userName}} also marks the meeting as completed, your meeting counter will update",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "archiveModal": {
+      "title": "Archive the invitation?",
+      "description": "You won't be able to write to each other, and {{userName}} will no longer appear in your feed",
+      "yes": "Yes",
+      "no": "No"
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "settings": "Settings",
+    "menu": "Menu",
+    "logout": "Logout",
+    "edit": "Edit",
+    "editTitle": "Edit Profile",
+    "saveChanges": "Save Changes",
+    "updatePhoto": "Update Photo",
+    "aboutYou": "About You",
+    "thoughts": "Thoughts",
+    "addInterest": "Add",
+    "additional": "Additional",
+    "jobPlaceholder": "Job Title",
+    "companyPlaceholder": "Company",
+    "bioPlaceholder": "A few words about yourself",
+    "interestsSelected": "selected",
+    "dateOfBirth": "Date of Birth",
+    "gender": "Gender",
+    "deleteModal": {
+      "title": "Are you sure you want to delete your account?",
+      "description": "You (events and people you marked) will be lost for the app",
+      "delete": "Delete",
+      "cancel": "No, don't"
+    }
+  },
+  "settings": {
+    "title": "Profile Settings",
+    "mainAccount": "Main Account",
+    "online": "Online",
+    "city": "City",
+    "privacy": "Privacy",
+    "showMeetingCounter": "Show meeting counter",
+    "showAge": "Show my age",
+    "aboutMatches": "About matches",
+    "notifications": "Notifications",
+    "aboutUpdates": "About news and updates",
+    "documents": "Documents",
+    "dangerZone": "Danger Zone",
+    "support": "Support",
+    "supportText": "Contact our support via Telegram, and we'll write User Agreement and Privacy Policy",
+    "deleteProfile": "Delete Profile",
+    "selectCity": "Select City",
+    "selectInterests": "Select Interests",
+    "userAgreement": "User Agreement",
+    "privacyPolicy": "Privacy Policy"
   }
 }
 

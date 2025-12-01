@@ -1,0 +1,214 @@
+.container {
+  min-height: 100vh;
+  background: var(--color-bg-primary, #ffffff);
+  padding-bottom: 80px;
+}
+
+.profileHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 20px;
+  background: var(--color-bg-primary, #ffffff);
+}
+
+.profileTitle {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--color-text-primary, #000000);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.settingsButton {
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  cursor: pointer;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-primary, #000000);
+  transition: all 0.2s ease;
+}
+
+.settingsButton:hover {
+  opacity: 0.7;
+}
+
+.settingsButton:active {
+  transform: scale(0.95);
+}
+
+.profilePhotoContainer {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto 16px;
+  padding: 0 16px;
+}
+
+.goalBadgeProfile {
+  position: absolute;
+  top: 12px;
+  left: 28px;
+  background: var(--color-bg-secondary, #f5f5f5);
+  color: var(--color-text-primary, #000000);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 2;
+}
+
+.threeDotMenu {
+  position: absolute;
+  top: 12px;
+  right: 28px;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  color: var(--color-text-secondary, #666666);
+  z-index: 2;
+  transition: all 0.2s ease;
+}
+
+.threeDotMenu:hover {
+  background: rgba(255, 255, 255, 1);
+}
+
+.threeDotMenu:active {
+  transform: scale(0.95);
+}
+
+.profilePhoto {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 18px;
+  object-fit: cover;
+  display: block;
+}
+
+.profileInfo {
+  padding: 0 20px;
+}
+
+.profileName {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--color-text-primary, #000000);
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+
+.profileJob {
+  font-size: 15px;
+  color: var(--color-text-secondary, #666666);
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.profileBio {
+  font-size: 15px;
+  color: var(--color-text-primary, #000000);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.interestsList {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.interestBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--color-bg-secondary, #f5f5f5);
+  border-radius: 20px;
+  font-size: 14px;
+}
+
+.interestIcon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.interestIcon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.profileActions {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+}
+
+.actionButtonLogout {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--color-bg-secondary, #f5f5f5);
+  color: #ff0000;
+  border: 1px solid var(--color-border, #e0e0e0);
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.actionButtonLogout:hover {
+  background: var(--color-bg-tertiary, #e0e0e0);
+}
+
+.actionButtonLogout:active {
+  transform: scale(0.98);
+}
+
+.actionButtonEdit {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--color-bg-secondary, #f5f5f5);
+  color: var(--color-text-primary, #000000);
+  border: 1px solid var(--color-border, #e0e0e0);
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.actionButtonEdit:hover {
+  background: var(--color-bg-tertiary, #e0e0e0);
+}
+
+.actionButtonEdit:active {
+  transform: scale(0.98);
+}
+

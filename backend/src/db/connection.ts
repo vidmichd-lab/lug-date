@@ -33,19 +33,45 @@ class YDBClient {
         process.env.YDB_TOKEN = config.database.token;
       }
 
+      // Ensure YC_SERVICE_ACCOUNT_KEY_FILE uses absolute path if relative
+      if (process.env.YC_SERVICE_ACCOUNT_KEY_FILE && !process.env.YC_SERVICE_ACCOUNT_KEY_FILE.startsWith('/')) {
+        const path = require('path');
+        const absPath = path.resolve(process.cwd(), process.env.YC_SERVICE_ACCOUNT_KEY_FILE);
+        process.env.YC_SERVICE_ACCOUNT_KEY_FILE = absPath;
+        logger.debug({ type: 'ydb_service_account_path_resolved', path: absPath });
+      }
+
       // Get credentials - YDB SDK automatically handles token, service account, or metadata
       let credentials;
       try {
+        logger.debug({ 
+          type: 'ydb_credentials_check',
+          hasToken: !!process.env.YDB_TOKEN,
+          hasServiceAccountFile: !!process.env.YC_SERVICE_ACCOUNT_KEY_FILE,
+          hasServiceAccountKey: !!process.env.YC_SERVICE_ACCOUNT_KEY,
+        });
         credentials = getCredentialsFromEnv();
+        logger.info({ type: 'ydb_credentials_loaded' });
       } catch (error) {
-        logger.warn({ error, type: 'ydb_credentials_env_failed' });
+        logger.error({ error, type: 'ydb_credentials_env_failed' });
         throw new Error('YDB credentials not found. Set YDB_TOKEN or configure service account.');
       }
 
-      // Create YDB driver configuration
-      const driverConfig: any = {
+      // Try both formats: connectionString (new) and endpoint/database (deprecated but may work better)
+      // Some SDK versions may prefer one format over another
+      const connectionString = `${config.database.endpoint}?database=${encodeURIComponent(config.database.database)}`;
+      
+      logger.debug({
+        type: 'ydb_driver_config',
         endpoint: config.database.endpoint,
         database: config.database.database,
+        connectionString: connectionString.replace(/\?database=.*/, '?database=***'),
+      });
+
+      // Create YDB driver configuration
+      // Use only connectionString (new format) - SDK warns about endpoint/database
+      const driverConfig: any = {
+        connectionString,
         authService: credentials,
       };
 
@@ -62,19 +88,27 @@ class YDBClient {
         logger.debug({ error, type: 'ydb_logger_config_failed' });
       }
 
+      logger.info({ type: 'ydb_driver_creating' });
       this.driver = new Driver(driverConfig);
 
-      // Wait for driver to be ready
-      const timeout = 10000; // 10 seconds
-      if (!(await this.driver.ready(timeout))) {
-        throw new Error('YDB driver initialization timeout');
+      // Wait for driver to be ready with increased timeout
+      const timeout = 30000; // 30 seconds (increased from 10)
+      logger.info({ type: 'ydb_driver_waiting', timeout });
+      
+      const isReady = await this.driver.ready(timeout);
+      if (!isReady) {
+        logger.error({ type: 'ydb_driver_timeout', timeout });
+        throw new Error(`YDB driver initialization timeout after ${timeout}ms. Check your network connection and credentials.`);
       }
+      
+      logger.info({ type: 'ydb_driver_ready' });
 
       this.isConnected = true;
       logger.info({
         type: 'ydb_connection',
         endpoint: config.database.endpoint,
         database: config.database.database,
+        connectionString: connectionString.replace(/\?database=.*/, '?database=***'), // Hide database path in logs
         status: 'connected',
       });
     } catch (error) {
@@ -109,11 +143,11 @@ class YDBClient {
   async executeQuery<T = any>(query: string, params?: Record<string, any>): Promise<T[]> {
     const driver = this.getDriver();
 
-    logger.debug({
-      type: 'ydb_query',
-      query,
-      params,
-    });
+      logger.debug({
+        type: 'ydb_query',
+        query,
+        params,
+      });
 
     // Use withSessionRetry for automatic session management
     return await driver.tableClient.withSessionRetry(async (session) => {
@@ -178,10 +212,10 @@ class YDBClient {
   ): Promise<T> {
     const driver = this.getDriver();
 
-    logger.debug({
-      type: 'ydb_transaction',
-      queriesCount: queries.length,
-    });
+      logger.debug({
+        type: 'ydb_transaction',
+        queriesCount: queries.length,
+      });
 
     // Use withSessionRetry for automatic session management
     return await driver.tableClient.withSessionRetry(async (session) => {
@@ -192,14 +226,14 @@ class YDBClient {
         // Try to use executeTransaction if available
         if (typeof (session as any).executeTransaction === 'function') {
           const result = await (session as any).executeTransaction(async (tx: any) => {
-            const results: any[] = [];
-            for (const { query, params } of queries) {
-              const queryResult = await tx.executeQuery(query, params || {});
-              results.push(queryResult);
-            }
-            return results;
-          });
-          return result as T;
+        const results: any[] = [];
+        for (const { query, params } of queries) {
+          const queryResult = await tx.executeQuery(query, params || {});
+          results.push(queryResult);
+        }
+        return results;
+      });
+      return result as T;
         } else {
           // Fallback: execute queries sequentially
           const results: any[] = [];
@@ -209,9 +243,9 @@ class YDBClient {
           }
           return results as T;
         }
-      } catch (error) {
-        logger.error({ error, type: 'ydb_transaction_failed' });
-        throw error;
+    } catch (error) {
+      logger.error({ error, type: 'ydb_transaction_failed' });
+      throw error;
       }
     });
   }
@@ -241,6 +275,7 @@ export const ydbClient = new YDBClient();
 
 /**
  * Initialize YDB connection on app start
+ * In development, allows app to start without DB (doesn't throw)
  */
 export async function initYDB(): Promise<void> {
   try {
@@ -253,5 +288,14 @@ export async function initYDB(): Promise<void> {
       throw error;
     }
   }
+}
+
+/**
+ * Initialize YDB connection for migrations
+ * Always throws error if connection fails (migrations require DB)
+ */
+export async function initYDBForMigrations(): Promise<void> {
+  await ydbClient.connect();
+  logger.info({ type: 'ydb_initialized_for_migrations' });
 }
 

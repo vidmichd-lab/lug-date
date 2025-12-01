@@ -4,6 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import App from './App';
 import './index.css';
+import './design-system/tokens/tokens.css'; // Design system CSS variables
 import './i18n/config'; // Initialize i18n
 import { initErrorMonitoring } from './monitoring';
 import { initMetrica } from './utils/metrica';

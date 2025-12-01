@@ -1,0 +1,299 @@
+.container {
+  min-height: 100vh;
+  background: var(--color-bg-primary, #ffffff);
+  padding-bottom: 100px;
+}
+
+.editProfileHeader {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  background: var(--color-bg-primary, #ffffff);
+  border-bottom: 1px solid var(--color-border, #e0e0e0);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.backButton {
+  width: 32px;
+  height: 32px;
+  margin-right: 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-primary, #000000);
+  transition: all 0.2s ease;
+}
+
+.backButton:hover {
+  opacity: 0.7;
+}
+
+.backButton:active {
+  transform: scale(0.95);
+}
+
+.editProfileTitle {
+  flex: 1;
+  text-align: center;
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--color-text-primary, #000000);
+  margin: 0;
+}
+
+.content {
+  padding: 20px;
+}
+
+.photoSection {
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.photoContainer {
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto 16px;
+}
+
+.profilePhoto {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 18px;
+  object-fit: cover;
+  display: block;
+}
+
+.updatePhotoButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--color-text-primary, #000000);
+  font-size: 14px;
+  padding: 8px 0;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.updatePhotoButton:hover {
+  opacity: 0.7;
+}
+
+.updatePhotoButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.section {
+  margin-bottom: 24px;
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary, #000000);
+  margin-bottom: 12px;
+}
+
+.goalSelector {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.goalOption {
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: var(--color-bg-secondary, #f5f5f5);
+  color: var(--color-text-primary, #000000);
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.goalOption:hover {
+  background: var(--color-bg-tertiary, #e0e0e0);
+}
+
+.goalOptionSelected {
+  background: var(--color-text-primary, #000000);
+  color: var(--color-bg-primary, #ffffff);
+}
+
+.interestsEdit {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.interestBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--color-bg-secondary, #f5f5f5);
+  border-radius: 20px;
+  font-size: 14px;
+}
+
+.interestIcon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.interestIcon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.addInterestButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-bg-secondary, #f5f5f5);
+  color: var(--color-text-primary, #000000);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.addInterestButton:hover {
+  background: var(--color-bg-tertiary, #e0e0e0);
+}
+
+.addInterestButton:active {
+  transform: scale(0.98);
+}
+
+.dateInputs {
+  display: flex;
+  gap: 12px;
+}
+
+.dateInput {
+  flex: 1;
+  background: var(--color-bg-secondary, #f5f5f5);
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+  font-size: 16px;
+  border: none;
+  font-family: inherit;
+  color: var(--color-text-primary, #000000);
+}
+
+.dateInput:focus {
+  outline: 2px solid var(--color-text-primary, #000000);
+  outline-offset: 2px;
+}
+
+.dateError {
+  color: #ff0000;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.genderOptions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.genderOption {
+  padding: 12px 20px;
+  border-radius: 12px;
+  background: var(--color-bg-secondary, #f5f5f5);
+  color: var(--color-text-primary, #000000);
+  font-size: 15px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.genderOption:hover {
+  background: var(--color-bg-tertiary, #e0e0e0);
+}
+
+.genderOptionSelected {
+  background: var(--color-text-primary, #000000);
+  color: var(--color-bg-primary, #ffffff);
+}
+
+.citySelectorButton {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--color-bg-secondary, #f5f5f5);
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.citySelectorButton:hover {
+  background: var(--color-bg-tertiary, #e0e0e0);
+}
+
+.cityLabel {
+  font-size: 15px;
+  color: var(--color-text-primary, #000000);
+  font-weight: 500;
+}
+
+.cityValue {
+  font-size: 15px;
+  color: var(--color-text-secondary, #666666);
+}
+
+.saveChangesButton {
+  background: var(--color-text-primary, #000000);
+  color: var(--color-bg-primary, #ffffff);
+  border-radius: 28px;
+  padding: 16px 32px;
+  font-size: 16px;
+  font-weight: 500;
+  width: 100%;
+  max-width: 400px;
+  margin: 24px auto 0;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  display: block;
+}
+
+.saveChangesButton:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.saveChangesButton:active {
+  transform: scale(0.98);
+}
+
+.saveChangesButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

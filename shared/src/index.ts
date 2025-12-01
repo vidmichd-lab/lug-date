@@ -9,6 +9,8 @@ export interface User {
   photoUrl?: string;
   bio?: string;
   age?: number;
+  isBanned?: boolean;
+  isModerated?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

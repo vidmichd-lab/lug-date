@@ -1,0 +1,203 @@
+.container {
+  min-height: 100vh;
+  background: var(--color-bg-primary, #ffffff);
+  padding-bottom: 40px;
+}
+
+.settingsHeader {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  background: var(--color-bg-primary, #ffffff);
+  border-bottom: 1px solid var(--color-border, #e0e0e0);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.backButton {
+  width: 32px;
+  height: 32px;
+  margin-right: 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-primary, #000000);
+  transition: all 0.2s ease;
+}
+
+.backButton:active {
+  transform: scale(0.95);
+}
+
+.settingsTitle {
+  flex: 1;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--color-text-primary, #000000);
+  margin: 0;
+}
+
+.content {
+  padding: 0;
+}
+
+.settingsSection {
+  padding: 20px;
+  border-bottom: 1px solid var(--color-border, #e0e0e0);
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary, #000000);
+  margin-bottom: 16px;
+}
+
+.settingsRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+}
+
+.settingsLabel {
+  font-size: 15px;
+  color: var(--color-text-primary, #000000);
+  flex: 1;
+}
+
+.settingsFieldSelect {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  width: 100%;
+  font-family: inherit;
+}
+
+.fieldValueContainer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fieldValue {
+  font-size: 15px;
+  color: var(--color-text-secondary, #666666);
+}
+
+.changeIcon {
+  width: 20px;
+  height: 20px;
+  color: var(--color-text-tertiary, #9e9e9e);
+  flex-shrink: 0;
+}
+
+.documentLink {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  width: 100%;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.documentLink:hover {
+  opacity: 0.7;
+}
+
+.documentText {
+  font-size: 15px;
+  color: var(--color-text-primary, #000000);
+}
+
+.chevronIcon {
+  width: 16px;
+  height: 16px;
+  color: var(--color-text-tertiary, #9e9e9e);
+  flex-shrink: 0;
+}
+
+.supportContainer {
+  position: relative;
+}
+
+.supportButton {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  width: 100%;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.supportButton:hover {
+  opacity: 0.7;
+}
+
+.supportText {
+  font-size: 15px;
+  color: var(--color-text-primary, #000000);
+}
+
+.supportIcon {
+  width: 20px;
+  height: 20px;
+  color: var(--color-text-primary, #000000);
+  flex-shrink: 0;
+}
+
+.supportPopup {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  background: var(--color-bg-primary, #ffffff);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  max-width: 280px;
+  margin-bottom: 8px;
+  z-index: 10;
+}
+
+.supportPopupText {
+  font-size: 13px;
+  color: var(--color-text-primary, #333333);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.deleteProfileLink {
+  color: #ff0000;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  width: 100%;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.deleteProfileLink:hover {
+  opacity: 0.8;
+}

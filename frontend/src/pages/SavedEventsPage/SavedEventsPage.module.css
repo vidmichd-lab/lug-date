@@ -1,0 +1,38 @@
+.container {
+  min-height: 100vh;
+  background: var(--color-bg-primary, #ffffff);
+  padding-bottom: 80px; /* Space for bottom nav */
+}
+
+.savedHeader {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--color-bg-primary, #ffffff);
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--color-border, #e0e0e0);
+  z-index: 100;
+}
+
+.savedTitle {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--color-text-primary, #000000);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.savedEventsList {
+  padding: 16px;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  font-size: 16px;
+  color: var(--color-text-secondary, #666666);
+}
+

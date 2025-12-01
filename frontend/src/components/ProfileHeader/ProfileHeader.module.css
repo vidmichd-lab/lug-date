@@ -1,0 +1,65 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 56px;
+  padding: 0 var(--spacing-base);
+  background-color: var(--color-background, #ffffff);
+  border-bottom: 1px solid var(--color-border, #dfe6e9);
+  box-sizing: border-box;
+}
+
+.headerContent {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: var(--spacing-base);
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text, #000000);
+  transition: opacity 0.2s ease-in-out;
+  flex-shrink: 0;
+}
+
+.backButton:hover {
+  opacity: 0.7;
+}
+
+.backButton:active {
+  opacity: 0.5;
+}
+
+.backButtonHidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.title {
+  flex: 1;
+  text-align: center;
+  font-size: var(--font-body-size, 16px);
+  font-weight: 500;
+  color: var(--color-text, #000000);
+  margin: 0;
+}
+
+.stepIndicator {
+  font-size: var(--font-body-small-size, 14px);
+  font-weight: 400;
+  color: var(--color-text-secondary, #666666);
+  flex-shrink: 0;
+  min-width: 40px;
+  text-align: right;
+}
+

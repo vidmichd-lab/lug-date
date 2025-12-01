@@ -1,0 +1,111 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  background-color: var(--color-background, #ffffff);
+  box-sizing: border-box;
+}
+
+.headerContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--color-background, #ffffff);
+  border-bottom: 1px solid var(--color-border, #dfe6e9);
+  z-index: 10;
+  padding: 0 var(--spacing-base);
+  box-sizing: border-box;
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-xl) var(--spacing-base);
+  max-width: 351px;
+  width: 100%;
+  margin: 0 auto;
+  margin-top: 84px; /* Header height */
+  margin-bottom: 100px; /* Button container height */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 32px;
+  color: var(--color-text, #000000);
+  margin: 0 0 var(--spacing-sm) 0;
+}
+
+.subtitle {
+  font-size: var(--font-body-small-size, 14px);
+  font-weight: 400;
+  line-height: 20px;
+  color: rgba(0, 0, 0, 0.6);
+  margin: 0 0 var(--spacing-xl) 0;
+}
+
+.interestsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-xl);
+}
+
+.bottomButtonContainer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.8) 20%, #ffffff 40%);
+  padding: var(--spacing-base) var(--spacing-base) var(--spacing-2xl) var(--spacing-base);
+  z-index: 10;
+  box-sizing: border-box;
+}
+
+.button {
+  width: 100%;
+  max-width: 400px;
+  height: 54px;
+  padding: var(--spacing-base) 48px;
+  border-radius: 28px;
+  font-size: var(--font-body-size, 16px);
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s ease-in-out, background-color 0.2s ease-in-out;
+  font-family: var(--font-family);
+  border: none;
+  margin: 0 auto;
+  display: block;
+}
+
+.buttonPrimary {
+  background-color: var(--color-text, #000000);
+  color: var(--color-background, #ffffff);
+}
+
+.buttonPrimary:hover {
+  opacity: 0.9;
+}
+
+.buttonPrimary:active {
+  opacity: 0.8;
+}
+
+.buttonSecondary {
+  background-color: #f5f5f5;
+  color: var(--color-text, #000000);
+}
+
+.buttonSecondary:hover {
+  background-color: #ececec;
+}
+
+.buttonSecondary:active {
+  opacity: 0.8;
+}
+

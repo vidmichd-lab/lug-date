@@ -1,0 +1,107 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+  padding: 16px;
+}
+
+.popup {
+  background: var(--color-bg-primary, #ffffff);
+  border-radius: 24px;
+  padding: 24px;
+  width: 100%;
+  max-width: 400px;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+  animation: slideUp 0.3s ease;
+}
+
+.closeButton {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  background: var(--color-bg-secondary, #f5f5f5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  color: var(--color-text-primary, #000000);
+  transition: all 0.2s ease;
+}
+
+.closeButton:hover {
+  background: var(--color-bg-tertiary, #e0e0e0);
+}
+
+.closeButton:active {
+  transform: scale(0.95);
+}
+
+.profilePhoto {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 18px;
+  object-fit: cover;
+  margin-bottom: 16px;
+}
+
+.profileName {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text-primary, #000000);
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.profileJob {
+  font-size: 15px;
+  color: var(--color-text-secondary, #666666);
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.profileBio {
+  font-size: 15px;
+  color: var(--color-text-primary, #000000);
+  line-height: 1.5;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--color-text-secondary, #666666);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+

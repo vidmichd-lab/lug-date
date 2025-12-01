@@ -1,0 +1,24 @@
+.progressContainer {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+  width: 100%;
+  padding: var(--spacing-base) 0;
+}
+
+.progressStep {
+  flex: 1;
+  height: 6px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: var(--radius-full);
+  transition: background-color 0.3s ease-in-out;
+}
+
+.progressStepActive {
+  background-color: var(--color-text, #000000);
+}
+
+.progressStepCompleted {
+  background-color: var(--color-text, #000000);
+}
+

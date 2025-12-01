@@ -6,43 +6,33 @@ import {
   eventsTopQuerySchema,
   recentMatchesQuerySchema,
 } from '../validation/schemas';
+import { analyticsRepository } from '../repositories/analyticsRepository';
+import { logger } from '../logger';
 
 const router = Router();
-
-// Mock данные для демонстрации
-// В реальном проекте здесь будут запросы к базе данных
 
 // Общая статистика
 router.get('/analytics/overview', validate({ query: analyticsOverviewQuerySchema }), async (req, res) => {
   try {
-    // TODO: Заменить на реальные данные из БД
+    const [users, events, matches, conversionRate, onlineUsers] = await Promise.all([
+      analyticsRepository.getUserStats(),
+      analyticsRepository.getEventStats(),
+      analyticsRepository.getMatchStats(),
+      analyticsRepository.getConversionRates(),
+      analyticsRepository.getOnlineUsersCount(),
+    ]);
+
     const data = {
-      users: {
-        total: 1250,
-        newThisWeek: 87,
-        growth: 12.5,
-      },
-      events: {
-        active: 45,
-        past: 120,
-        total: 165,
-      },
-      matches: {
-        total: 342,
-        today: 12,
-        thisWeek: 89,
-        growth: 8.3,
-      },
-      conversionRate: {
-        likesToMatches: 15.2,
-        viewsToLikes: 8.5,
-        viewsToMatches: 1.3,
-      },
-      onlineUsers: 156,
+      users,
+      events,
+      matches,
+      conversionRate,
+      onlineUsers,
     };
 
     res.json({ success: true, data });
   } catch (error) {
+    logger.error({ error, type: 'admin_overview_failed' });
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
@@ -53,19 +43,11 @@ router.get('/analytics/users-chart', validate({ query: usersChartQuerySchema }),
     const { period = '7d' } = req.query;
     const days = period === '7d' ? 7 : 30;
 
-    // TODO: Заменить на реальные данные из БД
-    const data = Array.from({ length: days }, (_, i) => {
-      const date = new Date();
-      date.setDate(date.getDate() - (days - i - 1));
-      return {
-        date: date.toISOString(),
-        registrations: Math.floor(Math.random() * 20) + 5,
-        active: Math.floor(Math.random() * 50) + 20,
-      };
-    });
+    const data = await analyticsRepository.getUserChartData(days);
 
     res.json({ success: true, data });
   } catch (error) {
+    logger.error({ error, type: 'admin_users_chart_failed' });
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
@@ -74,18 +56,13 @@ router.get('/analytics/users-chart', validate({ query: usersChartQuerySchema }),
 router.get('/analytics/events-top', validate({ query: eventsTopQuerySchema }), async (req, res) => {
   try {
     const { limit = 10 } = req.query;
+    const limitNumber = typeof limit === 'string' ? parseInt(limit, 10) : limit;
 
-    // TODO: Заменить на реальные данные из БД
-    const data = Array.from({ length: limit }, (_, i) => ({
-      id: `event-${i + 1}`,
-      title: `Событие ${i + 1}`,
-      likes: Math.floor(Math.random() * 500) + 100,
-      views: Math.floor(Math.random() * 2000) + 500,
-      matches: Math.floor(Math.random() * 50) + 10,
-    })).sort((a, b) => b.likes - a.likes);
+    const data = await analyticsRepository.getTopEvents(limitNumber);
 
     res.json({ success: true, data });
   } catch (error) {
+    logger.error({ error, type: 'admin_events_top_failed' });
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
@@ -93,31 +70,11 @@ router.get('/analytics/events-top', validate({ query: eventsTopQuerySchema }), a
 // Воронка конверсии
 router.get('/analytics/funnel', async (req, res) => {
   try {
-    // TODO: Заменить на реальные данные из БД
-    const views = 10000;
-    const likes = 850;
-    const matches = 130;
-
-    const data = [
-      {
-        stage: 'Просмотры',
-        count: views,
-        percentage: 100,
-      },
-      {
-        stage: 'Лайки',
-        count: likes,
-        percentage: (likes / views) * 100,
-      },
-      {
-        stage: 'Матчи',
-        count: matches,
-        percentage: (matches / views) * 100,
-      },
-    ];
+    const data = await analyticsRepository.getFunnelData();
 
     res.json({ success: true, data });
   } catch (error) {
+    logger.error({ error, type: 'admin_funnel_failed' });
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
@@ -125,22 +82,11 @@ router.get('/analytics/funnel', async (req, res) => {
 // Активность по дням недели (heatmap)
 router.get('/analytics/activity-heatmap', async (req, res) => {
   try {
-    // TODO: Заменить на реальные данные из БД
-    const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-    const data = [];
-
-    for (let day = 0; day < 7; day++) {
-      for (let hour = 0; hour < 24; hour++) {
-        data.push({
-          day: days[day],
-          hour,
-          value: Math.floor(Math.random() * 100),
-        });
-      }
-    }
+    const data = await analyticsRepository.getActivityHeatmap();
 
     res.json({ success: true, data });
   } catch (error) {
+    logger.error({ error, type: 'admin_heatmap_failed' });
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
@@ -149,29 +95,13 @@ router.get('/analytics/activity-heatmap', async (req, res) => {
 router.get('/analytics/recent-matches', validate({ query: recentMatchesQuerySchema }), async (req, res) => {
   try {
     const { limit = 10 } = req.query;
+    const limitNumber = typeof limit === 'string' ? parseInt(limit, 10) : limit;
 
-    // TODO: Заменить на реальные данные из БД
-    const data = Array.from({ length: limit }, (_, i) => {
-      const date = new Date();
-      date.setMinutes(date.getMinutes() - i * 15);
-      return {
-        id: `match-${i + 1}`,
-        user1: {
-          id: `user-${i * 2 + 1}`,
-          name: `Пользователь ${i * 2 + 1}`,
-        },
-        user2: {
-          id: `user-${i * 2 + 2}`,
-          name: `Пользователь ${i * 2 + 2}`,
-        },
-        eventId: i % 3 === 0 ? `event-${i}` : undefined,
-        eventTitle: i % 3 === 0 ? `Событие ${i}` : undefined,
-        createdAt: date.toISOString(),
-      };
-    });
+    const data = await analyticsRepository.getRecentMatches(limitNumber);
 
     res.json({ success: true, data });
   } catch (error) {
+    logger.error({ error, type: 'admin_recent_matches_failed' });
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });

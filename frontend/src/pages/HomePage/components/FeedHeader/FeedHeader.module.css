@@ -1,0 +1,138 @@
+.mainHeader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 100;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.logoButton {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000000;
+  transition: opacity 0.2s ease;
+}
+
+.logoButton:hover {
+  opacity: 0.7;
+}
+
+.tabSwitcher {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+}
+
+.tabButton {
+  background: transparent;
+  border: none;
+  padding: 8px 16px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #9e9e9e;
+  cursor: pointer;
+  border-radius: 20px;
+  transition: all 0.2s ease;
+  font-family: var(--font-family);
+}
+
+.tabButton:hover {
+  background: #f5f5f5;
+}
+
+.tabButtonActive {
+  color: #000000;
+  background: #f5f5f5;
+}
+
+.categoriesContainer {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.categoriesContainer::-webkit-scrollbar {
+  display: none;
+}
+
+.categoriesScroll {
+  display: flex;
+  gap: 8px;
+  padding-right: 16px;
+}
+
+.categoryPill {
+  background: #f5f5f5;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #000000;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  font-family: var(--font-family);
+}
+
+.categoryPill:hover {
+  background: #ececec;
+}
+
+.categoryPillActive {
+  background: #000000;
+  color: #ffffff;
+}
+
+.categoryPillActive:hover {
+  background: #000000;
+  opacity: 0.9;
+}
+
+.profileButton {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000000;
+  transition: opacity 0.2s ease;
+}
+
+.profileButton:hover {
+  opacity: 0.7;
+}
+
+@media (max-width: 375px) {
+  .mainHeader {
+    padding: 10px 12px;
+    gap: 12px;
+  }
+
+  .tabButton {
+    padding: 6px 12px;
+    font-size: 14px;
+  }
+
+  .categoryPill {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+}
+
