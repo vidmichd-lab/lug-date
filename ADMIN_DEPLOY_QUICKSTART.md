@@ -4,8 +4,8 @@
 
 ```
 Bucket: lug-admin-deploy
-Access Key ID: YCAJE9rBN49EzJOqjC9LmT4BS
-Secret Access Key: YCPK0EBU7f-IHoh29XkOt_XJ0D3MYRw6RbO6BjTl
+Access Key ID: YCAJE...
+Secret Access Key: YCPK...
 ```
 
 ## Шаг 1: Создайте бакет в Yandex Cloud
