@@ -22,7 +22,7 @@ export const LoginPage = ({ onLogin }: { onLogin: (token: string) => void }) => 
     setLoading(true);
 
     try {
-      const API_BASE_URL = getApiUrl();
+      const API_BASE_URL = getApiUrl().replace(/\/$/, ''); // Remove trailing slash
       const response = await axios.post(`${API_BASE_URL}/api/admin/auth/login`, {
         username,
         password,

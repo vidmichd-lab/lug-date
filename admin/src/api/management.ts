@@ -15,7 +15,7 @@ const getApiUrl = (): string => {
   return import.meta.env.VITE_API_URL || 'http://localhost:4000';
 };
 
-const API_BASE_URL = getApiUrl();
+const API_BASE_URL = getApiUrl().replace(/\/$/, ''); // Remove trailing slash
 
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api/admin/management`,

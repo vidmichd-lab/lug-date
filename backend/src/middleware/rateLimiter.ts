@@ -9,6 +9,7 @@ import { config } from '../config';
 /**
  * General API rate limiter
  * 100 requests per minute
+ * Skips OPTIONS requests (preflight) to allow CORS
  */
 export const generalLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
@@ -22,8 +23,8 @@ export const generalLimiter = rateLimit({
   },
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  // Skip rate limiting in test environment
-  skip: () => config.nodeEnv === 'test',
+  // Skip rate limiting for OPTIONS requests (CORS preflight) and in test environment
+  skip: (req) => req.method === 'OPTIONS' || config.nodeEnv === 'test',
 });
 
 /**
@@ -82,4 +83,3 @@ export const authLimiter = rateLimit({
   legacyHeaders: false,
   skip: () => config.nodeEnv === 'test',
 });
-
