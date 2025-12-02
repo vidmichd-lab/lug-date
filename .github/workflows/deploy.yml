@@ -69,6 +69,22 @@ jobs:
             bot/**
             shared/**
 
+      - name: Check if force deploy all
+        id: force-deploy
+        run: |
+          # Проверяем сообщение коммита на наличие флагов принудительного деплоя
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          # Если нет изменений в файлах, но это не первый коммит - деплоим все
+          if [ "${{ steps.changed-files.outputs.any_changed }}" != "true" ]; then
+            echo "force_all=true" >> $GITHUB_OUTPUT
+            echo "🚀 No file changes detected, deploying all components"
+          elif echo "$COMMIT_MSG" | grep -qiE "(force|deploy all|redeploy|full deploy)"; then
+            echo "force_all=true" >> $GITHUB_OUTPUT
+            echo "🚀 Force deploy all components detected"
+          else
+            echo "force_all=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Install dependencies
         run: npm ci
 
@@ -144,15 +160,15 @@ jobs:
           fi
 
       - name: Build backend
-        if: steps.changed-files.outputs.backend == 'true' || steps.changed-files.outputs.shared == 'true'
+        if: steps.changed-files.outputs.backend == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
         run: NODE_ENV=development npm run build --workspace=backend
 
       - name: Build bot
-        if: steps.changed-files.outputs.bot == 'true' || steps.changed-files.outputs.shared == 'true'
+        if: steps.changed-files.outputs.bot == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
         run: NODE_ENV=development npm run build --workspace=bot
 
       - name: Build admin
-        if: steps.changed-files.outputs.admin == 'true' || steps.changed-files.outputs.shared == 'true'
+        if: steps.changed-files.outputs.admin == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
         run: NODE_ENV=development npm run build --workspace=admin
 
       - name: Run database migrations
@@ -230,7 +246,7 @@ jobs:
           fi
 
       - name: Deploy Backend
-        if: steps.changed-files.outputs.backend == 'true' || steps.changed-files.outputs.shared == 'true'
+        if: steps.changed-files.outputs.backend == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
         env:
           YC_SERVICE_ACCOUNT_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
           YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
@@ -311,7 +327,7 @@ jobs:
           fi
 
       - name: Deploy Frontend
-        if: steps.changed-files.outputs.frontend == 'true' || steps.changed-files.outputs.shared == 'true'
+        if: steps.changed-files.outputs.frontend == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
         env:
           YANDEX_STORAGE_BUCKET: ${{ secrets.YANDEX_STORAGE_BUCKET_DEV }}
         run: |
@@ -334,7 +350,7 @@ jobs:
           pip3 install awscli --quiet
 
       - name: Deploy Admin
-        if: steps.changed-files.outputs.admin == 'true' || steps.changed-files.outputs.shared == 'true'
+        if: steps.changed-files.outputs.admin == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
         env:
           ADMIN_STORAGE_BUCKET: ${{ secrets.ADMIN_STORAGE_BUCKET_DEV }}
           ADMIN_STORAGE_ACCESS_KEY: ${{ secrets.ADMIN_STORAGE_ACCESS_KEY_DEV }}
@@ -389,7 +405,7 @@ jobs:
           echo "✅ Admin deployed to: https://${ADMIN_STORAGE_BUCKET}.website.yandexcloud.net"
 
       - name: Deploy Bot
-        if: steps.changed-files.outputs.bot == 'true' || steps.changed-files.outputs.shared == 'true'
+        if: steps.changed-files.outputs.bot == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
         env:
           YC_BOT_FUNCTION_ID: ${{ secrets.YC_BOT_FUNCTION_ID_STAGING }}
         run: |
@@ -449,6 +465,22 @@ jobs:
             backend/**
             bot/**
             shared/**
+
+      - name: Check if force deploy all
+        id: force-deploy
+        run: |
+          # Проверяем сообщение коммита на наличие флагов принудительного деплоя
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          # Если нет изменений в файлах, но это не первый коммит - деплоим все
+          if [ "${{ steps.changed-files.outputs.any_changed }}" != "true" ]; then
+            echo "force_all=true" >> $GITHUB_OUTPUT
+            echo "🚀 No file changes detected, deploying all components"
+          elif echo "$COMMIT_MSG" | grep -qiE "(force|deploy all|redeploy|full deploy)"; then
+            echo "force_all=true" >> $GITHUB_OUTPUT
+            echo "🚀 Force deploy all components detected"
+          else
+            echo "force_all=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Install dependencies
         run: npm ci
