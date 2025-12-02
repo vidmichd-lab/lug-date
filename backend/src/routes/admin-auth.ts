@@ -35,11 +35,23 @@ router.post('/login', async (req: Request, res: Response) => {
     // Проверка авторизации
     if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
       logger.info({ type: 'admin_login_success', username });
-      return res.json({ token: ADMIN_TOKEN });
+      return res.json({
+        success: true,
+        data: {
+          token: ADMIN_TOKEN,
+          username: ADMIN_USERNAME,
+        },
+      });
     }
 
     logger.warn({ type: 'admin_login_failed', username });
-    return res.status(401).json({ error: 'Invalid credentials' });
+    return res.status(401).json({
+      success: false,
+      error: {
+        message: 'Invalid credentials',
+        code: 'INVALID_CREDENTIALS',
+      },
+    });
   } catch (error) {
     logger.error({ error, type: 'admin_login_error' });
     return res.status(500).json({ error: 'Internal server error' });
