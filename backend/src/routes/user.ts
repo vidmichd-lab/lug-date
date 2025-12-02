@@ -9,11 +9,14 @@ import { validate } from '../validation/validate';
 import { z } from 'zod';
 import { logger } from '../logger';
 import { userRepository } from '../repositories/userRepository';
+import type { User } from '@dating-app/shared';
 
 const router = Router();
 
 const updateProfileSchema = z.object({
-  goal: z.enum(['find-friends', 'networking', 'dating', 'serious-relationship', 'other']).optional(),
+  goal: z
+    .enum(['find-friends', 'networking', 'dating', 'serious-relationship', 'other'])
+    .optional(),
   bio: z.string().max(200).optional(),
   job: z.string().max(32).optional(),
   company: z.string().max(32).optional(),
@@ -40,43 +43,59 @@ const updateProfileSchema = z.object({
 });
 
 // Get user profile
-router.get('/user/profile', telegramAuthMiddleware, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const telegramId = req.telegramUser?.id;
+router.get(
+  '/user/profile',
+  telegramAuthMiddleware,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const telegramId = req.telegramUser?.id;
 
-    if (!telegramId) {
-      return res.status(401).json({
-        success: false,
-        error: {
-          message: 'User not authenticated',
-          code: 'UNAUTHORIZED',
+      if (!telegramId) {
+        return res.status(401).json({
+          success: false,
+          error: {
+            message: 'User not authenticated',
+            code: 'UNAUTHORIZED',
+          },
+        });
+      }
+
+      // Get user by Telegram ID, create if not exists (automatic registration)
+      let user = await userRepository.getUserByTelegramId(telegramId);
+
+      if (!user) {
+        // Auto-register user from Telegram data
+        const telegramUser = req.telegramUser!;
+        const newUser: User = {
+          id: `user_${telegramId}`,
+          telegramId: telegramId,
+          username: telegramUser.username,
+          firstName: telegramUser.first_name,
+          lastName: telegramUser.last_name,
+          photoUrl: telegramUser.photo_url,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        user = await userRepository.upsertUser(newUser);
+        logger.info({
+          type: 'user_auto_registered',
+          userId: user.id,
+          telegramId: telegramId,
+        });
+      }
+
+      res.json({
+        success: true,
+        data: {
+          profile: user,
         },
       });
+    } catch (error) {
+      next(error);
     }
-
-    // Get user by Telegram ID
-    const user = await userRepository.getUserByTelegramId(telegramId);
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: {
-          message: 'User not found',
-          code: 'NOT_FOUND',
-        },
-      });
-    }
-
-    res.json({
-      success: true,
-      data: {
-        profile: user,
-      },
-    });
-  } catch (error) {
-    next(error);
   }
-});
+);
 
 // Update user profile
 router.patch(
@@ -112,7 +131,7 @@ router.patch(
 
       // Prepare update data
       const updates: any = {};
-      
+
       if (profileData.bio !== undefined) {
         updates.bio = profileData.bio;
       }
@@ -155,67 +174,74 @@ router.patch(
 );
 
 // Delete user account
-router.delete('/user/account', telegramAuthMiddleware, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const userId = req.telegramUser?.id.toString();
+router.delete(
+  '/user/account',
+  telegramAuthMiddleware,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.telegramUser?.id.toString();
 
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        error: {
-          message: 'User not authenticated',
-          code: 'UNAUTHORIZED',
-        },
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          error: {
+            message: 'User not authenticated',
+            code: 'UNAUTHORIZED',
+          },
+        });
+      }
+
+      // TODO: Implement real account deletion
+      // This should:
+      // 1. Mark user as deleted (soft delete) or remove from database
+      // 2. Remove all related data (matches, likes, etc.)
+      // 3. Clean up uploaded photos from Object Storage
+
+      logger.info({
+        type: 'account_deleted',
+        userId,
       });
+
+      res.json({
+        success: true,
+        data: { deleted: true },
+      });
+    } catch (error) {
+      next(error);
     }
-
-    // TODO: Implement real account deletion
-    // This should:
-    // 1. Mark user as deleted (soft delete) or remove from database
-    // 2. Remove all related data (matches, likes, etc.)
-    // 3. Clean up uploaded photos from Object Storage
-
-    logger.info({
-      type: 'account_deleted',
-      userId,
-    });
-
-    res.json({
-      success: true,
-      data: { deleted: true },
-    });
-  } catch (error) {
-    next(error);
   }
-});
+);
 
 // Get user by ID (for profile popup)
-router.get('/users/:userId', telegramAuthMiddleware, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { userId } = req.params;
+router.get(
+  '/users/:userId',
+  telegramAuthMiddleware,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { userId } = req.params;
 
-    const user = await userRepository.getUserById(userId);
+      const user = await userRepository.getUserById(userId);
 
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: {
-          message: 'User not found',
-          code: 'NOT_FOUND',
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            message: 'User not found',
+            code: 'NOT_FOUND',
+          },
+        });
+      }
+
+      res.json({
+        success: true,
+        data: {
+          user,
         },
       });
+    } catch (error) {
+      next(error);
     }
-
-    res.json({
-      success: true,
-      data: {
-        user,
-      },
-    });
-  } catch (error) {
-    next(error);
   }
-});
+);
 
 export default router;
-

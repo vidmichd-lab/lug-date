@@ -10,7 +10,7 @@ on:
       - main
 
 env:
-  NODE_VERSION: '18.x'
+  NODE_VERSION: '20'
 
 jobs:
   test:
@@ -74,9 +74,20 @@ jobs:
           echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
 
       - name: Configure Yandex Cloud CLI
+        env:
+          YC_SERVICE_ACCOUNT_KEY: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
+          YC_CLOUD_ID: ${{ secrets.YC_CLOUD_ID }}
+          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
         run: |
-          echo '${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' > /tmp/yc-sa-key.json
+          echo "$YC_SERVICE_ACCOUNT_KEY" > /tmp/yc-sa-key.json
+          yc config profile create sa-profile || true
           yc config set service-account-key /tmp/yc-sa-key.json
+          if [ -n "$YC_CLOUD_ID" ]; then
+            yc config set cloud-id "$YC_CLOUD_ID" || true
+          fi
+          if [ -n "$YC_FOLDER_ID" ]; then
+            yc config set folder-id "$YC_FOLDER_ID" || true
+          fi
 
       - name: Run database migrations
         run: |
@@ -88,51 +99,139 @@ jobs:
           npm run migrate || echo "⚠️ Migrations skipped"
         continue-on-error: true
 
-      - name: Build and push Docker image
+      - name: Login to Yandex Container Registry
         env:
-          REGISTRY: cr.yandex
-          REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
+          YC_SERVICE_ACCOUNT_KEY: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
+        run: |
+          echo "$YC_SERVICE_ACCOUNT_KEY" | docker login \
+            --username json_key \
+            --password-stdin \
+            cr.yandex
+
+      - name: Build and push Docker image
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
 
-          echo "📦 Building image..."
-          IMAGE_TAG="${REGISTRY}/${REGISTRY_ID}/dating-app-backend:${GITHUB_SHA:0:7}"
-          docker build -f backend/Dockerfile -t $IMAGE_TAG .
+          IMAGE_TAG="${GITHUB_SHA:0:7}"
+          IMAGE_NAME="cr.yandex/${{ secrets.YC_REGISTRY_ID }}/lug-date-backend"
 
-          echo ""
-          echo "🔐 Configuring Docker..."
-          yc container registry configure-docker
+          # Собираем образ
+          docker build \
+            -t ${IMAGE_NAME}:${IMAGE_TAG} \
+            -t ${IMAGE_NAME}:latest \
+            -f backend/Dockerfile \
+            .
 
-          echo ""
-          echo "📤 Pushing $IMAGE_TAG..."
-          docker push $IMAGE_TAG
+          # Пушим образ
+          docker push ${IMAGE_NAME}:${IMAGE_TAG}
+          docker push ${IMAGE_NAME}:latest
 
-          echo "IMAGE_URL=$IMAGE_TAG" >> $GITHUB_ENV
+          # Сохраняем для деплоя
+          echo "IMAGE_ID=${IMAGE_NAME}:${IMAGE_TAG}" >> $GITHUB_ENV
+
+      - name: Create container if not exists
+        env:
+          YC_SERVICE_ACCOUNT_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
+        run: |
+          export PATH=$PATH:$HOME/yandex-cloud/bin
+
+          # Создаем контейнер, если его еще нет
+          if [ -n "${YC_FOLDER_ID}" ]; then
+            yc serverless container create \
+              --name=lug-date-backend-staging \
+              --folder-id="${YC_FOLDER_ID}" || echo "Container already exists"
+          else
+            yc serverless container create --name=lug-date-backend-staging || echo "Container already exists"
+          fi
+
+          # Устанавливаем service account, если контейнер был только что создан
+          if [ $? -eq 0 ] && [ -n "${YC_SERVICE_ACCOUNT_ID}" ]; then
+            if [ -n "${YC_FOLDER_ID}" ]; then
+              yc serverless container set-access-bindings \
+                --name=lug-date-backend-staging \
+                --folder-id="${YC_FOLDER_ID}" \
+                --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
+                --role=serverless.containers.invoker || true
+            else
+              yc serverless container set-access-bindings \
+                --name=lug-date-backend-staging \
+                --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
+                --role=serverless.containers.invoker || true
+            fi
+          fi
 
       - name: Deploy Backend
         env:
-          YC_FUNCTION_ID: ${{ secrets.YC_BACKEND_FUNCTION_ID_STAGING }}
+          YC_SERVICE_ACCOUNT_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
+          YC_CONTAINER_ID_STAGING: ${{ secrets.YC_CONTAINER_ID_STAGING }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
 
-          yc serverless function version create \
-            --function-id "${YC_FUNCTION_ID}" \
-            --runtime container \
-            --memory 128m \
-            --execution-timeout 30s \
-            --source-image "${{ env.IMAGE_URL }}" \
-            --set-env-variable NODE_ENV=development \
-            --set-env-variable PORT=8080 \
-            --set-env-variable TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }} \
-            --set-env-variable YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_DEV }} \
-            --set-env-variable YDB_DATABASE=${{ secrets.YDB_DATABASE_DEV }} \
-            --set-env-variable YC_SERVICE_ACCOUNT_KEY='${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' \
-            --set-env-variable YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_DEV }} \
-            --set-env-variable YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_DEV }} \
-            --set-env-variable YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_DEV }} \
-            --set-env-variable TELEGRAM_ALERT_ENABLED=true \
-            --set-env-variable TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
-            --set-env-variable TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+          # Используем container-id если указан, иначе container-name с folder-id
+          if [ -n "${YC_CONTAINER_ID_STAGING}" ]; then
+            yc serverless container revision deploy \
+              --container-id="${YC_CONTAINER_ID_STAGING}" \
+              --image=${{ env.IMAGE_ID }} \
+              --memory=512m \
+              --cores=1 \
+              --execution-timeout=30s \
+              --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
+              --environment NODE_ENV=development \
+              --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }} \
+              --environment YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_DEV }} \
+              --environment YDB_DATABASE=${{ secrets.YDB_DATABASE_DEV }} \
+              --environment YC_SERVICE_ACCOUNT_KEY='${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' \
+              --environment YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_DEV }} \
+              --environment YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_DEV }} \
+              --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_DEV }} \
+              --environment TELEGRAM_ALERT_ENABLED=true \
+              --environment TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
+              --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+          elif [ -n "${YC_FOLDER_ID}" ]; then
+            yc serverless container revision deploy \
+              --container-name=lug-date-backend-staging \
+              --folder-id="${YC_FOLDER_ID}" \
+              --image=${{ env.IMAGE_ID }} \
+              --memory=512m \
+              --cores=1 \
+              --execution-timeout=30s \
+              --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
+              --environment NODE_ENV=development \
+              --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }} \
+              --environment YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_DEV }} \
+              --environment YDB_DATABASE=${{ secrets.YDB_DATABASE_DEV }} \
+              --environment YC_SERVICE_ACCOUNT_KEY='${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' \
+              --environment YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_DEV }} \
+              --environment YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_DEV }} \
+              --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_DEV }} \
+              --environment TELEGRAM_ALERT_ENABLED=true \
+              --environment TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
+              --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+          else
+            echo "Error: Either YC_CONTAINER_ID_STAGING or YC_FOLDER_ID must be set"
+            exit 1
+          fi
+
+      - name: Get Backend URL
+        env:
+          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
+          YC_CONTAINER_ID_STAGING: ${{ secrets.YC_CONTAINER_ID_STAGING }}
+        run: |
+          export PATH=$PATH:$HOME/yandex-cloud/bin
+
+          if [ -n "${YC_CONTAINER_ID_STAGING}" ]; then
+            BACKEND_URL=$(yc serverless container get --id="${YC_CONTAINER_ID_STAGING}" --format json | jq -r '.url')
+          elif [ -n "${YC_FOLDER_ID}" ]; then
+            BACKEND_URL=$(yc serverless container get --name=lug-date-backend-staging --folder-id="${YC_FOLDER_ID}" --format json | jq -r '.url')
+          else
+            echo "Warning: Cannot get backend URL"
+            exit 0
+          fi
+
+          echo "Backend deployed: ${BACKEND_URL}"
+          echo "Health check: ${BACKEND_URL}/health"
 
       - name: Deploy Frontend
         env:
@@ -144,6 +243,29 @@ jobs:
             frontend/dist/ \
             s3://${YANDEX_STORAGE_BUCKET}/ \
             --recursive
+
+      - name: Install AWS CLI
+        run: |
+          pip3 install awscli --quiet
+
+      - name: Deploy Admin
+        env:
+          ADMIN_STORAGE_BUCKET: ${{ secrets.ADMIN_STORAGE_BUCKET_DEV }}
+          ADMIN_STORAGE_ACCESS_KEY: ${{ secrets.ADMIN_STORAGE_ACCESS_KEY_DEV }}
+          ADMIN_STORAGE_SECRET_KEY: ${{ secrets.ADMIN_STORAGE_SECRET_KEY_DEV }}
+        run: |
+          export PATH=$PATH:$HOME/yandex-cloud/bin
+
+          # Настройка AWS CLI для Yandex Object Storage
+          export AWS_ACCESS_KEY_ID="${ADMIN_STORAGE_ACCESS_KEY}"
+          export AWS_SECRET_ACCESS_KEY="${ADMIN_STORAGE_SECRET_KEY}"
+          export AWS_DEFAULT_REGION=ru-central1
+
+          # Деплой admin панели
+          aws --endpoint-url=https://storage.yandexcloud.net s3 sync \
+            admin/dist/ \
+            s3://${ADMIN_STORAGE_BUCKET}/ \
+            --delete
 
       - name: Deploy Bot
         env:
@@ -211,9 +333,20 @@ jobs:
           echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
 
       - name: Configure Yandex Cloud CLI
+        env:
+          YC_SERVICE_ACCOUNT_KEY: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
+          YC_CLOUD_ID: ${{ secrets.YC_CLOUD_ID }}
+          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
         run: |
-          echo '${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' > /tmp/yc-sa-key.json
+          echo "$YC_SERVICE_ACCOUNT_KEY" > /tmp/yc-sa-key.json
+          yc config profile create sa-profile || true
           yc config set service-account-key /tmp/yc-sa-key.json
+          if [ -n "$YC_CLOUD_ID" ]; then
+            yc config set cloud-id "$YC_CLOUD_ID" || true
+          fi
+          if [ -n "$YC_FOLDER_ID" ]; then
+            yc config set folder-id "$YC_FOLDER_ID" || true
+          fi
 
       - name: Run database migrations
         run: |
@@ -225,51 +358,139 @@ jobs:
           npm run migrate
         continue-on-error: true
 
-      - name: Build and push Docker image
+      - name: Login to Yandex Container Registry
         env:
-          REGISTRY: cr.yandex
-          REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
+          YC_SERVICE_ACCOUNT_KEY: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
+        run: |
+          echo "$YC_SERVICE_ACCOUNT_KEY" | docker login \
+            --username json_key \
+            --password-stdin \
+            cr.yandex
+
+      - name: Build and push Docker image
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
 
-          echo "📦 Building image..."
-          IMAGE_TAG="${REGISTRY}/${REGISTRY_ID}/dating-app-backend:${GITHUB_SHA:0:7}"
-          docker build -f backend/Dockerfile -t $IMAGE_TAG .
+          IMAGE_TAG="${GITHUB_SHA:0:7}"
+          IMAGE_NAME="cr.yandex/${{ secrets.YC_REGISTRY_ID }}/lug-date-backend"
 
-          echo ""
-          echo "🔐 Configuring Docker..."
-          yc container registry configure-docker
+          # Собираем образ
+          docker build \
+            -t ${IMAGE_NAME}:${IMAGE_TAG} \
+            -t ${IMAGE_NAME}:latest \
+            -f backend/Dockerfile \
+            .
 
-          echo ""
-          echo "📤 Pushing $IMAGE_TAG..."
-          docker push $IMAGE_TAG
+          # Пушим образ
+          docker push ${IMAGE_NAME}:${IMAGE_TAG}
+          docker push ${IMAGE_NAME}:latest
 
-          echo "IMAGE_URL=$IMAGE_TAG" >> $GITHUB_ENV
+          # Сохраняем для деплоя
+          echo "IMAGE_ID=${IMAGE_NAME}:${IMAGE_TAG}" >> $GITHUB_ENV
+
+      - name: Create container if not exists
+        env:
+          YC_SERVICE_ACCOUNT_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
+        run: |
+          export PATH=$PATH:$HOME/yandex-cloud/bin
+
+          # Создаем контейнер, если его еще нет
+          if [ -n "${YC_FOLDER_ID}" ]; then
+            yc serverless container create \
+              --name=lug-date-backend-prod \
+              --folder-id="${YC_FOLDER_ID}" || echo "Container already exists"
+          else
+            yc serverless container create --name=lug-date-backend-prod || echo "Container already exists"
+          fi
+
+          # Устанавливаем service account, если контейнер был только что создан
+          if [ $? -eq 0 ] && [ -n "${YC_SERVICE_ACCOUNT_ID}" ]; then
+            if [ -n "${YC_FOLDER_ID}" ]; then
+              yc serverless container set-access-bindings \
+                --name=lug-date-backend-prod \
+                --folder-id="${YC_FOLDER_ID}" \
+                --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
+                --role=serverless.containers.invoker || true
+            else
+              yc serverless container set-access-bindings \
+                --name=lug-date-backend-prod \
+                --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
+                --role=serverless.containers.invoker || true
+            fi
+          fi
 
       - name: Deploy Backend
         env:
-          YC_FUNCTION_ID: ${{ secrets.YC_BACKEND_FUNCTION_ID_PROD }}
+          YC_SERVICE_ACCOUNT_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
+          YC_CONTAINER_ID_PROD: ${{ secrets.YC_CONTAINER_ID_PROD }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
 
-          yc serverless function version create \
-            --function-id "${YC_FUNCTION_ID}" \
-            --runtime container \
-            --memory 256m \
-            --execution-timeout 30s \
-            --source-image "${{ env.IMAGE_URL }}" \
-            --set-env-variable NODE_ENV=production \
-            --set-env-variable PORT=8080 \
-            --set-env-variable TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_PROD }} \
-            --set-env-variable YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_PROD }} \
-            --set-env-variable YDB_DATABASE=${{ secrets.YDB_DATABASE_PROD }} \
-            --set-env-variable YC_SERVICE_ACCOUNT_KEY='${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' \
-            --set-env-variable YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_PROD }} \
-            --set-env-variable YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_PROD }} \
-            --set-env-variable YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_PROD }} \
-            --set-env-variable TELEGRAM_ALERT_ENABLED=true \
-            --set-env-variable TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
-            --set-env-variable TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+          # Используем container-id если указан, иначе container-name с folder-id
+          if [ -n "${YC_CONTAINER_ID_PROD}" ]; then
+            yc serverless container revision deploy \
+              --container-id="${YC_CONTAINER_ID_PROD}" \
+              --image=${{ env.IMAGE_ID }} \
+              --memory=512m \
+              --cores=1 \
+              --execution-timeout=30s \
+              --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
+              --environment NODE_ENV=production \
+              --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_PROD }} \
+              --environment YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_PROD }} \
+              --environment YDB_DATABASE=${{ secrets.YDB_DATABASE_PROD }} \
+              --environment YC_SERVICE_ACCOUNT_KEY='${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' \
+              --environment YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_PROD }} \
+              --environment YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_PROD }} \
+              --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_PROD }} \
+              --environment TELEGRAM_ALERT_ENABLED=true \
+              --environment TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
+              --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+          elif [ -n "${YC_FOLDER_ID}" ]; then
+            yc serverless container revision deploy \
+              --container-name=lug-date-backend-prod \
+              --folder-id="${YC_FOLDER_ID}" \
+              --image=${{ env.IMAGE_ID }} \
+              --memory=512m \
+              --cores=1 \
+              --execution-timeout=30s \
+              --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
+              --environment NODE_ENV=production \
+              --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_PROD }} \
+              --environment YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_PROD }} \
+              --environment YDB_DATABASE=${{ secrets.YDB_DATABASE_PROD }} \
+              --environment YC_SERVICE_ACCOUNT_KEY='${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' \
+              --environment YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_PROD }} \
+              --environment YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_PROD }} \
+              --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_PROD }} \
+              --environment TELEGRAM_ALERT_ENABLED=true \
+              --environment TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
+              --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+          else
+            echo "Error: Either YC_CONTAINER_ID_PROD or YC_FOLDER_ID must be set"
+            exit 1
+          fi
+
+      - name: Get Backend URL
+        env:
+          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
+          YC_CONTAINER_ID_PROD: ${{ secrets.YC_CONTAINER_ID_PROD }}
+        run: |
+          export PATH=$PATH:$HOME/yandex-cloud/bin
+
+          if [ -n "${YC_CONTAINER_ID_PROD}" ]; then
+            BACKEND_URL=$(yc serverless container get --id="${YC_CONTAINER_ID_PROD}" --format json | jq -r '.url')
+          elif [ -n "${YC_FOLDER_ID}" ]; then
+            BACKEND_URL=$(yc serverless container get --name=lug-date-backend-prod --folder-id="${YC_FOLDER_ID}" --format json | jq -r '.url')
+          else
+            echo "Warning: Cannot get backend URL"
+            exit 0
+          fi
+
+          echo "Backend deployed: ${BACKEND_URL}"
+          echo "Health check: ${BACKEND_URL}/health"
 
       - name: Deploy Frontend
         env:
@@ -281,6 +502,25 @@ jobs:
             frontend/dist/ \
             s3://${YANDEX_STORAGE_BUCKET}/ \
             --recursive
+
+      - name: Deploy Admin
+        env:
+          ADMIN_STORAGE_BUCKET: ${{ secrets.ADMIN_STORAGE_BUCKET_PROD }}
+          ADMIN_STORAGE_ACCESS_KEY: ${{ secrets.ADMIN_STORAGE_ACCESS_KEY_PROD }}
+          ADMIN_STORAGE_SECRET_KEY: ${{ secrets.ADMIN_STORAGE_SECRET_KEY_PROD }}
+        run: |
+          export PATH=$PATH:$HOME/yandex-cloud/bin
+
+          # Настройка AWS CLI для Yandex Object Storage
+          export AWS_ACCESS_KEY_ID="${ADMIN_STORAGE_ACCESS_KEY}"
+          export AWS_SECRET_ACCESS_KEY="${ADMIN_STORAGE_SECRET_KEY}"
+          export AWS_DEFAULT_REGION=ru-central1
+
+          # Деплой admin панели
+          aws --endpoint-url=https://storage.yandexcloud.net s3 sync \
+            admin/dist/ \
+            s3://${ADMIN_STORAGE_BUCKET}/ \
+            --delete
 
       - name: Deploy Bot
         env:
