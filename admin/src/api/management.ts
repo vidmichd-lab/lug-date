@@ -96,23 +96,18 @@ export interface UserUpdate {
 
 export const usersApi = {
   getAll: async (limit?: number, offset?: number): Promise<{ data: User[]; pagination?: { total: number; limit: number; offset: number } }> => {
-    try {
-      const params = new URLSearchParams();
-      if (limit !== undefined) params.append('limit', limit.toString());
-      if (offset !== undefined) params.append('offset', offset.toString());
-      const queryString = params.toString();
-      const url = `/users${queryString ? `?${queryString}` : ''}`;
-      const response = await api.get(url);
-      
-      // Backend returns { success: true, data: [...], pagination: {...} }
-      return {
-        data: response.data.data || [],
-        pagination: response.data.pagination,
-      };
-    } catch (error: any) {
-      // Error is already processed by interceptor
-      throw error;
-    }
+    const params = new URLSearchParams();
+    if (limit !== undefined) params.append('limit', limit.toString());
+    if (offset !== undefined) params.append('offset', offset.toString());
+    const queryString = params.toString();
+    const url = `/users${queryString ? `?${queryString}` : ''}`;
+    const response = await api.get(url);
+    
+    // Backend returns { success: true, data: [...], pagination: {...} }
+    return {
+      data: response.data.data || [],
+      pagination: response.data.pagination,
+    };
   },
   getById: async (id: string): Promise<User> => {
     const response = await api.get(`/users/${id}`);
@@ -156,23 +151,18 @@ export interface EventUpdate extends Partial<EventCreate> {}
 
 export const eventsApi = {
   getAll: async (limit?: number, offset?: number): Promise<{ data: Event[]; pagination?: { total: number; limit: number; offset: number } }> => {
-    try {
-      const params = new URLSearchParams();
-      if (limit !== undefined) params.append('limit', limit.toString());
-      if (offset !== undefined) params.append('offset', offset.toString());
-      const queryString = params.toString();
-      const url = `/events${queryString ? `?${queryString}` : ''}`;
-      const response = await api.get(url);
-      
-      // Backend returns { success: true, data: [...], pagination: {...} }
-      return {
-        data: response.data.data || [],
-        pagination: response.data.pagination,
-      };
-    } catch (error: any) {
-      // Error is already processed by interceptor
-      throw error;
-    }
+    const params = new URLSearchParams();
+    if (limit !== undefined) params.append('limit', limit.toString());
+    if (offset !== undefined) params.append('offset', offset.toString());
+    const queryString = params.toString();
+    const url = `/events${queryString ? `?${queryString}` : ''}`;
+    const response = await api.get(url);
+    
+    // Backend returns { success: true, data: [...], pagination: {...} }
+    return {
+      data: response.data.data || [],
+      pagination: response.data.pagination,
+    };
   },
   create: async (event: EventCreate): Promise<Event> => {
     const response = await api.post('/events', event);
