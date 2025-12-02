@@ -394,6 +394,21 @@ jobs:
             exit 1
           fi
 
+          # Проверяем, что config.js есть в dist перед деплоем
+          if [ ! -f "admin/dist/config.js" ]; then
+            echo "⚠️  Warning: config.js not found in admin/dist, checking if it exists in admin/public..."
+            if [ -f "admin/public/config.js" ]; then
+              echo "📋 Config.js exists in public, copying to dist..."
+              cp admin/public/config.js admin/dist/config.js
+            else
+              echo "❌ Error: config.js not found in admin/public either!"
+            fi
+          else
+            echo "✅ Config.js found in admin/dist"
+            echo "📄 Config.js content:"
+            cat admin/dist/config.js
+          fi
+
           # Деплой admin панели
           aws --endpoint-url=https://storage.yandexcloud.net s3 sync \
             admin/dist/ \
@@ -401,6 +416,17 @@ jobs:
             --delete
 
           echo "✅ Admin deployed to: https://${ADMIN_STORAGE_BUCKET}.website.yandexcloud.net"
+
+          # Проверяем, что config.js задеплоился
+          echo "🔍 Verifying config.js deployment..."
+          CONFIG_URL="https://${ADMIN_STORAGE_BUCKET}.website.yandexcloud.net/config.js"
+          if curl -f -s "${CONFIG_URL}" > /dev/null 2>&1; then
+            echo "✅ Config.js is accessible at: ${CONFIG_URL}"
+            echo "📄 Deployed config.js content:"
+            curl -s "${CONFIG_URL}"
+          else
+            echo "⚠️  Warning: Could not verify config.js deployment"
+          fi
 
       - name: Deploy Bot
         if: steps.changed-files.outputs.bot == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
