@@ -99,7 +99,7 @@ app.use((req, res, next) => {
   const adminOriginsFromEnv = process.env.ADMIN_ORIGINS
     ? process.env.ADMIN_ORIGINS.split(',').map((o) => o.trim())
     : [];
-  
+
   const defaultAdminOrigins = [
     'https://lug-admin-deploy.website.yandexcloud.net',
     ...adminOriginsFromEnv,
@@ -116,8 +116,35 @@ app.use((req, res, next) => {
       ? origin
       : allAllowedOrigins[0] || null;
 
+  // Log CORS decisions in production for debugging
+  if (!isDevelopment && origin) {
+    logger.info({
+      type: 'cors_check',
+      origin,
+      allowed: allAllowedOrigins.includes(origin),
+      allowedOrigins: allAllowedOrigins,
+      allowOrigin,
+    });
+  }
+
   if (allowOrigin) {
     res.header('Access-Control-Allow-Origin', allowOrigin);
+  } else if (origin && !isDevelopment) {
+    // Log blocked requests for debugging
+    logger.warn({
+      type: 'cors_blocked',
+      origin,
+      allowedOrigins: allAllowedOrigins,
+      path: req.path,
+    });
+    // Return 403 for blocked origins
+    return res.status(403).json({
+      success: false,
+      error: {
+        message: 'Origin not allowed',
+        code: 'CORS_ERROR',
+      },
+    });
   }
 
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
