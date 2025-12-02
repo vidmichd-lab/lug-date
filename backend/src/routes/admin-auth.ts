@@ -32,47 +32,17 @@ router.post('/login', async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
 
-    if (!username || !password) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          message: 'Username and password are required',
-          code: 'MISSING_CREDENTIALS',
-        },
-      });
-    }
-
-    // Simple credential check
+    // Проверка авторизации
     if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
       logger.info({ type: 'admin_login_success', username });
-
-      return res.json({
-        success: true,
-        data: {
-          token: ADMIN_TOKEN,
-          username: ADMIN_USERNAME,
-        },
-      });
+      return res.json({ token: ADMIN_TOKEN });
     }
 
     logger.warn({ type: 'admin_login_failed', username });
-
-    return res.status(401).json({
-      success: false,
-      error: {
-        message: 'Invalid username or password',
-        code: 'INVALID_CREDENTIALS',
-      },
-    });
+    return res.status(401).json({ error: 'Invalid credentials' });
   } catch (error) {
     logger.error({ error, type: 'admin_login_error' });
-    return res.status(500).json({
-      success: false,
-      error: {
-        message: 'Internal server error',
-        code: 'INTERNAL_ERROR',
-      },
-    });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
