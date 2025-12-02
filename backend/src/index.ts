@@ -202,9 +202,13 @@ process.on('unhandledRejection', async (reason, promise) => {
 // Export app for serverless handler
 export default app;
 
-// Start server only if not in serverless environment
-if (process.env.SERVERLESS !== 'true' && require.main === module) {
-  app.listen(PORT, () => {
+// Start server for container runtime or local development
+// For Yandex Cloud Functions container runtime, we run: node dist/index.js
+// In this case, require.main === module is true, so server will start
+// For serverless handler (via handler.ts), this file is imported as module,
+// so require.main !== module and server won't start (handler.ts manages it)
+if (require.main === module) {
+  app.listen(PORT, '0.0.0.0', () => {
     logger.info({
       type: 'server_started',
       port: PORT,
