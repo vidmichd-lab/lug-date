@@ -43,7 +43,7 @@
 #### Другие необходимые секреты для Production:
 
 - `YC_CONTAINER_ID_PROD` = ID контейнера backend в Yandex Cloud
-- `YC_BOT_FUNCTION_ID_PROD` = ID функции бота в Yandex Cloud
+- `YC_BOT_FUNCTION_ID_PROD` = ID функции бота в Yandex Cloud (опционально, если не указан - деплой бота будет пропущен)
 - `TELEGRAM_BOT_TOKEN_PROD` = Токен Telegram бота для production
 - `YDB_ENDPOINT_PROD` = Endpoint базы данных YDB для production
 - `YDB_DATABASE_PROD` = Имя базы данных YDB для production

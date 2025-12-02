@@ -435,6 +435,13 @@ jobs:
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
 
+          # Check if function ID is set
+          if [ -z "${YC_BOT_FUNCTION_ID}" ]; then
+            echo "⚠️  Warning: YC_BOT_FUNCTION_ID_STAGING is not set in GitHub Secrets"
+            echo "Skipping bot deployment. To deploy bot, add YC_BOT_FUNCTION_ID_STAGING to GitHub Secrets."
+            exit 0
+          fi
+
           # Check bot/dist size
           BOT_SIZE=$(du -sb bot/dist | cut -f1)
           MAX_SIZE=$((3500000))
@@ -444,6 +451,7 @@ jobs:
             exit 1
           fi
 
+          echo "🤖 Deploying bot to function: ${YC_BOT_FUNCTION_ID}"
           yc serverless function version create \
             --function-id "${YC_BOT_FUNCTION_ID}" \
             --runtime nodejs18 \
@@ -453,6 +461,8 @@ jobs:
             --source-path bot/dist \
             --environment NODE_ENV=development \
             --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }}
+
+          echo "✅ Bot deployed successfully"
 
       - name: Health check
         run: |
@@ -857,6 +867,13 @@ jobs:
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
 
+          # Check if function ID is set
+          if [ -z "${YC_BOT_FUNCTION_ID}" ]; then
+            echo "⚠️  Warning: YC_BOT_FUNCTION_ID_PROD is not set in GitHub Secrets"
+            echo "Skipping bot deployment. To deploy bot, add YC_BOT_FUNCTION_ID_PROD to GitHub Secrets."
+            exit 0
+          fi
+
           # Check bot/dist size
           BOT_SIZE=$(du -sb bot/dist | cut -f1)
           MAX_SIZE=$((3500000))
@@ -866,6 +883,7 @@ jobs:
             exit 1
           fi
 
+          echo "🤖 Deploying bot to function: ${YC_BOT_FUNCTION_ID}"
           yc serverless function version create \
             --function-id "${YC_BOT_FUNCTION_ID}" \
             --runtime nodejs18 \
@@ -875,6 +893,8 @@ jobs:
             --source-path bot/dist \
             --environment NODE_ENV=production \
             --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_PROD }}
+
+          echo "✅ Bot deployed successfully"
 
       - name: Health check
         run: |
