@@ -31,6 +31,14 @@ api.interceptors.request.use(
     const token = localStorage.getItem('admin_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log(
+        '🔑 Adding auth token to request:',
+        config.url,
+        'Token:',
+        token.substring(0, 20) + '...'
+      );
+    } else {
+      console.warn('⚠️ No auth token found in localStorage for request:', config.url);
     }
     return config;
   },

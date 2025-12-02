@@ -26,6 +26,9 @@ api.interceptors.request.use(
     const token = localStorage.getItem('admin_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('🔑 Adding auth token to analytics request:', config.url);
+    } else {
+      console.warn('⚠️ No auth token found in localStorage for analytics request:', config.url);
     }
     return config;
   },

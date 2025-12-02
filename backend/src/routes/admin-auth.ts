@@ -13,6 +13,17 @@ const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'admin-secret-token-change-in-production';
 
+// Log admin credentials setup (without exposing actual values)
+logger.info({
+  type: 'admin_auth_config',
+  hasUsername: !!process.env.ADMIN_USERNAME,
+  hasPassword: !!process.env.ADMIN_PASSWORD,
+  hasToken: !!process.env.ADMIN_TOKEN,
+  tokenLength: ADMIN_TOKEN.length,
+  usingDefaults:
+    !process.env.ADMIN_USERNAME || !process.env.ADMIN_PASSWORD || !process.env.ADMIN_TOKEN,
+});
+
 /**
  * POST /api/admin/auth/login
  * Login endpoint for admin panel

@@ -118,14 +118,16 @@ app.use((req, res, next) => {
       ? origin
       : allAllowedOrigins[0] || null;
 
-  // Log CORS decisions in production for debugging
-  if (!isDevelopment && origin) {
+  // Log CORS decisions in production for debugging (always log for admin debugging)
+  if (origin) {
     logger.info({
       type: 'cors_check',
       origin,
       allowed: allAllowedOrigins.includes(origin),
       allowedOrigins: allAllowedOrigins,
       allowOrigin,
+      path: req.path || req.url,
+      isDevelopment,
     });
   }
 

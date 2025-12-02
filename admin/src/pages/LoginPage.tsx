@@ -29,9 +29,12 @@ export const LoginPage = ({ onLogin }: { onLogin: (token: string) => void }) => 
       });
 
       if (response.data.success && response.data.data?.token) {
-        localStorage.setItem('admin_token', response.data.data.token);
-        onLogin(response.data.data.token);
+        const token = response.data.data.token;
+        console.log('✅ Login successful, token received:', token.substring(0, 20) + '...');
+        localStorage.setItem('admin_token', token);
+        onLogin(token);
       } else {
+        console.error('❌ Login failed:', response.data);
         setError(response.data.error?.message || 'Login failed');
       }
     } catch (err: any) {
