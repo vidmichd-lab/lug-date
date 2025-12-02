@@ -92,7 +92,7 @@ jobs:
           YC_CONTAINER_ID_STAGING: ${{ secrets.YC_CONTAINER_ID_STAGING }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
-          
+
           if [ -n "${YC_CONTAINER_ID_STAGING}" ]; then
             BACKEND_URL=$(yc serverless container get --id="${YC_CONTAINER_ID_STAGING}" --format json | jq -r '.url')
           elif [ -n "${YC_FOLDER_ID}" ]; then
@@ -101,28 +101,40 @@ jobs:
             echo "Warning: Cannot get backend URL, will use default from config.js"
             BACKEND_URL=""
           fi
-          
+
           if [ -n "${BACKEND_URL}" ]; then
             echo "Backend URL for admin: ${BACKEND_URL}"
             echo "BACKEND_URL=${BACKEND_URL}" >> $GITHUB_ENV
             
             # Обновляем config.js с правильным URL бекенда
-            cat > admin/public/config.js << 'CONFIG_EOF'
-// Runtime configuration for admin panel
-// This file is loaded before the app starts
-// You can override API URL by setting window.ADMIN_CONFIG before this script loads
-window.ADMIN_CONFIG = window.ADMIN_CONFIG || {
-  // Backend URL - контейнер Yandex Serverless Containers
-  API_URL: 'BACKEND_URL_PLACEHOLDER'
-};
-CONFIG_EOF
-            sed -i "s|BACKEND_URL_PLACEHOLDER|${BACKEND_URL}|g" admin/public/config.js
+            printf '%s\n' \
+              '// Runtime configuration for admin panel' \
+              '// This file is loaded before the app starts' \
+              '// You can override API URL by setting window.ADMIN_CONFIG before this script loads' \
+              'window.ADMIN_CONFIG = window.ADMIN_CONFIG || {' \
+              '  // Backend URL - контейнер Yandex Serverless Containers' \
+              "  API_URL: '${BACKEND_URL}'" \
+              '};' > admin/public/config.js
             
             echo "✅ Updated admin config.js with backend URL: ${BACKEND_URL}"
+            
+            # Пересобираем frontend с правильным URL бекенда
+            if [ -n "${BACKEND_URL}" ]; then
+              echo "Rebuilding frontend with API URL: ${BACKEND_URL}"
+              VITE_API_URL="${BACKEND_URL}" npm run build --workspace=frontend
+            fi
           else
             echo "⚠️  Backend URL not available, using default from config.js"
           fi
 
+      - name: Build all packages
+        env:
+          VITE_API_URL: ${{ env.BACKEND_URL }}
+        run: |
+          if [ -n "${VITE_API_URL}" ]; then
+            echo "Building with API URL: ${VITE_API_URL}"
+          fi
+          NODE_ENV=development npm run build --workspace=backend --workspace=bot --workspace=admin
 
       - name: Run database migrations
         run: |
@@ -309,7 +321,7 @@ CONFIG_EOF
             admin/dist/ \
             s3://${ADMIN_STORAGE_BUCKET}/ \
             --delete
-          
+
           echo "✅ Admin deployed to: https://${ADMIN_STORAGE_BUCKET}.website.yandexcloud.net"
 
       - name: Deploy Bot
@@ -396,7 +408,7 @@ CONFIG_EOF
           YC_CONTAINER_ID_PROD: ${{ secrets.YC_CONTAINER_ID_PROD }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
-          
+
           if [ -n "${YC_CONTAINER_ID_PROD}" ]; then
             BACKEND_URL=$(yc serverless container get --id="${YC_CONTAINER_ID_PROD}" --format json | jq -r '.url')
           elif [ -n "${YC_FOLDER_ID}" ]; then
@@ -405,22 +417,20 @@ CONFIG_EOF
             echo "Warning: Cannot get backend URL, will use default from config.js"
             BACKEND_URL=""
           fi
-          
+
           if [ -n "${BACKEND_URL}" ]; then
             echo "Backend URL for admin: ${BACKEND_URL}"
             echo "BACKEND_URL=${BACKEND_URL}" >> $GITHUB_ENV
             
             # Обновляем config.js с правильным URL бекенда
-            cat > admin/public/config.js << 'CONFIG_EOF'
-// Runtime configuration for admin panel
-// This file is loaded before the app starts
-// You can override API URL by setting window.ADMIN_CONFIG before this script loads
-window.ADMIN_CONFIG = window.ADMIN_CONFIG || {
-  // Backend URL - контейнер Yandex Serverless Containers
-  API_URL: 'BACKEND_URL_PLACEHOLDER'
-};
-CONFIG_EOF
-            sed -i "s|BACKEND_URL_PLACEHOLDER|${BACKEND_URL}|g" admin/public/config.js
+            printf '%s\n' \
+              '// Runtime configuration for admin panel' \
+              '// This file is loaded before the app starts' \
+              '// You can override API URL by setting window.ADMIN_CONFIG before this script loads' \
+              'window.ADMIN_CONFIG = window.ADMIN_CONFIG || {' \
+              '  // Backend URL - контейнер Yandex Serverless Containers' \
+              "  API_URL: '${BACKEND_URL}'" \
+              '};' > admin/public/config.js
             
             echo "✅ Updated admin config.js with backend URL: ${BACKEND_URL}"
           else
@@ -428,7 +438,15 @@ CONFIG_EOF
           fi
 
       - name: Build all packages
-        run: NODE_ENV=production npm run build --workspace=frontend --workspace=backend --workspace=bot --workspace=admin
+        env:
+          VITE_API_URL: ${{ env.BACKEND_URL }}
+        run: |
+          if [ -n "${VITE_API_URL}" ]; then
+            echo "Building frontend with API URL: ${VITE_API_URL}"
+          else
+            echo "⚠️  VITE_API_URL not set, frontend will use default"
+          fi
+          NODE_ENV=production npm run build --workspace=frontend --workspace=backend --workspace=bot --workspace=admin
 
       - name: Run database migrations
         run: |
