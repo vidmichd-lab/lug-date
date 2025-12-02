@@ -11,6 +11,7 @@ on:
 
 env:
   NODE_VERSION: '18.x'
+  BACKEND_IMAGE_NAME: dating-app-backend
 
 jobs:
   test:
@@ -77,15 +78,46 @@ jobs:
           npm run migrate || echo "Migrations failed, but continuing deployment"
         continue-on-error: true
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Authenticate to Yandex Container Registry
+        run: |
+          # Get IAM token for Docker login
+          yc iam create-token | docker login --username iam --password-stdin cr.yandex
+
+      - name: Build and push Docker image
+        run: |
+          CR_REGISTRY_ID="${{ secrets.CR_REGISTRY_ID }}"
+          if [ -z "$CR_REGISTRY_ID" ]; then
+            echo "Error: CR_REGISTRY_ID secret is not set"
+            exit 1
+          fi
+          IMAGE_TAG="cr.yandex/${CR_REGISTRY_ID}/${{ env.BACKEND_IMAGE_NAME }}:staging-${GITHUB_SHA::8}"
+          IMAGE_LATEST="cr.yandex/${CR_REGISTRY_ID}/${{ env.BACKEND_IMAGE_NAME }}:staging-latest"
+          
+          # Build Docker image
+          docker build \
+            -f backend/Dockerfile \
+            -t "$IMAGE_TAG" \
+            -t "$IMAGE_LATEST" \
+            .
+          
+          # Push to Container Registry
+          docker push "$IMAGE_TAG"
+          docker push "$IMAGE_LATEST"
+          
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
       - name: Deploy Backend
         run: |
           yc serverless function version create \
             --function-name dating-app-backend-staging \
-            --runtime nodejs18 \
-            --entrypoint index.handler \
+            --runtime container \
+            --entrypoint "handler.handler" \
             --memory 128m \
             --execution-timeout 10s \
-            --source-path backend/dist \
+            --image "${{ env.IMAGE_TAG }}" \
             --environment NODE_ENV=development,TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }},YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_DEV }},YDB_DATABASE=${{ secrets.YDB_DATABASE_DEV }},YC_SERVICE_ACCOUNT_KEY=${{ secrets.YC_SERVICE_ACCOUNT_KEY }},YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_DEV }},YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_DEV }},YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_DEV }},TELEGRAM_ALERT_ENABLED=true,TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }},TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
 
       - name: Deploy Frontend
@@ -152,15 +184,46 @@ jobs:
           YDB_DATABASE_PROD=${{ secrets.YDB_DATABASE_PROD }} \
           npm run migrate
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Authenticate to Yandex Container Registry
+        run: |
+          # Get IAM token for Docker login
+          yc iam create-token | docker login --username iam --password-stdin cr.yandex
+
+      - name: Build and push Docker image
+        run: |
+          CR_REGISTRY_ID="${{ secrets.CR_REGISTRY_ID }}"
+          if [ -z "$CR_REGISTRY_ID" ]; then
+            echo "Error: CR_REGISTRY_ID secret is not set"
+            exit 1
+          fi
+          IMAGE_TAG="cr.yandex/${CR_REGISTRY_ID}/${{ env.BACKEND_IMAGE_NAME }}:prod-${GITHUB_SHA::8}"
+          IMAGE_LATEST="cr.yandex/${CR_REGISTRY_ID}/${{ env.BACKEND_IMAGE_NAME }}:prod-latest"
+          
+          # Build Docker image
+          docker build \
+            -f backend/Dockerfile \
+            -t "$IMAGE_TAG" \
+            -t "$IMAGE_LATEST" \
+            .
+          
+          # Push to Container Registry
+          docker push "$IMAGE_TAG"
+          docker push "$IMAGE_LATEST"
+          
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
       - name: Deploy Backend
         run: |
           yc serverless function version create \
             --function-name dating-app-backend-prod \
-            --runtime nodejs18 \
-            --entrypoint index.handler \
+            --runtime container \
+            --entrypoint "handler.handler" \
             --memory 256m \
             --execution-timeout 30s \
-            --source-path backend/dist \
+            --image "${{ env.IMAGE_TAG }}" \
             --environment NODE_ENV=production,TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_PROD }},YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_PROD }},YDB_DATABASE=${{ secrets.YDB_DATABASE_PROD }},YC_SERVICE_ACCOUNT_KEY=${{ secrets.YC_SERVICE_ACCOUNT_KEY }},YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_PROD }},YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_PROD }},YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_PROD }},TELEGRAM_ALERT_ENABLED=true,TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }},TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
 
       - name: Deploy Frontend

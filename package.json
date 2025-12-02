@@ -34,6 +34,7 @@
     "test:storage": "tsx scripts/test-object-storage.ts",
     "test:alerts": "tsx scripts/test-alerts.ts",
     "check:github-setup": "tsx scripts/check-github-setup.ts",
+    "setup:container-registry": "tsx scripts/setup-container-registry.ts",
     "tunnel": "bash scripts/start-tunnel.sh 3000 serveo",
     "tunnel:localhost": "bash scripts/start-tunnel.sh 3000 localhost",
     "deploy:frontend": "npm run build:frontend && tsx scripts/deploy-frontend-to-storage.ts",
