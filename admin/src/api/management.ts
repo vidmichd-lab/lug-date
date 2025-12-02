@@ -24,6 +24,21 @@ const api = axios.create({
   },
 });
 
+// Add request interceptor to include auth token
+api.interceptors.request.use(
+  (config) => {
+    // Get token from localStorage
+    const token = localStorage.getItem('admin_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 // Add response interceptor for better error handling
 api.interceptors.response.use(
   (response) => {
@@ -95,14 +110,17 @@ export interface UserUpdate {
 }
 
 export const usersApi = {
-  getAll: async (limit?: number, offset?: number): Promise<{ data: User[]; pagination?: { total: number; limit: number; offset: number } }> => {
+  getAll: async (
+    limit?: number,
+    offset?: number
+  ): Promise<{ data: User[]; pagination?: { total: number; limit: number; offset: number } }> => {
     const params = new URLSearchParams();
     if (limit !== undefined) params.append('limit', limit.toString());
     if (offset !== undefined) params.append('offset', offset.toString());
     const queryString = params.toString();
     const url = `/users${queryString ? `?${queryString}` : ''}`;
     const response = await api.get(url);
-    
+
     // Backend returns { success: true, data: [...], pagination: {...} }
     return {
       data: response.data.data || [],
@@ -150,14 +168,17 @@ export interface EventCreate {
 export interface EventUpdate extends Partial<EventCreate> {}
 
 export const eventsApi = {
-  getAll: async (limit?: number, offset?: number): Promise<{ data: Event[]; pagination?: { total: number; limit: number; offset: number } }> => {
+  getAll: async (
+    limit?: number,
+    offset?: number
+  ): Promise<{ data: Event[]; pagination?: { total: number; limit: number; offset: number } }> => {
     const params = new URLSearchParams();
     if (limit !== undefined) params.append('limit', limit.toString());
     if (offset !== undefined) params.append('offset', offset.toString());
     const queryString = params.toString();
     const url = `/events${queryString ? `?${queryString}` : ''}`;
     const response = await api.get(url);
-    
+
     // Backend returns { success: true, data: [...], pagination: {...} }
     return {
       data: response.data.data || [],
@@ -178,7 +199,7 @@ export const eventsApi = {
   uploadImage: async (file: File): Promise<{ imageUrl: string }> => {
     const formData = new FormData();
     formData.append('image', file);
-    
+
     try {
       // Create a separate axios instance for file uploads without default JSON headers
       // Axios will automatically set Content-Type with boundary for FormData
@@ -188,7 +209,7 @@ export const eventsApi = {
         maxContentLength: Infinity,
         maxBodyLength: Infinity,
       });
-      
+
       const response = await uploadApi.post('/events/upload-image', formData);
       return response.data.data;
     } catch (error: any) {
@@ -251,4 +272,3 @@ export const settingsApi = {
     return response.data.data;
   },
 };
-

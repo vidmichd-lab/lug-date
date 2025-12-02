@@ -6,6 +6,7 @@ dotenv.config({ path: resolve(process.cwd(), '.env') });
 import express from 'express';
 import adminRoutes from './routes/admin';
 import adminManagementRoutes from './routes/admin-management';
+import adminAuthRoutes from './routes/admin-auth';
 import matchesRoutes from './routes/matches';
 import photosRoutes from './routes/photos';
 import feedRoutes from './routes/feed';
@@ -20,6 +21,7 @@ import { errorHandler } from './middleware/errorHandler';
 import { generalLimiter, adminLimiter, uploadLimiter } from './middleware/rateLimiter';
 import { sanitizeMiddleware } from './utils/sanitize';
 import { telegramAuthMiddleware } from './middleware/telegramAuth';
+import { adminAuthMiddleware } from './middleware/adminAuth';
 import { logger } from './logger';
 import { sendCriticalAlert } from './alerts';
 import { initYDB } from './db/connection';
@@ -167,11 +169,15 @@ app.get('/health', (req, res) => {
 });
 
 // API routes with specific rate limiters and authentication
-// Admin routes - no Telegram auth (may have separate admin auth later)
+// Admin auth routes (login/logout) - no auth required
+app.use('/api/admin/auth', adminLimiter, adminAuthRoutes);
+
+// Admin routes - require admin token authentication
 // Add error handling middleware before routes to catch any errors
 app.use(
   '/api/admin',
   adminLimiter,
+  adminAuthMiddleware,
   (req, res, next) => {
     // Log admin requests for debugging
     if (process.env.NODE_ENV === 'development') {
@@ -191,6 +197,7 @@ app.use(
 app.use(
   '/api/admin/management',
   adminLimiter,
+  adminAuthMiddleware,
   (req, res, next) => {
     // Log management requests for debugging
     if (process.env.NODE_ENV === 'development') {

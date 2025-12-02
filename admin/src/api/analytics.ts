@@ -19,6 +19,21 @@ const api = axios.create({
   },
 });
 
+// Add request interceptor to include auth token
+api.interceptors.request.use(
+  (config) => {
+    // Get token from localStorage
+    const token = localStorage.getItem('admin_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 // Add response interceptor for better error handling
 api.interceptors.response.use(
   (response) => response,
@@ -145,4 +160,3 @@ export const analyticsApi = {
     return response.data.data;
   },
 };
-

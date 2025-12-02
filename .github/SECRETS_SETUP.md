@@ -40,6 +40,14 @@
 - `ALLOWED_ORIGINS_PROD` = Список разрешенных origin'ов через запятую (например: `https://yourdomain.com,https://www.yourdomain.com`)
 - `ADMIN_ORIGINS_PROD` = Список разрешенных origin'ов для admin панели (например: `https://admin.yourdomain.com`)
 
+#### Секреты для авторизации админки (опционально):
+
+- `ADMIN_USERNAME_PROD` = Имя пользователя для входа в админку (по умолчанию: `admin`)
+- `ADMIN_PASSWORD_PROD` = Пароль для входа в админку (по умолчанию: `admin123`)
+- `ADMIN_TOKEN_PROD` = Токен для авторизации запросов (по умолчанию: `admin-secret-token-change-in-production`)
+
+**⚠️ ВАЖНО:** Обязательно измените значения по умолчанию в production!
+
 #### Другие необходимые секреты для Production:
 
 - `YC_CONTAINER_ID_PROD` = ID контейнера backend в Yandex Cloud

@@ -271,7 +271,10 @@ jobs:
               --environment TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
               --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }} \
               --environment ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS_DEV }} \
-              --environment ADMIN_ORIGINS=${{ secrets.ADMIN_ORIGINS_DEV }}
+              --environment ADMIN_ORIGINS=${{ secrets.ADMIN_ORIGINS_DEV }} \
+              --environment ADMIN_USERNAME=${{ secrets.ADMIN_USERNAME_DEV || 'admin' }} \
+              --environment ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD_DEV || 'admin123' }} \
+              --environment ADMIN_TOKEN=${{ secrets.ADMIN_TOKEN_DEV || 'admin-secret-token-change-in-production' }}
           elif [ -n "${YC_FOLDER_ID}" ]; then
             yc serverless container revision deploy \
               --container-name=lug-date-backend-staging \
@@ -293,7 +296,10 @@ jobs:
               --environment TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
               --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }} \
               --environment ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS_DEV }} \
-              --environment ADMIN_ORIGINS=${{ secrets.ADMIN_ORIGINS_DEV }}
+              --environment ADMIN_ORIGINS=${{ secrets.ADMIN_ORIGINS_DEV }} \
+              --environment ADMIN_USERNAME=${{ secrets.ADMIN_USERNAME_DEV || 'admin' }} \
+              --environment ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD_DEV || 'admin123' }} \
+              --environment ADMIN_TOKEN=${{ secrets.ADMIN_TOKEN_DEV || 'admin-secret-token-change-in-production' }}
           else
             echo "Error: Either YC_CONTAINER_ID_STAGING or YC_FOLDER_ID must be set"
             exit 1
@@ -739,7 +745,35 @@ jobs:
               --environment TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
               --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }} \
               --environment ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS_PROD }} \
-              --environment ADMIN_ORIGINS=${{ secrets.ADMIN_ORIGINS_PROD }}
+              --environment ADMIN_ORIGINS=${{ secrets.ADMIN_ORIGINS_PROD }} \
+              --environment ADMIN_USERNAME=${{ secrets.ADMIN_USERNAME_PROD || 'admin' }} \
+              --environment ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD_PROD || 'admin123' }} \
+              --environment ADMIN_TOKEN=${{ secrets.ADMIN_TOKEN_PROD || 'admin-secret-token-change-in-production' }}
+          elif [ -n "${YC_FOLDER_ID}" ]; then
+            yc serverless container revision deploy \
+              --container-name=lug-date-backend-prod \
+              --folder-id="${YC_FOLDER_ID}" \
+              --image=${{ env.IMAGE_ID }} \
+              --memory=512m \
+              --cores=1 \
+              --execution-timeout=30s \
+              --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
+              --environment NODE_ENV=production \
+              --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_PROD }} \
+              --environment YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_PROD }} \
+              --environment YDB_DATABASE=${{ secrets.YDB_DATABASE_PROD }} \
+              --environment YC_SERVICE_ACCOUNT_KEY='${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' \
+              --environment YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_PROD }} \
+              --environment YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_PROD }} \
+              --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_PROD }} \
+              --environment TELEGRAM_ALERT_ENABLED=true \
+              --environment TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
+              --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }} \
+              --environment ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS_PROD }} \
+              --environment ADMIN_ORIGINS=${{ secrets.ADMIN_ORIGINS_PROD }} \
+              --environment ADMIN_USERNAME=${{ secrets.ADMIN_USERNAME_PROD || 'admin' }} \
+              --environment ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD_PROD || 'admin123' }} \
+              --environment ADMIN_TOKEN=${{ secrets.ADMIN_TOKEN_PROD || 'admin-secret-token-change-in-production' }}
           else
             echo "Error: Either YC_CONTAINER_ID_PROD or YC_FOLDER_ID must be set"
             exit 1

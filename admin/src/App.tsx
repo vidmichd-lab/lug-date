@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dashboard } from './pages/Dashboard';
 import { UsersPage } from './pages/UsersPage';
 import { EventsPage } from './pages/EventsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { LoginPage } from './pages/LoginPage';
 import './App.css';
 import styles from './App.module.css';
 
@@ -10,6 +11,23 @@ type Page = 'dashboard' | 'users' | 'events' | 'settings';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    // Check if user is already logged in
+    const token = localStorage.getItem('admin_token');
+    setIsAuthenticated(!!token);
+  }, []);
+
+  const handleLogin = (token: string) => {
+    localStorage.setItem('admin_token', token);
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('admin_token');
+    setIsAuthenticated(false);
+  };
 
   const renderPage = () => {
     switch (currentPage) {
@@ -25,6 +43,10 @@ function App() {
         return <Dashboard />;
     }
   };
+
+  if (!isAuthenticated) {
+    return <LoginPage onLogin={handleLogin} />;
+  }
 
   return (
     <div className="app">
@@ -56,12 +78,17 @@ function App() {
             >
               Настройки
             </button>
+            <button
+              className={styles.navLink}
+              onClick={handleLogout}
+              style={{ marginLeft: 'auto' }}
+            >
+              Выход
+            </button>
           </div>
         </div>
       </nav>
-      <main className={styles.main}>
-        {renderPage()}
-      </main>
+      <main className={styles.main}>{renderPage()}</main>
     </div>
   );
 }
