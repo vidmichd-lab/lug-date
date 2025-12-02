@@ -16,12 +16,12 @@ class YDBClient {
 
   /**
    * Initialize YDB connection
-   * 
+   *
    * YDB SDK 5.x uses getCredentialsFromEnv() which automatically handles:
    * - Token from YDB_TOKEN environment variable
    * - Service account key from YC_SERVICE_ACCOUNT_KEY_FILE or YC_SERVICE_ACCOUNT_KEY
    * - Metadata service (when running in Yandex Cloud)
-   * 
+   *
    * See: https://github.com/ydb-platform/ydb-nodejs-sdk
    */
   async connect(): Promise<void> {
@@ -30,12 +30,12 @@ class YDBClient {
       logger.debug({ type: 'ydb_connection_already_in_progress' });
       return;
     }
-    
+
     if (this.isConnected && this.driver) {
       logger.debug({ type: 'ydb_already_connected' });
       return;
     }
-    
+
     this.isConnecting = true;
     try {
       if (!config.database.endpoint || !config.database.database) {
@@ -51,7 +51,7 @@ class YDBClient {
       // Ensure YC_SERVICE_ACCOUNT_KEY_FILE uses absolute path if relative
       // Priority: YC_SERVICE_ACCOUNT_KEY_FILE > YC_SERVICE_ACCOUNT_KEY > YDB_TOKEN
       let serviceAccountKeyFile: string | undefined;
-      
+
       if (process.env.YC_SERVICE_ACCOUNT_KEY_FILE) {
         serviceAccountKeyFile = process.env.YC_SERVICE_ACCOUNT_KEY_FILE.startsWith('/')
           ? process.env.YC_SERVICE_ACCOUNT_KEY_FILE
@@ -67,14 +67,14 @@ class YDBClient {
       // Priority: YC_SERVICE_ACCOUNT_KEY_FILE > YC_SERVICE_ACCOUNT_KEY > YDB_TOKEN > metadata service
       let credentials;
       try {
-        logger.debug({ 
+        logger.debug({
           type: 'ydb_credentials_check',
           hasToken: !!process.env.YDB_TOKEN,
           hasServiceAccountFile: !!process.env.YC_SERVICE_ACCOUNT_KEY_FILE,
           hasServiceAccountKey: !!process.env.YC_SERVICE_ACCOUNT_KEY,
           serviceAccountKeyFile: serviceAccountKeyFile || 'not set',
         });
-        
+
         // Ensure service account key file is accessible
         if (serviceAccountKeyFile) {
           if (!existsSync(serviceAccountKeyFile)) {
@@ -84,45 +84,29 @@ class YDBClient {
           process.env.YC_SERVICE_ACCOUNT_KEY_FILE = serviceAccountKeyFile;
           logger.debug({ type: 'ydb_service_account_file_set', path: serviceAccountKeyFile });
         }
-        
-        // Use service account key file directly if available
-        // getSACredentialsFromJson expects a file path, not JSON object
-        if (serviceAccountKeyFile) {
-          try {
-            credentials = getSACredentialsFromJson(serviceAccountKeyFile);
-            logger.info({ type: 'ydb_credentials_loaded', method: 'service_account_file_direct', path: serviceAccountKeyFile });
-          } catch (error) {
-            logger.warn({ 
-              error, 
-              type: 'ydb_sa_file_direct_failed',
-              message: error instanceof Error ? error.message : String(error),
-              path: serviceAccountKeyFile
-            });
-            // Fallback: try to use getCredentialsFromEnv but disable metadata first
-            const originalMetadataUrl = process.env.METADATA_URL;
-            delete process.env.METADATA_URL;
-            try {
-              credentials = getCredentialsFromEnv();
-              logger.info({ type: 'ydb_credentials_loaded', method: 'service_account_file_fallback' });
-            } finally {
-              if (originalMetadataUrl) {
-                process.env.METADATA_URL = originalMetadataUrl;
-              }
-            }
-          }
-        } else {
-          // Use getCredentialsFromEnv as fallback
-          credentials = getCredentialsFromEnv();
-          logger.info({ type: 'ydb_credentials_loaded', method: 'env_fallback' });
-        }
+
+        // Use getCredentialsFromEnv() which automatically handles:
+        // - YC_SERVICE_ACCOUNT_KEY_FILE (file path)
+        // - YC_SERVICE_ACCOUNT_KEY (JSON string)
+        // - YDB_TOKEN
+        // - Metadata service (when running in Yandex Cloud)
+        // This is the recommended approach for YDB SDK 5.x
+        credentials = getCredentialsFromEnv();
+        logger.info({
+          type: 'ydb_credentials_loaded',
+          method: 'getCredentialsFromEnv',
+          hasServiceAccountFile: !!serviceAccountKeyFile,
+        });
       } catch (error) {
-        logger.error({ 
-          error, 
+        logger.error({
+          error,
           type: 'ydb_credentials_env_failed',
           message: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined
+          stack: error instanceof Error ? error.stack : undefined,
         });
-        throw new Error(`YDB credentials not found. Set YDB_TOKEN or configure service account. Error: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(
+          `YDB credentials not found. Set YDB_TOKEN or configure service account. Error: ${error instanceof Error ? error.message : String(error)}`
+        );
       }
 
       // Build connection string
@@ -134,12 +118,12 @@ class YDBClient {
       } else {
         // Build connection string from endpoint and database
         // Ensure database path starts with /
-        const dbPath = config.database.database.startsWith('/') 
-          ? config.database.database 
+        const dbPath = config.database.database.startsWith('/')
+          ? config.database.database
           : `/${config.database.database}`;
         connectionString = `${config.database.endpoint}?database=${encodeURIComponent(dbPath)}`;
       }
-      
+
       logger.info({
         type: 'ydb_driver_config',
         endpoint: config.database.endpoint,
@@ -173,25 +157,31 @@ class YDBClient {
 
       // Wait for driver to be ready with increased timeout
       const timeout = 60000; // 60 seconds (increased for better reliability)
-      logger.info({ type: 'ydb_driver_waiting', timeout, connectionString: connectionString.replace(/\?database=.*/, '?database=***') });
-      
+      logger.info({
+        type: 'ydb_driver_waiting',
+        timeout,
+        connectionString: connectionString.replace(/\?database=.*/, '?database=***'),
+      });
+
       try {
         const isReady = await this.driver.ready(timeout);
         if (!isReady) {
           logger.error({ type: 'ydb_driver_timeout', timeout });
-          throw new Error(`YDB driver initialization timeout after ${timeout}ms. Check your network connection and credentials.`);
+          throw new Error(
+            `YDB driver initialization timeout after ${timeout}ms. Check your network connection and credentials.`
+          );
         }
       } catch (error) {
-        logger.error({ 
-          error, 
+        logger.error({
+          error,
           type: 'ydb_driver_ready_failed',
           message: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : undefined,
-          timeout
+          timeout,
         });
         throw error;
       }
-      
+
       logger.info({ type: 'ydb_driver_ready' });
 
       this.isConnected = true;
@@ -206,11 +196,11 @@ class YDBClient {
     } catch (error) {
       this.isConnecting = false;
       this.isConnected = false;
-      logger.error({ 
-        error, 
+      logger.error({
+        error,
         type: 'ydb_connection_failed',
         message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
       });
       if (this.driver) {
         try {
@@ -236,7 +226,7 @@ class YDBClient {
 
   /**
    * Execute query using YDB SDK 5.x
-   * 
+   *
    * Uses withSessionRetry for automatic session management and retries
    */
   async executeQuery<T = any>(query: string, params?: Record<string, any>): Promise<T[]> {
@@ -245,54 +235,56 @@ class YDBClient {
       if (this.isConnecting) {
         // Wait a bit if connection is in progress (max 10 seconds)
         for (let i = 0; i < 10; i++) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
           if (this.isConnected && this.driver) {
             break;
           }
         }
         if (!this.isConnected || !this.driver) {
-          throw new Error('Database connection timeout. Please check YDB configuration and connection.');
+          throw new Error(
+            'Database connection timeout. Please check YDB configuration and connection.'
+          );
         }
       } else {
         logger.warn({ type: 'ydb_not_connected_attempting_reconnect', query });
         try {
           await this.connect();
         } catch (error) {
-          logger.error({ 
-            type: 'ydb_reconnect_failed', 
+          logger.error({
+            type: 'ydb_reconnect_failed',
             query,
             error: error instanceof Error ? error.message : String(error),
-            stack: error instanceof Error ? error.stack : undefined
+            stack: error instanceof Error ? error.stack : undefined,
           });
           throw new Error('Database not connected. Please check YDB configuration and connection.');
         }
       }
     }
-    
+
     // Now we should be connected, get driver
     if (!this.driver || !this.isConnected) {
       throw new Error('Database connection failed. Please check YDB configuration and connection.');
     }
-    
+
     const driver = this.driver;
 
-      logger.debug({
-        type: 'ydb_query',
-        query,
-        params,
-      });
+    logger.debug({
+      type: 'ydb_query',
+      query,
+      params,
+    });
 
     // Use withSessionRetry for automatic session management
     return await driver.tableClient.withSessionRetry(async (session) => {
       // Execute query using YDB SDK 5.x API
       const result = await session.executeQuery(query, params || {});
-      
+
       // Transform result to array of objects
       const rows: T[] = [];
-      
+
       if (result.resultSets && result.resultSets.length > 0) {
         const resultSet = result.resultSets[0];
-        
+
         // Convert YDB result set to array of objects
         if (resultSet.rows) {
           for (const row of resultSet.rows) {
@@ -337,7 +329,7 @@ class YDBClient {
 
   /**
    * Execute transaction using YDB SDK 5.x
-   * 
+   *
    * Uses withSessionRetry for automatic session management
    */
   async executeTransaction<T>(
@@ -345,10 +337,10 @@ class YDBClient {
   ): Promise<T> {
     const driver = this.getDriver();
 
-      logger.debug({
-        type: 'ydb_transaction',
-        queriesCount: queries.length,
-      });
+    logger.debug({
+      type: 'ydb_transaction',
+      queriesCount: queries.length,
+    });
 
     // Use withSessionRetry for automatic session management
     return await driver.tableClient.withSessionRetry(async (session) => {
@@ -359,14 +351,14 @@ class YDBClient {
         // Try to use executeTransaction if available
         if (typeof (session as any).executeTransaction === 'function') {
           const result = await (session as any).executeTransaction(async (tx: any) => {
-        const results: any[] = [];
-        for (const { query, params } of queries) {
-          const queryResult = await tx.executeQuery(query, params || {});
-          results.push(queryResult);
-        }
-        return results;
-      });
-      return result as T;
+            const results: any[] = [];
+            for (const { query, params } of queries) {
+              const queryResult = await tx.executeQuery(query, params || {});
+              results.push(queryResult);
+            }
+            return results;
+          });
+          return result as T;
         } else {
           // Fallback: execute queries sequentially
           const results: any[] = [];
@@ -376,9 +368,9 @@ class YDBClient {
           }
           return results as T;
         }
-    } catch (error) {
-      logger.error({ error, type: 'ydb_transaction_failed' });
-      throw error;
+      } catch (error) {
+        logger.error({ error, type: 'ydb_transaction_failed' });
+        throw error;
       }
     });
   }
@@ -416,11 +408,11 @@ export async function initYDB(): Promise<void> {
     await ydbClient.connect();
     logger.info({ type: 'ydb_initialized', status: 'connected' });
   } catch (error) {
-    logger.error({ 
-      error, 
+    logger.error({
+      error,
       type: 'ydb_init_failed',
       message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
     // Don't throw - allow app to start without DB in development
     if (config.nodeEnv === 'production') {
@@ -438,4 +430,3 @@ export async function initYDBForMigrations(): Promise<void> {
   await ydbClient.connect();
   logger.info({ type: 'ydb_initialized_for_migrations' });
 }
-
