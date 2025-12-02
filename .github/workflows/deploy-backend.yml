@@ -2,17 +2,25 @@ name: Deploy Backend to Yandex Cloud Functions
 
 on:
   push:
-    branches: [main, develop]
+    branches:
+      - main # Production
+      - develop # Staging
     paths:
       - 'backend/**'
       - 'shared/**'
       - '.github/workflows/deploy-backend.yml'
-  workflow_dispatch: # Allow manual trigger
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18.x'
 
 jobs:
-  deploy:
+  deploy-staging:
+    name: Deploy Backend to Staging
     runs-on: ubuntu-latest
-    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    if: github.ref == 'refs/heads/develop'
+    environment:
+      name: staging
 
     steps:
       - name: Checkout code
@@ -21,304 +29,155 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build shared package
-        run: npm run build --workspace=shared
-
-      - name: Build backend
-        run: npm run build --workspace=backend
-
-      - name: Install Yandex Cloud CLI
-        run: |
-          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
-          export PATH=$PATH:$HOME/yandex-cloud/bin
-          echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
+      - name: Build all packages
+        run: NODE_ENV=development npm run build:all
 
       - name: Configure Yandex Cloud CLI
-        run: |
-          export PATH=$PATH:$HOME/yandex-cloud/bin
-          echo '${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' > /tmp/yc-sa-key.json
-          export YC_SERVICE_ACCOUNT_KEY_FILE=/tmp/yc-sa-key.json
-          yc config set service-account-key /tmp/yc-sa-key.json
-          yc config set folder-id ${{ secrets.YC_FOLDER_ID || 'b1g6rst3sps7hhu8tqla' }}
+        uses: yandex-cloud/actions-yc-cli@v1
+        with:
+          yc-sa-json-credentials: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
 
       - name: Run database migrations
-        env:
-          YC_SERVICE_ACCOUNT_KEY_FILE: /tmp/yc-sa-key.json
         run: |
-          export PATH=$PATH:$HOME/yandex-cloud/bin
+          # Export service account key for YDB SDK
           echo '${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' > /tmp/yc-sa-key.json
-          export NODE_ENV=${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
-          export YDB_ENDPOINT=${{ github.ref == 'refs/heads/main' && secrets.YDB_ENDPOINT_PROD || secrets.YDB_ENDPOINT_DEV }}
-          export YDB_DATABASE=${{ github.ref == 'refs/heads/main' && secrets.YDB_DATABASE_PROD || secrets.YDB_DATABASE_DEV }}
-          export YDB_TOKEN=${{ github.ref == 'refs/heads/main' && secrets.YDB_TOKEN_PROD || secrets.YDB_TOKEN_DEV }}
-          npm run migrate --workspace=backend || echo "Migrations failed, but continuing deployment"
+          export YC_SERVICE_ACCOUNT_KEY_FILE=/tmp/yc-sa-key.json
+          NODE_ENV=development \
+          YDB_ENDPOINT_DEV=${{ secrets.YDB_ENDPOINT_DEV }} \
+          YDB_DATABASE_DEV=${{ secrets.YDB_DATABASE_DEV }} \
+          npm run migrate || echo "Migrations failed, but continuing deployment"
         continue-on-error: true
 
-      - name: Create deployment package
-        run: |
-          cd backend
-          mkdir -p deploy-package
-          cp -r dist/* deploy-package/
-          cp -r ../shared/dist deploy-package/shared-dist
-          cp package.json deploy-package/
-          cp package-lock.json deploy-package/ 2>/dev/null || true
-          cd deploy-package
-          # Update shared package reference to local path
-          sed -i.bak 's/"@dating-app\/shared": "\*"/"@dating-app\/shared": "file:.\/shared-dist"/' package.json
-          rm -f package.json.bak
-          npm install --production --ignore-scripts
-          cd ..
-          # Create zip with files in root (not in deploy-package/ folder)
-          cd deploy-package
-          zip -r ../function.zip . -x "*.git*" "*.DS_Store"
-          cd ..
-          # Check archive size
-          ls -lh function.zip
-
-      - name: Upload archive to Object Storage
+      - name: Build and push Docker image
         env:
           YC_SERVICE_ACCOUNT_KEY_FILE: /tmp/yc-sa-key.json
-          YANDEX_STORAGE_BUCKET: ${{ github.ref == 'refs/heads/main' && secrets.YANDEX_STORAGE_BUCKET_PROD || secrets.YANDEX_STORAGE_BUCKET_DEV }}
+          REGISTRY: cr.yandex
+          REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
-          # Generate unique filename with timestamp and commit SHA
-          ARCHIVE_NAME="function-${GITHUB_SHA:0:7}-$(date +%s).zip"
-          # Upload to Object Storage using S3 interface (yc storage s3)
-          echo "📦 Uploading archive to Object Storage bucket: ${YANDEX_STORAGE_BUCKET}/${ARCHIVE_NAME}..."
-          yc storage s3 cp \
-            backend/function.zip \
-            s3://${YANDEX_STORAGE_BUCKET}/${ARCHIVE_NAME}
-
-          # Check if upload was successful
-          if [ $? -ne 0 ]; then
-            echo "❌ Error: Failed to upload archive to Object Storage"
-            exit 1
-          fi
-
-          # Use https:// format for Yandex Cloud Functions
-          FUNCTION_ARCHIVE_URL="https://storage.yandexcloud.net/${YANDEX_STORAGE_BUCKET}/${ARCHIVE_NAME}"
-          echo "FUNCTION_ARCHIVE_URL=${FUNCTION_ARCHIVE_URL}" >> $GITHUB_ENV
-          echo "✅ Archive uploaded to Object Storage: ${FUNCTION_ARCHIVE_URL}"
-
-          # Verify file is accessible (mandatory check)
-          echo "🔍 Verifying file accessibility..."
-          sleep 3
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$FUNCTION_ARCHIVE_URL" || echo "000")
-          if [ "$HTTP_CODE" = "200" ]; then
-            echo "✅ File is accessible (HTTP $HTTP_CODE)"
-          else
-            echo "❌ Error: File returned HTTP $HTTP_CODE - archive is not accessible"
-            exit 1
-          fi
+          
+          # Аутентификация в Container Registry
+          yc container registry configure-docker
+          
+          # Собрать Docker образ
+          docker build -f backend/Dockerfile -t dating-app-backend:latest .
+          
+          # Тег образа с commit SHA
+          IMAGE_TAG="${REGISTRY}/${REGISTRY_ID}/dating-app-backend:${GITHUB_SHA:0:7}"
+          
+          # Tag и push образа
+          docker tag dating-app-backend:latest $IMAGE_TAG
+          docker push $IMAGE_TAG
+          
+          echo "IMAGE_URL=$IMAGE_TAG" >> $GITHUB_ENV
 
       - name: Deploy to Yandex Cloud Functions
         env:
           YC_SERVICE_ACCOUNT_KEY_FILE: /tmp/yc-sa-key.json
-          YANDEX_STORAGE_BUCKET: ${{ github.ref == 'refs/heads/main' && secrets.YANDEX_STORAGE_BUCKET_PROD || secrets.YANDEX_STORAGE_BUCKET_DEV }}
-          # Pass secrets through env section for safe handling
-          YDB_ENDPOINT_VAL: ${{ github.ref == 'refs/heads/main' && secrets.YDB_ENDPOINT_PROD || secrets.YDB_ENDPOINT_DEV }}
-          YDB_DATABASE_VAL: ${{ github.ref == 'refs/heads/main' && secrets.YDB_DATABASE_PROD || secrets.YDB_DATABASE_DEV }}
-          YDB_TOKEN_VAL: ${{ github.ref == 'refs/heads/main' && secrets.YDB_TOKEN_PROD || secrets.YDB_TOKEN_DEV }}
-          YC_SA_KEY_VAL: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
-          TELEGRAM_BOT_TOKEN_VAL: ${{ github.ref == 'refs/heads/main' && secrets.TELEGRAM_BOT_TOKEN_PROD || secrets.TELEGRAM_BOT_TOKEN_DEV }}
-          YANDEX_STORAGE_BUCKET_VAL: ${{ github.ref == 'refs/heads/main' && secrets.YANDEX_STORAGE_BUCKET_PROD || secrets.YANDEX_STORAGE_BUCKET_DEV }}
-          YANDEX_STORAGE_ACCESS_KEY_VAL: ${{ github.ref == 'refs/heads/main' && secrets.YANDEX_STORAGE_ACCESS_KEY_PROD || secrets.YANDEX_STORAGE_ACCESS_KEY_DEV }}
-          YANDEX_STORAGE_SECRET_KEY_VAL: ${{ github.ref == 'refs/heads/main' && secrets.YANDEX_STORAGE_SECRET_KEY_PROD || secrets.YANDEX_STORAGE_SECRET_KEY_DEV }}
-          TELEGRAM_ALERT_BOT_TOKEN_VAL: ${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }}
-          TELEGRAM_ALERT_CHAT_ID_VAL: ${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
-
-          # Step 1: Check FUNCTION_ARCHIVE_URL
-          if [ -z "$FUNCTION_ARCHIVE_URL" ]; then
-            echo "❌ Error: FUNCTION_ARCHIVE_URL is not set"
-            exit 1
-          fi
-
-          echo "📦 Archive URL: $FUNCTION_ARCHIVE_URL"
-
-          # Step 2: Extract bucket and object key from URL
-          # URL format: https://storage.yandexcloud.net/<bucket>/<object-key>
-          OBJECT_KEY="${FUNCTION_ARCHIVE_URL#https://storage.yandexcloud.net/${YANDEX_STORAGE_BUCKET}/}"
-
-          if [ -z "$OBJECT_KEY" ] || [ "$OBJECT_KEY" = "$FUNCTION_ARCHIVE_URL" ]; then
-            echo "❌ Error: Failed to extract object key from URL: $FUNCTION_ARCHIVE_URL"
-            exit 1
-          fi
-
-          echo "📦 Bucket: ${YANDEX_STORAGE_BUCKET}"
-          echo "📦 Object key: ${OBJECT_KEY}"
-
-          # Step 3: Prepare function deployment (before download to fail early if function doesn't exist)
-          FUNCTION_NAME=${{ github.ref == 'refs/heads/main' && 'dating-app-backend-prod' || 'dating-app-backend-staging' }}
-          FUNCTION_ID=${{ github.ref == 'refs/heads/main' && 'd4enks8erf8eentnojj9' || 'd4enks8erf8eentnojj9' }}
-
-          # Use existing function ID or create new function
-          if [ -z "$FUNCTION_ID" ] || [ "$FUNCTION_ID" = "d4enks8erf8eentnojj9" ]; then
-            # Use existing function
-            FUNCTION_ID="d4enks8erf8eentnojj9"
-            echo "Using existing function: $FUNCTION_ID"
-          else
-            # Create function if it doesn't exist
-            FOLDER_ID="${{ secrets.YC_FOLDER_ID || 'b1g6rst3sps7hhu8tqla' }}"
-            yc serverless function create \
-              --name $FUNCTION_NAME \
-              --description "Dating app backend API" \
-              --folder-id $FOLDER_ID || echo "Function already exists"
-            
-            if [ $? -ne 0 ]; then
-              echo "⚠️  Warning: Function creation check failed, continuing..."
-            fi
-            
-            FUNCTION_ID=$(yc serverless function get --name $FUNCTION_NAME --format json | jq -r '.id')
-            if [ -z "$FUNCTION_ID" ] || [ "$FUNCTION_ID" = "null" ]; then
-              echo "❌ Error: Failed to get function ID"
-              exit 1
-            fi
-          fi
-
-          # Build environment variables string
-          ENV_STRING="NODE_ENV=${{ github.ref == 'refs/heads/main' && 'production' || 'development' }},PORT=8080"
-
-          # Helper function to safely add environment variable to ENV_STRING
-          add_env_var() {
-            local key=$1
-            local value=$2
-            if [ -n "$value" ] && [ "$value" != "null" ]; then
-              ENV_STRING="${ENV_STRING},${key}=${value}"
-            fi
-          }
-
-          # Add variables from env section
-          add_env_var "YDB_ENDPOINT" "$YDB_ENDPOINT_VAL"
-          add_env_var "YDB_DATABASE" "$YDB_DATABASE_VAL"
-          add_env_var "YDB_TOKEN" "$YDB_TOKEN_VAL"
-
-          # For JSON values (YC_SERVICE_ACCOUNT_KEY), use base64 encoding
-          if [ -n "$YC_SA_KEY_VAL" ] && [ "$YC_SA_KEY_VAL" != "null" ]; then
-            YC_SA_KEY_B64=$(printf '%s' "$YC_SA_KEY_VAL" | base64 -w 0 | tr -d '\n')
-            ENV_STRING="${ENV_STRING},YC_SERVICE_ACCOUNT_KEY_B64=${YC_SA_KEY_B64}"
-            ENV_STRING="${ENV_STRING},YC_SERVICE_ACCOUNT_KEY=${YC_SA_KEY_VAL}"
-          fi
-
-          add_env_var "TELEGRAM_BOT_TOKEN" "$TELEGRAM_BOT_TOKEN_VAL"
-          add_env_var "YANDEX_STORAGE_BUCKET" "$YANDEX_STORAGE_BUCKET_VAL"
-          add_env_var "YANDEX_STORAGE_ACCESS_KEY" "$YANDEX_STORAGE_ACCESS_KEY_VAL"
-          add_env_var "YANDEX_STORAGE_SECRET_KEY" "$YANDEX_STORAGE_SECRET_KEY_VAL"
-
-          ENV_STRING="${ENV_STRING},TELEGRAM_ALERT_ENABLED=true"
-
-          add_env_var "TELEGRAM_ALERT_BOT_TOKEN" "$TELEGRAM_ALERT_BOT_TOKEN_VAL"
-          add_env_var "TELEGRAM_ALERT_CHAT_ID" "$TELEGRAM_ALERT_CHAT_ID_VAL"
-
-          ENV_STRING="${ENV_STRING},ALLOWED_ORIGINS=https://dating-app-storage.website.yandexcloud.net,https://lug-admin-deploy.website.yandexcloud.net"
-
-          # Step 3: Check available source flags for debugging
-          echo "🔍 Checking available source flags in yc CLI..."
-          yc serverless function version create --help | grep -i source || echo "No source flags found in help"
-
-          # Step 4: Download archive from Object Storage
-          echo "📥 Downloading archive from Object Storage..."
-          yc storage s3 cp \
-            s3://${YANDEX_STORAGE_BUCKET}/${OBJECT_KEY} \
-            ./temp-function.zip
-
-          # Check if download was successful
-          if [ $? -ne 0 ]; then
-            echo "❌ Error: Failed to download archive from Object Storage"
-            exit 1
-          fi
-
-          # Verify file exists and is not empty
-          if [ ! -f ./temp-function.zip ]; then
-            echo "❌ Error: Archive file ./temp-function.zip not found after download"
-            exit 1
-          fi
-
-          FILE_SIZE=$(stat -f%z ./temp-function.zip 2>/dev/null || stat -c%s ./temp-function.zip 2>/dev/null || echo "0")
-          if [ "$FILE_SIZE" -eq 0 ]; then
-            echo "❌ Error: Archive file is empty (size: $FILE_SIZE bytes)"
-            rm -f ./temp-function.zip
-            exit 1
-          fi
-
-          echo "✅ Archive downloaded successfully"
-          echo "📊 Archive size: $(ls -lh ./temp-function.zip | awk '{print $5}')"
-
-          # Step 5: Extract archive
-          echo "📦 Extracting archive..."
-          mkdir -p ./function-contents
-          unzip -q ./temp-function.zip -d ./function-contents
-
-          if [ $? -ne 0 ]; then
-            echo "❌ Error: Failed to extract archive"
-            rm -f ./temp-function.zip
-            exit 1
-          fi
-
-          # Verify extraction was successful
-          if [ ! -d ./function-contents ] || [ -z "$(ls -A ./function-contents)" ]; then
-            echo "❌ Error: Archive extraction failed or directory is empty"
-            rm -f ./temp-function.zip
-            rm -rf ./function-contents
-            exit 1
-          fi
-
-          echo "✅ Archive extracted successfully"
-          echo "📊 Extracted contents size: $(du -sh ./function-contents | awk '{print $1}')"
-
-          # Step 6: Create function version from extracted directory
-          echo "🚀 Creating function version from extracted directory..."
-          echo "📦 Source path: ./function-contents"
-
+          
+          # Создать версию функции из Docker образа
           yc serverless function version create \
-            --function-id "$FUNCTION_ID" \
-            --runtime nodejs18 \
-            --entrypoint handler.handler \
+            --function-name dating-app-backend-staging \
+            --runtime container \
+            --entrypoint "" \
             --memory 128m \
             --execution-timeout 30s \
-            --source-path ./function-contents \
-            --service-account-id aje0defcl8b2577p01hg \
-            --environment "$ENV_STRING"
+            --image "${{ env.IMAGE_URL }}" \
+            --environment NODE_ENV=development,PORT=8080,TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }},YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_DEV }},YDB_DATABASE=${{ secrets.YDB_DATABASE_DEV }},YC_SERVICE_ACCOUNT_KEY=${{ secrets.YC_SERVICE_ACCOUNT_KEY }},YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_DEV }},YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_DEV }},YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_DEV }},TELEGRAM_ALERT_ENABLED=true,TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }},TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
 
-          # Check if deployment was successful
-          DEPLOY_EXIT_CODE=$?
+      - name: Health check
+        run: |
+          echo "Waiting for function to start..."
+          sleep 10
+          echo "Deployment completed"
 
-          # Step 7: Clean up temporary files
-          echo "🧹 Cleaning up temporary files..."
-          rm -f ./temp-function.zip
-          rm -rf ./function-contents
+  deploy-production:
+    name: Deploy Backend to Production
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
 
-          if [ $DEPLOY_EXIT_CODE -ne 0 ]; then
-            echo "❌ Error: Failed to create function version"
-            exit 1
-          fi
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-          echo "✅ Function version created successfully"
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
 
-          echo "FUNCTION_ID=$FUNCTION_ID" >> $GITHUB_ENV
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Get function URL
-        id: get-url
+      - name: Build all packages
+        run: NODE_ENV=production npm run build:all
+
+      - name: Configure Yandex Cloud CLI
+        uses: yandex-cloud/actions-yc-cli@v1
+        with:
+          yc-sa-json-credentials: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
+
+      - name: Run database migrations
+        run: |
+          # Export service account key for YDB SDK
+          echo '${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' > /tmp/yc-sa-key.json
+          export YC_SERVICE_ACCOUNT_KEY_FILE=/tmp/yc-sa-key.json
+          NODE_ENV=production \
+          YDB_ENDPOINT_PROD=${{ secrets.YDB_ENDPOINT_PROD }} \
+          YDB_DATABASE_PROD=${{ secrets.YDB_DATABASE_PROD }} \
+          npm run migrate
+
+      - name: Build and push Docker image
+        env:
+          YC_SERVICE_ACCOUNT_KEY_FILE: /tmp/yc-sa-key.json
+          REGISTRY: cr.yandex
+          REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
+        run: |
+          export PATH=$PATH:$HOME/yandex-cloud/bin
+          
+          # Аутентификация в Container Registry
+          yc container registry configure-docker
+          
+          # Собрать Docker образ
+          docker build -f backend/Dockerfile -t dating-app-backend:latest .
+          
+          # Тег образа с commit SHA
+          IMAGE_TAG="${REGISTRY}/${REGISTRY_ID}/dating-app-backend:${GITHUB_SHA:0:7}"
+          
+          # Tag и push образа
+          docker tag dating-app-backend:latest $IMAGE_TAG
+          docker push $IMAGE_TAG
+          
+          echo "IMAGE_URL=$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Deploy to Yandex Cloud Functions
         env:
           YC_SERVICE_ACCOUNT_KEY_FILE: /tmp/yc-sa-key.json
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
-          FUNCTION_ID=${FUNCTION_ID:-d4enks8erf8eentnojj9}
-          FUNCTION_URL="https://functions.yandexcloud.net/$FUNCTION_ID"
-          echo "url=$FUNCTION_URL" >> $GITHUB_OUTPUT
-          echo "✅ Backend deployed successfully!"
-          echo "🌐 Backend URL: $FUNCTION_URL"
-          echo "🌐 API Gateway: https://d5dc4655gjtafu92k0od.yl4tuxdu.apigw.yandexcloud.net"
+          
+          # Создать версию функции из Docker образа
+          yc serverless function version create \
+            --function-name dating-app-backend-prod \
+            --runtime container \
+            --entrypoint "" \
+            --memory 256m \
+            --execution-timeout 30s \
+            --image "${{ env.IMAGE_URL }}" \
+            --environment NODE_ENV=production,PORT=8080,TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_PROD }},YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_PROD }},YDB_DATABASE=${{ secrets.YDB_DATABASE_PROD }},YC_SERVICE_ACCOUNT_KEY=${{ secrets.YC_SERVICE_ACCOUNT_KEY }},YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_PROD }},YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_PROD }},YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_PROD }},TELEGRAM_ALERT_ENABLED=true,TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }},TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
 
-      - name: Deployment summary
+      - name: Health check
         run: |
-          echo "✅ Backend deployment completed!"
-          echo "🌐 Backend URL: ${{ steps.get-url.outputs.url }}"
-          echo "📝 Update frontend and admin config.js with this URL"
+          echo "Waiting for function to start..."
+          sleep 15
+          echo "Deployment completed"
