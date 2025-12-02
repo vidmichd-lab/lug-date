@@ -17,6 +17,7 @@ export function initSentry() {
   }
 
   // Try to import Sentry (optional dependency)
+  // Using require() is acceptable for optional dependencies
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const Sentry = require('@sentry/node');

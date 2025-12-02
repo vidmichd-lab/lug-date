@@ -42,19 +42,19 @@ export const uploadPhotoSchema = z.object({
 // Admin API schemas
 // ============================================
 
-export const analyticsOverviewQuerySchema = z.object({});
+export const analyticsOverviewQuerySchema = z.object({}).passthrough();
 
 export const usersChartQuerySchema = z.object({
-  period: z.enum(['7d', '30d']).default('7d').optional(),
-});
+  period: z.enum(['7d', '30d']).optional().default('7d'),
+}).passthrough();
 
 export const eventsTopQuerySchema = z.object({
-  limit: z.coerce.number().int().min(1).max(100).default(10).optional(),
-});
+  limit: z.coerce.number().int().min(1).max(100).optional().default(10),
+}).passthrough();
 
 export const recentMatchesQuerySchema = z.object({
-  limit: z.coerce.number().int().min(1).max(100).default(10).optional(),
-});
+  limit: z.coerce.number().int().min(1).max(100).optional().default(10),
+}).passthrough();
 
 // ============================================
 // Helper type exports

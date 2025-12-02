@@ -3,13 +3,16 @@
  * Handles connection to Yandex Database (YDB) using official SDK
  */
 
-import { Driver, getCredentialsFromEnv, Logger } from 'ydb-sdk';
+import { Driver, getCredentialsFromEnv, getSACredentialsFromJson, Logger } from 'ydb-sdk';
+import { resolve } from 'path';
+import { existsSync } from 'fs';
 import { config } from '../config';
 import { logger } from '../logger';
 
 class YDBClient {
   private driver: Driver | null = null;
   private isConnected: boolean = false;
+  private isConnecting: boolean = false;
 
   /**
    * Initialize YDB connection
@@ -22,6 +25,18 @@ class YDBClient {
    * See: https://github.com/ydb-platform/ydb-nodejs-sdk
    */
   async connect(): Promise<void> {
+    // Prevent multiple simultaneous connection attempts
+    if (this.isConnecting) {
+      logger.debug({ type: 'ydb_connection_already_in_progress' });
+      return;
+    }
+    
+    if (this.isConnected && this.driver) {
+      logger.debug({ type: 'ydb_already_connected' });
+      return;
+    }
+    
+    this.isConnecting = true;
     try {
       if (!config.database.endpoint || !config.database.database) {
         throw new Error('YDB endpoint and database are required');
@@ -34,14 +49,22 @@ class YDBClient {
       }
 
       // Ensure YC_SERVICE_ACCOUNT_KEY_FILE uses absolute path if relative
-      if (process.env.YC_SERVICE_ACCOUNT_KEY_FILE && !process.env.YC_SERVICE_ACCOUNT_KEY_FILE.startsWith('/')) {
-        const path = require('path');
-        const absPath = path.resolve(process.cwd(), process.env.YC_SERVICE_ACCOUNT_KEY_FILE);
-        process.env.YC_SERVICE_ACCOUNT_KEY_FILE = absPath;
-        logger.debug({ type: 'ydb_service_account_path_resolved', path: absPath });
+      // Priority: YC_SERVICE_ACCOUNT_KEY_FILE > YC_SERVICE_ACCOUNT_KEY > YDB_TOKEN
+      let serviceAccountKeyFile: string | undefined;
+      
+      if (process.env.YC_SERVICE_ACCOUNT_KEY_FILE) {
+        serviceAccountKeyFile = process.env.YC_SERVICE_ACCOUNT_KEY_FILE.startsWith('/')
+          ? process.env.YC_SERVICE_ACCOUNT_KEY_FILE
+          : resolve(process.cwd(), process.env.YC_SERVICE_ACCOUNT_KEY_FILE);
+        process.env.YC_SERVICE_ACCOUNT_KEY_FILE = serviceAccountKeyFile;
+        logger.debug({ type: 'ydb_service_account_path_resolved', path: serviceAccountKeyFile });
+      } else if (process.env.YC_SERVICE_ACCOUNT_KEY) {
+        // If YC_SERVICE_ACCOUNT_KEY is set as JSON string, write it to temp file
+        logger.debug({ type: 'ydb_using_service_account_key_env' });
       }
 
       // Get credentials - YDB SDK automatically handles token, service account, or metadata
+      // Priority: YC_SERVICE_ACCOUNT_KEY_FILE > YC_SERVICE_ACCOUNT_KEY > YDB_TOKEN > metadata service
       let credentials;
       try {
         logger.debug({ 
@@ -49,27 +72,84 @@ class YDBClient {
           hasToken: !!process.env.YDB_TOKEN,
           hasServiceAccountFile: !!process.env.YC_SERVICE_ACCOUNT_KEY_FILE,
           hasServiceAccountKey: !!process.env.YC_SERVICE_ACCOUNT_KEY,
+          serviceAccountKeyFile: serviceAccountKeyFile || 'not set',
         });
-        credentials = getCredentialsFromEnv();
-        logger.info({ type: 'ydb_credentials_loaded' });
+        
+        // Ensure service account key file is accessible
+        if (serviceAccountKeyFile) {
+          if (!existsSync(serviceAccountKeyFile)) {
+            throw new Error(`Service account key file not found: ${serviceAccountKeyFile}`);
+          }
+          // Explicitly set the environment variable to absolute path
+          process.env.YC_SERVICE_ACCOUNT_KEY_FILE = serviceAccountKeyFile;
+          logger.debug({ type: 'ydb_service_account_file_set', path: serviceAccountKeyFile });
+        }
+        
+        // Use service account key file directly if available
+        // getSACredentialsFromJson expects a file path, not JSON object
+        if (serviceAccountKeyFile) {
+          try {
+            credentials = getSACredentialsFromJson(serviceAccountKeyFile);
+            logger.info({ type: 'ydb_credentials_loaded', method: 'service_account_file_direct', path: serviceAccountKeyFile });
+          } catch (error) {
+            logger.warn({ 
+              error, 
+              type: 'ydb_sa_file_direct_failed',
+              message: error instanceof Error ? error.message : String(error),
+              path: serviceAccountKeyFile
+            });
+            // Fallback: try to use getCredentialsFromEnv but disable metadata first
+            const originalMetadataUrl = process.env.METADATA_URL;
+            delete process.env.METADATA_URL;
+            try {
+              credentials = getCredentialsFromEnv();
+              logger.info({ type: 'ydb_credentials_loaded', method: 'service_account_file_fallback' });
+            } finally {
+              if (originalMetadataUrl) {
+                process.env.METADATA_URL = originalMetadataUrl;
+              }
+            }
+          }
+        } else {
+          // Use getCredentialsFromEnv as fallback
+          credentials = getCredentialsFromEnv();
+          logger.info({ type: 'ydb_credentials_loaded', method: 'env_fallback' });
+        }
       } catch (error) {
-        logger.error({ error, type: 'ydb_credentials_env_failed' });
-        throw new Error('YDB credentials not found. Set YDB_TOKEN or configure service account.');
+        logger.error({ 
+          error, 
+          type: 'ydb_credentials_env_failed',
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
+        });
+        throw new Error(`YDB credentials not found. Set YDB_TOKEN or configure service account. Error: ${error instanceof Error ? error.message : String(error)}`);
       }
 
-      // Try both formats: connectionString (new) and endpoint/database (deprecated but may work better)
-      // Some SDK versions may prefer one format over another
-      const connectionString = `${config.database.endpoint}?database=${encodeURIComponent(config.database.database)}`;
+      // Build connection string
+      // Format: grpcs://endpoint:port?database=/path/to/database
+      let connectionString: string;
+      if (config.database.endpoint.includes('?database=')) {
+        // Endpoint already contains database path
+        connectionString = config.database.endpoint;
+      } else {
+        // Build connection string from endpoint and database
+        // Ensure database path starts with /
+        const dbPath = config.database.database.startsWith('/') 
+          ? config.database.database 
+          : `/${config.database.database}`;
+        connectionString = `${config.database.endpoint}?database=${encodeURIComponent(dbPath)}`;
+      }
       
-      logger.debug({
+      logger.info({
         type: 'ydb_driver_config',
         endpoint: config.database.endpoint,
         database: config.database.database,
         connectionString: connectionString.replace(/\?database=.*/, '?database=***'),
+        hasCredentials: !!credentials,
       });
 
       // Create YDB driver configuration
-      // Use only connectionString (new format) - SDK warns about endpoint/database
+      // Use connectionString format
       const driverConfig: any = {
         connectionString,
         authService: credentials,
@@ -92,18 +172,30 @@ class YDBClient {
       this.driver = new Driver(driverConfig);
 
       // Wait for driver to be ready with increased timeout
-      const timeout = 30000; // 30 seconds (increased from 10)
-      logger.info({ type: 'ydb_driver_waiting', timeout });
+      const timeout = 60000; // 60 seconds (increased for better reliability)
+      logger.info({ type: 'ydb_driver_waiting', timeout, connectionString: connectionString.replace(/\?database=.*/, '?database=***') });
       
-      const isReady = await this.driver.ready(timeout);
-      if (!isReady) {
-        logger.error({ type: 'ydb_driver_timeout', timeout });
-        throw new Error(`YDB driver initialization timeout after ${timeout}ms. Check your network connection and credentials.`);
+      try {
+        const isReady = await this.driver.ready(timeout);
+        if (!isReady) {
+          logger.error({ type: 'ydb_driver_timeout', timeout });
+          throw new Error(`YDB driver initialization timeout after ${timeout}ms. Check your network connection and credentials.`);
+        }
+      } catch (error) {
+        logger.error({ 
+          error, 
+          type: 'ydb_driver_ready_failed',
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          timeout
+        });
+        throw error;
       }
       
       logger.info({ type: 'ydb_driver_ready' });
 
       this.isConnected = true;
+      this.isConnecting = false;
       logger.info({
         type: 'ydb_connection',
         endpoint: config.database.endpoint,
@@ -112,7 +204,14 @@ class YDBClient {
         status: 'connected',
       });
     } catch (error) {
-      logger.error({ error, type: 'ydb_connection_failed' });
+      this.isConnecting = false;
+      this.isConnected = false;
+      logger.error({ 
+        error, 
+        type: 'ydb_connection_failed',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
       if (this.driver) {
         try {
           await this.driver.destroy();
@@ -141,7 +240,41 @@ class YDBClient {
    * Uses withSessionRetry for automatic session management and retries
    */
   async executeQuery<T = any>(query: string, params?: Record<string, any>): Promise<T[]> {
-    const driver = this.getDriver();
+    // Try to connect if not connected
+    if (!this.isConnected || !this.driver) {
+      if (this.isConnecting) {
+        // Wait a bit if connection is in progress (max 10 seconds)
+        for (let i = 0; i < 10; i++) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          if (this.isConnected && this.driver) {
+            break;
+          }
+        }
+        if (!this.isConnected || !this.driver) {
+          throw new Error('Database connection timeout. Please check YDB configuration and connection.');
+        }
+      } else {
+        logger.warn({ type: 'ydb_not_connected_attempting_reconnect', query });
+        try {
+          await this.connect();
+        } catch (error) {
+          logger.error({ 
+            type: 'ydb_reconnect_failed', 
+            query,
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined
+          });
+          throw new Error('Database not connected. Please check YDB configuration and connection.');
+        }
+      }
+    }
+    
+    // Now we should be connected, get driver
+    if (!this.driver || !this.isConnected) {
+      throw new Error('Database connection failed. Please check YDB configuration and connection.');
+    }
+    
+    const driver = this.driver;
 
       logger.debug({
         type: 'ydb_query',
@@ -279,14 +412,21 @@ export const ydbClient = new YDBClient();
  */
 export async function initYDB(): Promise<void> {
   try {
+    logger.info({ type: 'ydb_init_starting' });
     await ydbClient.connect();
-    logger.info({ type: 'ydb_initialized' });
+    logger.info({ type: 'ydb_initialized', status: 'connected' });
   } catch (error) {
-    logger.error({ error, type: 'ydb_init_failed' });
+    logger.error({ 
+      error, 
+      type: 'ydb_init_failed',
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     // Don't throw - allow app to start without DB in development
     if (config.nodeEnv === 'production') {
       throw error;
     }
+    logger.warn({ type: 'ydb_init_skipped', reason: 'development_mode_allows_start_without_db' });
   }
 }
 

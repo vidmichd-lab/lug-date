@@ -63,10 +63,21 @@ app.use(requestLogger);
 // Apply general rate limiting to all routes
 app.use(generalLimiter);
 
-app.use(express.json());
+// JSON body parser - only for requests with Content-Type: application/json
+app.use(express.json({ 
+  strict: false, // Allow empty JSON bodies
+  type: 'application/json'
+}));
 
 // Sanitize user input to prevent XSS attacks
-app.use(sanitizeMiddleware);
+// Skip sanitization for GET requests (only sanitize body, not query)
+app.use((req, res, next) => {
+  if (req.method === 'GET') {
+    next();
+  } else {
+    sanitizeMiddleware(req, res, next);
+  }
+});
 
 // CORS configuration
 app.use((req, res, next) => {
@@ -80,19 +91,31 @@ app.use((req, res, next) => {
   // In development, allow all origins for easier testing
   // In production, only allow configured origins
   const isDevelopment = config.nodeEnv === 'development';
+  
+  // Default allowed origins for admin panel
+  const defaultAdminOrigins = [
+    'https://lug-admin-deploy.website.yandexcloud.net',
+    'http://localhost:5174',
+    'http://localhost:5173',
+  ];
+  
+  // Combine configured and default origins
+  const allAllowedOrigins = [...allowedOrigins, ...defaultAdminOrigins];
+  
   const allowOrigin = isDevelopment
     ? origin || '*'
-    : origin && allowedOrigins.includes(origin)
+    : origin && allAllowedOrigins.includes(origin)
     ? origin
-    : allowedOrigins[0] || null;
+    : allAllowedOrigins[0] || null;
   
   if (allowOrigin) {
     res.header('Access-Control-Allow-Origin', allowOrigin);
   }
   
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Content-Length');
   res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Max-Age', '86400'); // 24 hours
   
   if (req.method === 'OPTIONS') {
     res.sendStatus(200);
@@ -107,8 +130,33 @@ app.get('/health', (req, res) => {
 
 // API routes with specific rate limiters and authentication
 // Admin routes - no Telegram auth (may have separate admin auth later)
-app.use('/api/admin', adminLimiter, adminRoutes);
-app.use('/api/admin/management', adminLimiter, adminManagementRoutes);
+// Add error handling middleware before routes to catch any errors
+app.use('/api/admin', adminLimiter, (req, res, next) => {
+  // Log admin requests for debugging
+  if (process.env.NODE_ENV === 'development') {
+    logger.info({
+      type: 'admin_request',
+      method: req.method,
+      url: req.url,
+      query: req.query,
+      headers: req.headers,
+    });
+  }
+  next();
+}, adminRoutes);
+
+app.use('/api/admin/management', adminLimiter, (req, res, next) => {
+  // Log management requests for debugging
+  if (process.env.NODE_ENV === 'development') {
+    logger.info({
+      type: 'admin_management_request',
+      method: req.method,
+      url: req.url,
+      query: req.query,
+    });
+  }
+  next();
+}, adminManagementRoutes);
 
 // User API routes - require Telegram authentication
 app.use('/api/v1/matches', telegramAuthMiddleware, matchesRoutes);

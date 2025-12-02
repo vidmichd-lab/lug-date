@@ -17,6 +17,7 @@
     "@aws-sdk/client-s3": "^3.940.0",
     "@aws-sdk/s3-request-presigner": "^3.940.0",
     "@dating-app/shared": "*",
+    "@faker-js/faker": "^8.4.1",
     "@yandex-cloud/nodejs-sdk": "^2.9.0",
     "dompurify": "^2.5.8",
     "dotenv": "^16.6.1",

@@ -10,18 +10,23 @@ import { logger } from './logger';
 process.env.SERVERLESS = 'true';
 
 // Import app (this will initialize everything)
+// Using dynamic import to avoid circular dependencies and ensure serverless mode is set
 let serverlessHandler: any = null;
+let appPromise: Promise<any> | null = null;
 
 /**
  * Get or create serverless handler
  */
-function getServerlessHandler() {
+async function getServerlessHandler() {
   if (serverlessHandler) {
     return serverlessHandler;
   }
 
-  // Import app after setting serverless mode
-  const app = require('./index').default;
+  // Lazy load app to ensure SERVERLESS env is set first
+  if (!appPromise) {
+    appPromise = import('./index');
+  }
+  const { default: app } = await appPromise;
   
   // Wrap Express app with serverless-http
   serverlessHandler = serverless(app, {
@@ -37,7 +42,7 @@ function getServerlessHandler() {
  */
 export async function handler(event: any, context: any): Promise<any> {
   try {
-    const handlerInstance = getServerlessHandler();
+    const handlerInstance = await getServerlessHandler();
     
     // Yandex Cloud Functions uses AWS Lambda-compatible format
     // serverless-http will handle the conversion
