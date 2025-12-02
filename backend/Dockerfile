@@ -31,7 +31,8 @@ COPY backend/package*.json ./backend/
 COPY shared/package*.json ./shared/
 
 # Устанавливаем только production зависимости
-RUN npm ci --only=production --omit=dev
+# Отключаем prepare скрипт (husky не нужен в Docker и требует .git)
+RUN npm ci --only=production --omit=dev --ignore-scripts
 
 # Копируем собранный код из builder
 COPY --from=builder /build/backend/dist ./backend/dist
