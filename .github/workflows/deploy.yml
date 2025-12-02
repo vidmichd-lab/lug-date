@@ -516,17 +516,23 @@ jobs:
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
 
+          echo "🔍 Getting backend URL..."
+          echo "YC_CONTAINER_ID_PROD: ${YC_CONTAINER_ID_PROD:0:20}..."
+          echo "YC_FOLDER_ID: ${YC_FOLDER_ID}"
+
           if [ -n "${YC_CONTAINER_ID_PROD}" ]; then
             BACKEND_URL=$(yc serverless container get --id="${YC_CONTAINER_ID_PROD}" --format json | jq -r '.url')
+            echo "✅ Got backend URL from container ID: ${BACKEND_URL}"
           elif [ -n "${YC_FOLDER_ID}" ]; then
             BACKEND_URL=$(yc serverless container get --name=lug-date-backend-prod --folder-id="${YC_FOLDER_ID}" --format json | jq -r '.url')
+            echo "✅ Got backend URL from folder ID: ${BACKEND_URL}"
           else
-            echo "Warning: Cannot get backend URL, will use default from config.js"
+            echo "❌ Warning: Cannot get backend URL - neither YC_CONTAINER_ID_PROD nor YC_FOLDER_ID is set"
             BACKEND_URL=""
           fi
 
-          if [ -n "${BACKEND_URL}" ]; then
-            echo "Backend URL for admin: ${BACKEND_URL}"
+          if [ -n "${BACKEND_URL}" ] && [ "${BACKEND_URL}" != "null" ]; then
+            echo "✅ Backend URL for admin: ${BACKEND_URL}"
             echo "BACKEND_URL=${BACKEND_URL}" >> $GITHUB_ENV
             
             # Обновляем config.js с правильным URL бекенда
@@ -540,8 +546,17 @@ jobs:
               '};' > admin/public/config.js
             
             echo "✅ Updated admin config.js with backend URL: ${BACKEND_URL}"
+            
+            # Проверяем, что файл создан правильно
+            echo "📄 Config.js content:"
+            cat admin/public/config.js
           else
-            echo "⚠️  Backend URL not available, using default from config.js"
+            echo "❌ ERROR: Backend URL not available! Admin panel will not work."
+            echo "Please check:"
+            echo "  1. YC_CONTAINER_ID_PROD or YC_FOLDER_ID is set in GitHub Secrets"
+            echo "  2. Backend container exists in Yandex Cloud"
+            echo "  3. Service account has permissions to read container info"
+            exit 1
           fi
 
       - name: Build frontend
@@ -711,11 +726,25 @@ jobs:
             BACKEND_URL=""
           fi
 
-          if [ -n "${BACKEND_URL}" ]; then
-            echo "Backend deployed: ${BACKEND_URL}"
-            echo "Health check: ${BACKEND_URL}/health"
+          if [ -n "${BACKEND_URL}" ] && [ "${BACKEND_URL}" != "null" ]; then
+            echo "✅ Backend deployed: ${BACKEND_URL}"
+            echo "🔍 Health check URL: ${BACKEND_URL}/health"
+            
+            # Проверяем health бекенда
+            echo "⏳ Waiting for backend to be ready..."
+            sleep 5
+            
+            for i in {1..10}; do
+              if curl -f -s "${BACKEND_URL}/health" > /dev/null 2>&1; then
+                echo "✅ Backend is healthy!"
+                break
+              else
+                echo "⏳ Attempt $i/10: Backend not ready yet, waiting..."
+                sleep 3
+              fi
+            done
           else
-            echo "Warning: Cannot get backend URL"
+            echo "❌ Warning: Cannot get backend URL"
           fi
 
       - name: Deploy Frontend
