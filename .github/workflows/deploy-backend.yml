@@ -155,36 +155,7 @@ jobs:
           echo "📦 Bucket: ${YANDEX_STORAGE_BUCKET}"
           echo "📦 Object key: ${OBJECT_KEY}"
 
-          # Step 3: Download archive from Object Storage
-          echo "📥 Downloading archive from Object Storage..."
-          yc storage s3 cp \
-            s3://${YANDEX_STORAGE_BUCKET}/${OBJECT_KEY} \
-            ./function.zip
-
-          # Check if download was successful
-          if [ $? -ne 0 ]; then
-            echo "❌ Error: Failed to download archive from Object Storage"
-            exit 1
-          fi
-
-          # Step 4: Verify file exists and is not empty
-          if [ ! -f ./function.zip ]; then
-            echo "❌ Error: Archive file ./function.zip not found after download"
-            exit 1
-          fi
-
-          # Check file size (must be > 0)
-          FILE_SIZE=$(stat -f%z ./function.zip 2>/dev/null || stat -c%s ./function.zip 2>/dev/null || echo "0")
-          if [ "$FILE_SIZE" -eq 0 ]; then
-            echo "❌ Error: Archive file ./function.zip is empty (size: $FILE_SIZE bytes)"
-            exit 1
-          fi
-
-          echo "✅ Archive downloaded successfully"
-          echo "📊 Archive size: $(ls -lh ./function.zip | awk '{print $5}')"
-          ls -lh ./function.zip
-
-          # Step 5: Prepare function deployment
+          # Step 3: Prepare function deployment
           FUNCTION_NAME=${{ github.ref == 'refs/heads/main' && 'dating-app-backend-prod' || 'dating-app-backend-staging' }}
           FUNCTION_ID=${{ github.ref == 'refs/heads/main' && 'd4enks8erf8eentnojj9' || 'd4enks8erf8eentnojj9' }}
 
@@ -248,9 +219,9 @@ jobs:
 
           ENV_STRING="${ENV_STRING},ALLOWED_ORIGINS=https://dating-app-storage.website.yandexcloud.net,https://lug-admin-deploy.website.yandexcloud.net"
 
-          # Step 6: Create function version with local archive
-          echo "🚀 Creating function version..."
-          echo "📦 Using local archive: ./function.zip"
+          # Step 4: Create function version with archive from Object Storage
+          echo "🚀 Creating function version from Object Storage..."
+          echo "📦 Source: s3://${YANDEX_STORAGE_BUCKET}/${OBJECT_KEY}"
 
           yc serverless function version create \
             --function-id "$FUNCTION_ID" \
@@ -258,7 +229,9 @@ jobs:
             --entrypoint handler.handler \
             --memory 128m \
             --execution-timeout 30s \
-            --source-path ./function.zip \
+            --source-object-storage \
+            --source-bucket "${YANDEX_STORAGE_BUCKET}" \
+            --source-object "${OBJECT_KEY}" \
             --service-account-id aje0defcl8b2577p01hg \
             --environment "$ENV_STRING"
 
@@ -269,14 +242,6 @@ jobs:
           fi
 
           echo "✅ Function version created successfully"
-
-          # Step 7: Clean up local archive after deployment
-          rm -f ./function.zip
-          if [ $? -ne 0 ]; then
-            echo "⚠️  Warning: Failed to remove local archive (non-critical)"
-          else
-            echo "🧹 Cleaned up local archive"
-          fi
 
           echo "FUNCTION_ID=$FUNCTION_ID" >> $GITHUB_ENV
 
