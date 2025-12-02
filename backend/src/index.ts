@@ -4,6 +4,7 @@ import { resolve } from 'path';
 dotenv.config({ path: resolve(process.cwd(), '.env') });
 
 import express from 'express';
+import cors from 'cors';
 import adminRoutes from './routes/admin';
 import adminManagementRoutes from './routes/admin-management';
 import adminAuthRoutes from './routes/admin-auth';
@@ -84,87 +85,52 @@ app.use((req, res, next) => {
 });
 
 // CORS configuration
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Combine allowed origins from environment variables
+      const allowed = [
+        ...(process.env.ALLOWED_ORIGINS?.split(',').map((o) => o.trim()) || []),
+        ...(process.env.ADMIN_ORIGINS?.split(',').map((o) => o.trim()) || []),
+        // Default admin origins
+        'https://lug-admin-deploy.website.yandexcloud.net',
+        'http://localhost:5174',
+        'http://localhost:5173',
+      ];
 
-  // Get allowed origins from environment variable
-  const allowedOrigins = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
-    : [];
+      // In development, allow all origins for easier testing
+      const isDevelopment = config.nodeEnv === 'development';
 
-  // In development, allow all origins for easier testing
-  // In production, only allow configured origins
-  const isDevelopment = config.nodeEnv === 'development';
+      // Log CORS decisions for debugging
+      if (origin) {
+        const isAllowed = !origin || allowed.includes(origin) || isDevelopment;
+        logger.info({
+          type: 'cors_check',
+          origin,
+          allowed: isAllowed,
+          allowedOrigins: allowed,
+          isDevelopment,
+        });
+      }
 
-  // Default allowed origins for admin panel
-  // Добавляем поддержку любых bucket админки через переменную окружения
-  const adminOriginsFromEnv = process.env.ADMIN_ORIGINS
-    ? process.env.ADMIN_ORIGINS.split(',').map((o) => o.trim())
-    : [];
-
-  const defaultAdminOrigins = [
-    'https://lug-admin-deploy.website.yandexcloud.net',
-    ...adminOriginsFromEnv,
-    'http://localhost:5174',
-    'http://localhost:5173',
-  ];
-
-  // Combine configured and default origins
-  const allAllowedOrigins = [...allowedOrigins, ...defaultAdminOrigins];
-
-  const allowOrigin = isDevelopment
-    ? origin || '*'
-    : origin && allAllowedOrigins.includes(origin)
-      ? origin
-      : allAllowedOrigins[0] || null;
-
-  // Log CORS decisions in production for debugging (always log for admin debugging)
-  if (origin) {
-    logger.info({
-      type: 'cors_check',
-      origin,
-      allowed: allAllowedOrigins.includes(origin),
-      allowedOrigins: allAllowedOrigins,
-      allowOrigin,
-      path: req.path || req.url,
-      isDevelopment,
-    });
-  }
-
-  if (allowOrigin) {
-    res.header('Access-Control-Allow-Origin', allowOrigin);
-  } else if (origin && !isDevelopment) {
-    // Log blocked requests for debugging
-    logger.warn({
-      type: 'cors_blocked',
-      origin,
-      allowedOrigins: allAllowedOrigins,
-      path: req.path,
-    });
-    // Return 403 for blocked origins
-    return res.status(403).json({
-      success: false,
-      error: {
-        message: 'Origin not allowed',
-        code: 'CORS_ERROR',
-      },
-    });
-  }
-
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header(
-    'Access-Control-Allow-Headers',
-    'Origin, X-Requested-With, Content-Type, Accept, Authorization, Content-Length'
-  );
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Max-Age', '86400'); // 24 hours
-
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-  } else {
-    next();
-  }
-});
+      // Allow request if no origin (same-origin) or origin is in allowed list
+      // In development, allow all origins
+      if (!origin || allowed.includes(origin) || isDevelopment) {
+        callback(null, true);
+      } else {
+        logger.warn({
+          type: 'cors_blocked',
+          origin,
+          allowedOrigins: allowed,
+        });
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'backend' });
