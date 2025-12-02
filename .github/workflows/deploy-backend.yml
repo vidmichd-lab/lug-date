@@ -99,13 +99,18 @@ jobs:
           export PATH=$PATH:$HOME/yandex-cloud/bin
           # Generate unique filename with timestamp and commit SHA
           ARCHIVE_NAME="function-${GITHUB_SHA:0:7}-$(date +%s).zip"
-          # Upload to Object Storage using AWS CLI (uses service account credentials)
+          # Upload to Object Storage using AWS CLI with public-read ACL
+          # This makes the file accessible via HTTPS URL for Yandex Cloud Functions
           echo "📦 Uploading archive to s3://${YANDEX_STORAGE_BUCKET}/${ARCHIVE_NAME}..."
-          aws --endpoint-url=$OBJECT_STORAGE_URL s3 cp backend/function.zip s3://${YANDEX_STORAGE_BUCKET}/${ARCHIVE_NAME}
-          # Use https:// format for Yandex Cloud Functions (it requires public HTTPS URL)
+          aws --endpoint-url=$OBJECT_STORAGE_URL s3 cp backend/function.zip s3://${YANDEX_STORAGE_BUCKET}/${ARCHIVE_NAME} --acl public-read
+          # Use https:// format for Yandex Cloud Functions (file is now publicly accessible)
           FUNCTION_ARCHIVE_URL="https://storage.yandexcloud.net/${YANDEX_STORAGE_BUCKET}/${ARCHIVE_NAME}"
           echo "FUNCTION_ARCHIVE_URL=${FUNCTION_ARCHIVE_URL}" >> $GITHUB_ENV
-          echo "✅ Archive uploaded to Object Storage: ${FUNCTION_ARCHIVE_URL}"
+          echo "✅ Archive uploaded to Object Storage (public): ${FUNCTION_ARCHIVE_URL}"
+          
+          # Verify file is accessible
+          echo "🔍 Verifying file accessibility..."
+          curl -I "$FUNCTION_ARCHIVE_URL" | head -1 || echo "⚠️  Warning: File may not be immediately accessible"
 
       - name: Deploy to Yandex Cloud Functions
         env:
