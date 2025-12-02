@@ -1,21 +1,60 @@
-FROM node:18-alpine
+# Multi-stage build для уменьшения размера
+FROM node:20-alpine AS builder
 
-WORKDIR /app
+WORKDIR /build
 
-# Копировать код
-COPY backend/dist ./dist
-COPY backend/package.json ./
-COPY backend/package-lock.json* ./
-COPY shared/dist ./shared-dist
+# Копируем package files для кэширования слоёв
+COPY package*.json ./
+COPY backend/package*.json ./backend/
+COPY shared/package*.json ./shared/
 
-# Обновить ссылку на shared пакет
-RUN sed -i.bak 's|"@dating-app/shared": "\*"|"@dating-app/shared": "file:./shared-dist"|' package.json && rm package.json.bak
+# Устанавливаем все зависимости (включая dev для сборки)
+RUN npm ci
 
-# Установить зависимости только production
-RUN npm install --production --ignore-scripts
+# Копируем исходники
+COPY backend ./backend
+COPY shared ./shared
+COPY tsconfig.json ./
 
-# Entrypoint для Cloud Functions
+# Собираем TypeScript
+RUN npm run build --workspace=shared
+RUN npm run build --workspace=backend
+
+# Production stage
+FROM node:20-alpine
+
+WORKDIR /function
+
+# Копируем только package files
+COPY package*.json ./
+COPY backend/package*.json ./backend/
+COPY shared/package*.json ./shared/
+
+# Устанавливаем только production зависимости
+RUN npm ci --only=production --omit=dev
+
+# Копируем собранный код из builder
+COPY --from=builder /build/backend/dist ./backend/dist
+COPY --from=builder /build/shared/dist ./shared/dist
+
+# Обновляем ссылку на shared пакет в package.json
+# Структура: /function/backend и /function/shared
+RUN sed -i.bak 's|"@dating-app/shared": "\*"|"@dating-app/shared": "file:../shared/dist"|' backend/package.json && rm backend/package.json.bak
+
+# Копируем service account key (будет монтироваться в runtime)
+RUN mkdir -p /function/keys
+
+# Переменные окружения
+ENV NODE_ENV=production
 ENV PORT=8080
+
+WORKDIR /function/backend
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:8080/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+
 EXPOSE 8080
 
+# Запуск приложения
 CMD ["node", "dist/index.js"]

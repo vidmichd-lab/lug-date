@@ -3,13 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "main": "./dist/index.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
-    "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "deploy": "echo 'Deploy to Yandex Cloud'",
+    "dev": "tsx watch src/index.ts",
     "lint": "eslint src --ext ts",
-    "clean": "rm -rf dist node_modules",
     "migrate": "tsx src/db/migrations/run.ts",
     "migrate:status": "tsx src/db/migrations/status.ts"
   },

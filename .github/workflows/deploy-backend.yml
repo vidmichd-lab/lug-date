@@ -1,10 +1,8 @@
-name: Deploy Backend to Yandex Cloud Functions
+name: Deploy Backend
 
 on:
   push:
-    branches:
-      - main # Production
-      - develop # Staging
+    branches: [develop, main]
     paths:
       - 'backend/**'
       - 'shared/**'
@@ -12,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  NODE_VERSION: '18.x'
+  NODE_VERSION: '20'
 
 jobs:
   deploy-staging:
@@ -35,81 +33,89 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build all packages
-        run: NODE_ENV=development npm run build:all
+      - name: Run linter
+        run: npm run lint --workspace=backend
+        continue-on-error: true # Временно пропускаем warnings
+
+      - name: Build shared package
+        run: npm run build --workspace=shared
 
       - name: Install Yandex Cloud CLI
         run: |
           curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
-          export PATH=$PATH:$HOME/yandex-cloud/bin
           echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
 
       - name: Configure Yandex Cloud CLI
         run: |
-          echo '${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' > /tmp/yc-sa-key.json
-          export YC_SERVICE_ACCOUNT_KEY_FILE=/tmp/yc-sa-key.json
+          echo "${{ secrets.YC_SERVICE_ACCOUNT_KEY }}" > /tmp/yc-sa-key.json
+          yc config profile create sa-profile || true
           yc config set service-account-key /tmp/yc-sa-key.json
+          yc config set cloud-id ${{ secrets.YC_CLOUD_ID }} || true
+          yc config set folder-id ${{ secrets.YC_FOLDER_ID }} || true
 
-      - name: Run database migrations
+      - name: Login to Yandex Container Registry
         run: |
-          # Export service account key for YDB SDK
-          export YC_SERVICE_ACCOUNT_KEY_FILE=/tmp/yc-sa-key.json
-          NODE_ENV=development \
-          YDB_ENDPOINT_DEV=${{ secrets.YDB_ENDPOINT_DEV }} \
-          YDB_DATABASE_DEV=${{ secrets.YDB_DATABASE_DEV }} \
-          npm run migrate || echo "Migrations failed, but continuing deployment"
-        continue-on-error: true
+          echo "${{ secrets.YC_SERVICE_ACCOUNT_KEY }}" | docker login \
+            --username json_key \
+            --password-stdin \
+            cr.yandex
 
       - name: Build and push Docker image
-        env:
-          YC_SERVICE_ACCOUNT_KEY_FILE: /tmp/yc-sa-key.json
-          REGISTRY: cr.yandex
-          REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
 
-          # Аутентификация в Container Registry
-          yc container registry configure-docker
+          IMAGE_TAG="${GITHUB_SHA:0:7}"
+          IMAGE_NAME="cr.yandex/${{ secrets.YC_REGISTRY_ID }}/lug-date-backend"
 
-          # Собрать Docker образ
-          docker build -f backend/Dockerfile -t dating-app-backend:latest .
+          # Собираем образ
+          docker build \
+            -t ${IMAGE_NAME}:${IMAGE_TAG} \
+            -t ${IMAGE_NAME}:latest \
+            -f backend/Dockerfile \
+            .
 
-          # Тег образа с commit SHA
-          IMAGE_TAG="${REGISTRY}/${REGISTRY_ID}/dating-app-backend:${GITHUB_SHA:0:7}"
+          # Пушим образ
+          docker push ${IMAGE_NAME}:${IMAGE_TAG}
+          docker push ${IMAGE_NAME}:latest
 
-          # Tag и push образа
-          docker tag dating-app-backend:latest $IMAGE_TAG
-          docker push $IMAGE_TAG
+          # Сохраняем для деплоя
+          echo "IMAGE_ID=${IMAGE_NAME}:${IMAGE_TAG}" >> $GITHUB_ENV
 
-          echo "IMAGE_URL=$IMAGE_TAG" >> $GITHUB_ENV
+          # Показываем размер
+          docker images ${IMAGE_NAME}:${IMAGE_TAG}
 
-      - name: Deploy to Yandex Cloud Functions
+      - name: Deploy to Yandex Cloud Function
         env:
-          YC_SERVICE_ACCOUNT_KEY_FILE: /tmp/yc-sa-key.json
           YC_FUNCTION_ID: ${{ secrets.YC_BACKEND_FUNCTION_ID_STAGING }}
+          YC_SERVICE_ACCOUNT_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
 
-          # Создать версию функции из Docker образа
-          # Для container runtime используем --source-image вместо --image-url
           yc serverless function version create \
-            --function-id "${YC_FUNCTION_ID}" \
-            --runtime container \
-            --memory 128m \
-            --execution-timeout 30s \
-            --source-image "${{ env.IMAGE_URL }}" \
-            --set-env-variable NODE_ENV=development \
-            --set-env-variable PORT=8080 \
-            --set-env-variable TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }} \
-            --set-env-variable YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_DEV }} \
-            --set-env-variable YDB_DATABASE=${{ secrets.YDB_DATABASE_DEV }} \
-            --set-env-variable YC_SERVICE_ACCOUNT_KEY='${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' \
-            --set-env-variable YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_DEV }} \
-            --set-env-variable YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_DEV }} \
-            --set-env-variable YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_DEV }} \
-            --set-env-variable TELEGRAM_ALERT_ENABLED=true \
-            --set-env-variable TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
-            --set-env-variable TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+            --function-id="${YC_FUNCTION_ID}" \
+            --runtime=custom-image \
+            --image=${{ env.IMAGE_ID }} \
+            --memory=512m \
+            --execution-timeout=30s \
+            --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
+            --environment NODE_ENV=development \
+            --environment PORT=8080 \
+            --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }} \
+            --environment YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_DEV }} \
+            --environment YDB_DATABASE=${{ secrets.YDB_DATABASE_DEV }} \
+            --environment YC_SERVICE_ACCOUNT_KEY='${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' \
+            --environment YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_DEV }} \
+            --environment YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_DEV }} \
+            --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_DEV }} \
+            --environment TELEGRAM_ALERT_ENABLED=true \
+            --environment TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
+            --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+
+      - name: Get Function URL
+        run: |
+          export PATH=$PATH:$HOME/yandex-cloud/bin
+          FUNCTION_ID=$(yc serverless function get --id ${{ secrets.YC_BACKEND_FUNCTION_ID_STAGING }} --format json | jq -r '.id')
+          echo "Function deployed: https://functions.yandexcloud.net/${FUNCTION_ID}"
 
       - name: Health check
         run: |
@@ -137,80 +143,89 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build all packages
-        run: NODE_ENV=production npm run build:all
+      - name: Run linter
+        run: npm run lint --workspace=backend
+        continue-on-error: true # Временно пропускаем warnings
+
+      - name: Build shared package
+        run: npm run build --workspace=shared
 
       - name: Install Yandex Cloud CLI
         run: |
           curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
-          export PATH=$PATH:$HOME/yandex-cloud/bin
           echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
 
       - name: Configure Yandex Cloud CLI
         run: |
-          echo '${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' > /tmp/yc-sa-key.json
-          export YC_SERVICE_ACCOUNT_KEY_FILE=/tmp/yc-sa-key.json
+          echo "${{ secrets.YC_SERVICE_ACCOUNT_KEY }}" > /tmp/yc-sa-key.json
+          yc config profile create sa-profile || true
           yc config set service-account-key /tmp/yc-sa-key.json
+          yc config set cloud-id ${{ secrets.YC_CLOUD_ID }} || true
+          yc config set folder-id ${{ secrets.YC_FOLDER_ID }} || true
 
-      - name: Run database migrations
+      - name: Login to Yandex Container Registry
         run: |
-          # Export service account key for YDB SDK
-          export YC_SERVICE_ACCOUNT_KEY_FILE=/tmp/yc-sa-key.json
-          NODE_ENV=production \
-          YDB_ENDPOINT_PROD=${{ secrets.YDB_ENDPOINT_PROD }} \
-          YDB_DATABASE_PROD=${{ secrets.YDB_DATABASE_PROD }} \
-          npm run migrate
+          echo "${{ secrets.YC_SERVICE_ACCOUNT_KEY }}" | docker login \
+            --username json_key \
+            --password-stdin \
+            cr.yandex
 
       - name: Build and push Docker image
-        env:
-          YC_SERVICE_ACCOUNT_KEY_FILE: /tmp/yc-sa-key.json
-          REGISTRY: cr.yandex
-          REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
 
-          # Аутентификация в Container Registry
-          yc container registry configure-docker
+          IMAGE_TAG="${GITHUB_SHA:0:7}"
+          IMAGE_NAME="cr.yandex/${{ secrets.YC_REGISTRY_ID }}/lug-date-backend"
 
-          # Собрать Docker образ
-          docker build -f backend/Dockerfile -t dating-app-backend:latest .
+          # Собираем образ
+          docker build \
+            -t ${IMAGE_NAME}:${IMAGE_TAG} \
+            -t ${IMAGE_NAME}:latest \
+            -f backend/Dockerfile \
+            .
 
-          # Тег образа с commit SHA
-          IMAGE_TAG="${REGISTRY}/${REGISTRY_ID}/dating-app-backend:${GITHUB_SHA:0:7}"
+          # Пушим образ
+          docker push ${IMAGE_NAME}:${IMAGE_TAG}
+          docker push ${IMAGE_NAME}:latest
 
-          # Tag и push образа
-          docker tag dating-app-backend:latest $IMAGE_TAG
-          docker push $IMAGE_TAG
+          # Сохраняем для деплоя
+          echo "IMAGE_ID=${IMAGE_NAME}:${IMAGE_TAG}" >> $GITHUB_ENV
 
-          echo "IMAGE_URL=$IMAGE_TAG" >> $GITHUB_ENV
+          # Показываем размер
+          docker images ${IMAGE_NAME}:${IMAGE_TAG}
 
-      - name: Deploy to Yandex Cloud Functions
+      - name: Deploy to Yandex Cloud Function
         env:
-          YC_SERVICE_ACCOUNT_KEY_FILE: /tmp/yc-sa-key.json
           YC_FUNCTION_ID: ${{ secrets.YC_BACKEND_FUNCTION_ID_PROD }}
+          YC_SERVICE_ACCOUNT_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
 
-          # Создать версию функции из Docker образа
-          # Для container runtime используем --source-image вместо --image-url
           yc serverless function version create \
-            --function-id "${YC_FUNCTION_ID}" \
-            --runtime container \
-            --memory 256m \
-            --execution-timeout 30s \
-            --source-image "${{ env.IMAGE_URL }}" \
-            --set-env-variable NODE_ENV=production \
-            --set-env-variable PORT=8080 \
-            --set-env-variable TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_PROD }} \
-            --set-env-variable YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_PROD }} \
-            --set-env-variable YDB_DATABASE=${{ secrets.YDB_DATABASE_PROD }} \
-            --set-env-variable YC_SERVICE_ACCOUNT_KEY='${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' \
-            --set-env-variable YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_PROD }} \
-            --set-env-variable YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_PROD }} \
-            --set-env-variable YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_PROD }} \
-            --set-env-variable TELEGRAM_ALERT_ENABLED=true \
-            --set-env-variable TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
-            --set-env-variable TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+            --function-id="${YC_FUNCTION_ID}" \
+            --runtime=custom-image \
+            --image=${{ env.IMAGE_ID }} \
+            --memory=512m \
+            --execution-timeout=30s \
+            --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
+            --environment NODE_ENV=production \
+            --environment PORT=8080 \
+            --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_PROD }} \
+            --environment YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_PROD }} \
+            --environment YDB_DATABASE=${{ secrets.YDB_DATABASE_PROD }} \
+            --environment YC_SERVICE_ACCOUNT_KEY='${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' \
+            --environment YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_PROD }} \
+            --environment YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_PROD }} \
+            --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_PROD }} \
+            --environment TELEGRAM_ALERT_ENABLED=true \
+            --environment TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
+            --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+
+      - name: Get Function URL
+        run: |
+          export PATH=$PATH:$HOME/yandex-cloud/bin
+          FUNCTION_ID=$(yc serverless function get --id ${{ secrets.YC_BACKEND_FUNCTION_ID_PROD }} --format json | jq -r '.id')
+          echo "Function deployed: https://functions.yandexcloud.net/${FUNCTION_ID}"
 
       - name: Health check
         run: |

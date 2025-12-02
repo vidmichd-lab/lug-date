@@ -1,16 +1,13 @@
-# Docker ignore file for backend
 node_modules
 dist
 *.log
 .env
 .env.*
 .git
-.gitignore
-*.md
-coverage
+.github
 .vscode
 .idea
-*.zip
-function.zip
-deploy-package
-
+*.md
+coverage
+.DS_Store
+Thumbs.db
