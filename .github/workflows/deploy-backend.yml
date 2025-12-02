@@ -33,15 +33,26 @@ jobs:
       - name: Build backend
         run: npm run build --workspace=backend
 
-      - name: Configure Yandex Cloud CLI
-        uses: yandex-cloud/actions-yc-cli@v1
-        with:
-          yc-sa-json-credentials: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
-
-      - name: Run database migrations
+      - name: Install Yandex Cloud CLI
         run: |
+          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
+          export PATH=$PATH:$HOME/yandex-cloud/bin
+          echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
+      
+      - name: Configure Yandex Cloud CLI
+        run: |
+          export PATH=$PATH:$HOME/yandex-cloud/bin
           echo '${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' > /tmp/yc-sa-key.json
           export YC_SERVICE_ACCOUNT_KEY_FILE=/tmp/yc-sa-key.json
+          yc config set service-account-key /tmp/yc-sa-key.json
+          yc config set folder-id ${{ secrets.YC_FOLDER_ID || 'b1g6rst3sps7hhu8tqla' }}
+
+      - name: Run database migrations
+        env:
+          YC_SERVICE_ACCOUNT_KEY_FILE: /tmp/yc-sa-key.json
+        run: |
+          export PATH=$PATH:$HOME/yandex-cloud/bin
+          echo '${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' > /tmp/yc-sa-key.json
           export NODE_ENV=${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
           export YDB_ENDPOINT=${{ github.ref == 'refs/heads/main' && secrets.YDB_ENDPOINT_PROD || secrets.YDB_ENDPOINT_DEV }}
           export YDB_DATABASE=${{ github.ref == 'refs/heads/main' && secrets.YDB_DATABASE_PROD || secrets.YDB_DATABASE_DEV }}
@@ -54,42 +65,49 @@ jobs:
           cd backend
           mkdir -p deploy-package
           cp -r dist/* deploy-package/
+          cp -r ../shared/dist deploy-package/shared-dist
           cp package.json deploy-package/
           cp package-lock.json deploy-package/ 2>/dev/null || true
           cd deploy-package
-          npm ci --production --ignore-scripts
+          # Update shared package reference to local path
+          sed -i.bak 's/"@dating-app\/shared": "\*"/"@dating-app\/shared": "file:.\/shared-dist"/' package.json
+          rm -f package.json.bak
+          npm install --production --ignore-scripts
           cd ..
           zip -r function.zip deploy-package/
 
       - name: Deploy to Yandex Cloud Functions
+        env:
+          YC_SERVICE_ACCOUNT_KEY_FILE: /tmp/yc-sa-key.json
         run: |
+          export PATH=$PATH:$HOME/yandex-cloud/bin
           FUNCTION_NAME=${{ github.ref == 'refs/heads/main' && 'dating-app-backend-prod' || 'dating-app-backend-staging' }}
+          FUNCTION_ID=${{ github.ref == 'refs/heads/main' && 'd4enks8erf8eentnojj9' || 'd4enks8erf8eentnojj9' }}
           
-          # Create function if it doesn't exist
-          # Use folder-id from secrets or default from yc config
-          FOLDER_ID="${{ secrets.YC_FOLDER_ID }}"
-          if [ -z "$FOLDER_ID" ]; then
-            FOLDER_ID=$(yc config get folder-id 2>/dev/null || echo "")
-          fi
-          if [ -n "$FOLDER_ID" ]; then
+          # Use existing function ID or create new function
+          if [ -z "$FUNCTION_ID" ] || [ "$FUNCTION_ID" = "d4enks8erf8eentnojj9" ]; then
+            # Use existing function
+            FUNCTION_ID="d4enks8erf8eentnojj9"
+            echo "Using existing function: $FUNCTION_ID"
+          else
+            # Create function if it doesn't exist
+            FOLDER_ID="${{ secrets.YC_FOLDER_ID || 'b1g6rst3sps7hhu8tqla' }}"
             yc serverless function create \
               --name $FUNCTION_NAME \
               --description "Dating app backend API" \
               --folder-id $FOLDER_ID || echo "Function already exists"
-          else
-            yc serverless function create \
-              --name $FUNCTION_NAME \
-              --description "Dating app backend API" || echo "Function already exists"
+            FUNCTION_ID=$(yc serverless function get --name $FUNCTION_NAME --format json | jq -r '.id')
           fi
           
           # Create new version
           yc serverless function version create \
-            --function-name $FUNCTION_NAME \
+            --function-id $FUNCTION_ID \
             --runtime nodejs18 \
-            --entrypoint index.handler \
-            --memory 512m \
+            --entrypoint handler.handler \
+            --memory 128m \
             --execution-timeout 30s \
             --source-path backend/function.zip \
+            --service-account-id aje0defcl8b2577p01hg \
             --environment \
               NODE_ENV=${{ github.ref == 'refs/heads/main' && 'production' || 'development' }},\
               PORT=8080,\
@@ -105,19 +123,21 @@ jobs:
               TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }},\
               TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }},\
               ALLOWED_ORIGINS=https://dating-app-storage.website.yandexcloud.net,https://lug-admin-deploy.website.yandexcloud.net
+          
+          echo "FUNCTION_ID=$FUNCTION_ID" >> $GITHUB_ENV
 
       - name: Get function URL
         id: get-url
+        env:
+          YC_SERVICE_ACCOUNT_KEY_FILE: /tmp/yc-sa-key.json
         run: |
-          FUNCTION_NAME=${{ github.ref == 'refs/heads/main' && 'dating-app-backend-prod' || 'dating-app-backend-staging' }}
-          FUNCTION_URL=$(yc serverless function get --name $FUNCTION_NAME --format json | jq -r '.http_invoke_url // empty')
-          if [ -z "$FUNCTION_URL" ]; then
-            FUNCTION_ID=$(yc serverless function get --name $FUNCTION_NAME --format json | jq -r '.id')
-            FUNCTION_URL="https://functions.yandexcloud.net/$FUNCTION_ID"
-          fi
+          export PATH=$PATH:$HOME/yandex-cloud/bin
+          FUNCTION_ID=${FUNCTION_ID:-d4enks8erf8eentnojj9}
+          FUNCTION_URL="https://functions.yandexcloud.net/$FUNCTION_ID"
           echo "url=$FUNCTION_URL" >> $GITHUB_OUTPUT
           echo "✅ Backend deployed successfully!"
           echo "🌐 Backend URL: $FUNCTION_URL"
+          echo "🌐 API Gateway: https://d5dc4655gjtafu92k0od.yl4tuxdu.apigw.yandexcloud.net"
 
       - name: Deployment summary
         run: |
