@@ -30,6 +30,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <App />
       {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
     </QueryClientProvider>
-  </React.StrictMode>,
+  </React.StrictMode>
 );
 
+// Deployment trigger
