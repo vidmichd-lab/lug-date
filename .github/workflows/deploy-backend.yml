@@ -146,7 +146,6 @@ jobs:
               --execution-timeout=30s \
               --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
               --environment NODE_ENV=development \
-              --environment PORT=8080 \
               --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }} \
               --environment YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_DEV }} \
               --environment YDB_DATABASE=${{ secrets.YDB_DATABASE_DEV }} \
@@ -167,7 +166,6 @@ jobs:
               --execution-timeout=30s \
               --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
               --environment NODE_ENV=development \
-              --environment PORT=8080 \
               --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }} \
               --environment YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_DEV }} \
               --environment YDB_DATABASE=${{ secrets.YDB_DATABASE_DEV }} \
@@ -341,7 +339,6 @@ jobs:
               --execution-timeout=30s \
               --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
               --environment NODE_ENV=production \
-              --environment PORT=8080 \
               --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_PROD }} \
               --environment YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_PROD }} \
               --environment YDB_DATABASE=${{ secrets.YDB_DATABASE_PROD }} \
@@ -362,7 +359,6 @@ jobs:
               --execution-timeout=30s \
               --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
               --environment NODE_ENV=production \
-              --environment PORT=8080 \
               --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_PROD }} \
               --environment YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_PROD }} \
               --environment YDB_DATABASE=${{ secrets.YDB_DATABASE_PROD }} \
