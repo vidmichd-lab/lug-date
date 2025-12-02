@@ -63,28 +63,7 @@ const PORT = config.port;
 // Request logging middleware (before routes)
 app.use(requestLogger);
 
-// Apply general rate limiting to all routes
-app.use(generalLimiter);
-
-// JSON body parser - only for requests with Content-Type: application/json
-app.use(
-  express.json({
-    strict: false, // Allow empty JSON bodies
-    type: 'application/json',
-  })
-);
-
-// Sanitize user input to prevent XSS attacks
-// Skip sanitization for GET requests (only sanitize body, not query)
-app.use((req, res, next) => {
-  if (req.method === 'GET') {
-    next();
-  } else {
-    sanitizeMiddleware(req, res, next);
-  }
-});
-
-// CORS configuration
+// CORS configuration - MUST be before rate limiter to allow preflight requests
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -128,9 +107,39 @@ app.use(
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Origin',
+      'X-Requested-With',
+      'Accept',
+      'Content-Length',
+    ],
+    exposedHeaders: ['Content-Type', 'Authorization'],
+    maxAge: 86400, // 24 hours
   })
 );
+
+// Apply general rate limiting to all routes (after CORS)
+app.use(generalLimiter);
+
+// JSON body parser - only for requests with Content-Type: application/json
+app.use(
+  express.json({
+    strict: false, // Allow empty JSON bodies
+    type: 'application/json',
+  })
+);
+
+// Sanitize user input to prevent XSS attacks
+// Skip sanitization for GET requests (only sanitize body, not query)
+app.use((req, res, next) => {
+  if (req.method === 'GET') {
+    next();
+  } else {
+    sanitizeMiddleware(req, res, next);
+  }
+});
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'backend' });
