@@ -93,21 +93,28 @@ jobs:
           echo "📦 Uploading archive to Object Storage bucket: ${YANDEX_STORAGE_BUCKET}/${ARCHIVE_NAME}..."
           yc storage s3 cp \
             backend/function.zip \
-            s3://${YANDEX_STORAGE_BUCKET}/${ARCHIVE_NAME} \
-            --acl public-read
+            s3://${YANDEX_STORAGE_BUCKET}/${ARCHIVE_NAME}
+
+          # Check if upload was successful
+          if [ $? -ne 0 ]; then
+            echo "❌ Error: Failed to upload archive to Object Storage"
+            exit 1
+          fi
+
           # Use https:// format for Yandex Cloud Functions
           FUNCTION_ARCHIVE_URL="https://storage.yandexcloud.net/${YANDEX_STORAGE_BUCKET}/${ARCHIVE_NAME}"
           echo "FUNCTION_ARCHIVE_URL=${FUNCTION_ARCHIVE_URL}" >> $GITHUB_ENV
           echo "✅ Archive uploaded to Object Storage: ${FUNCTION_ARCHIVE_URL}"
 
-          # Verify file is accessible
+          # Verify file is accessible (mandatory check)
           echo "🔍 Verifying file accessibility..."
-          sleep 2
+          sleep 3
           HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$FUNCTION_ARCHIVE_URL" || echo "000")
           if [ "$HTTP_CODE" = "200" ]; then
             echo "✅ File is accessible (HTTP $HTTP_CODE)"
           else
-            echo "⚠️  Warning: File returned HTTP $HTTP_CODE (may need a moment to propagate)"
+            echo "❌ Error: File returned HTTP $HTTP_CODE - archive is not accessible"
+            exit 1
           fi
 
       - name: Download archive from Object Storage
