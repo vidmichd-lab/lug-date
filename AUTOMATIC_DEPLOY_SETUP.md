@@ -17,11 +17,13 @@
 **Нажмите "New repository secret" и добавьте:**
 
 #### Обязательные (для всех окружений):
+
 1. **YC_SERVICE_ACCOUNT_KEY**
    - JSON ключ сервисного аккаунта Yandex Cloud
    - Скачайте из Yandex Cloud Console → IAM → Service Accounts
 
 #### Для Development (ветка develop):
+
 2. **YDB_ENDPOINT_DEV** - например: `grpcs://ydb.serverless.yandexcloud.net:2135`
 3. **YDB_DATABASE_DEV** - путь к базе, например: `/ru-central1/b1g.../etn...`
 4. **YDB_TOKEN_DEV** (опционально) - если используете токен вместо service account
@@ -31,6 +33,7 @@
 8. **YANDEX_STORAGE_SECRET_KEY_DEV** - Secret Key для Object Storage
 
 #### Для Production (ветка main):
+
 9. **YDB_ENDPOINT_PROD** - endpoint для production
 10. **YDB_DATABASE_PROD** - база данных для production
 11. **YDB_TOKEN_PROD** (опционально)
@@ -40,6 +43,7 @@
 15. **YANDEX_STORAGE_SECRET_KEY_PROD** - Secret Key
 
 #### Для алертов:
+
 16. **TELEGRAM_ALERT_BOT_TOKEN** - токен бота для отправки алертов
 17. **TELEGRAM_ALERT_CHAT_ID** - ID чата для алертов
 
@@ -62,12 +66,15 @@ GitHub может блокировать push из-за секретов в ис
 После добавления всех секретов и разрешения push:
 
 **Вариант А: Автоматический деплой**
+
 ```bash
 git push origin develop
 ```
+
 GitHub Actions автоматически запустит деплой при push в `develop` или `main`.
 
 **Вариант Б: Ручной запуск**
+
 1. Перейдите в GitHub → Actions
 2. Выберите workflow "Deploy Backend to Yandex Cloud Functions"
 3. Нажмите "Run workflow" → выберите ветку → "Run workflow"
@@ -87,6 +94,7 @@ GitHub Actions автоматически запустит деплой при p
    ```
 
 URL будет выглядеть примерно так:
+
 ```
 https://functions.yandexcloud.net/d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0
 ```
@@ -96,17 +104,20 @@ https://functions.yandexcloud.net/d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0
 После получения URL backend:
 
 **Для админки:**
+
 ```bash
 BACKEND_URL=https://functions.yandexcloud.net/<your-function-id> npm run deploy:admin
 ```
 
 **Для frontend:**
 Добавьте в `.env` в корне проекта:
+
 ```env
 VITE_API_URL=https://functions.yandexcloud.net/<your-function-id>
 ```
 
 Затем задеплойте frontend:
+
 ```bash
 npm run deploy:frontend
 ```
@@ -128,7 +139,7 @@ curl https://functions.yandexcloud.net/<function-id>/health
 # Логи staging
 yc serverless function logs --name dating-app-backend-staging --limit 50
 
-# Логи production  
+# Логи production
 yc serverless function logs --name dating-app-backend-prod --limit 50
 ```
 
@@ -143,6 +154,7 @@ yc serverless function logs --name dating-app-backend-prod --limit 50
 ## 🎯 Итог
 
 После настройки:
+
 1. Backend автоматически деплоится при push в `develop`/`main`
 2. Не нужно запускать backend локально
 3. Все работает в облаке без вашего участия
@@ -153,6 +165,3 @@ yc serverless function logs --name dating-app-backend-prod --limit 50
 - `.github/BACKEND_SETUP.md` - подробная инструкция по настройке
 - `docs/BACKEND_DEPLOY.md` - документация по деплою
 - `.github/SECRETS_SETUP.md` - настройка секретов
-
-
-

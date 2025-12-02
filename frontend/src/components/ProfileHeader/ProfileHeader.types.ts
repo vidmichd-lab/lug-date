@@ -9,6 +9,3 @@ export interface ProfileHeaderProps {
   totalSteps: number;
   onBack?: () => void;
 }
-
-
-

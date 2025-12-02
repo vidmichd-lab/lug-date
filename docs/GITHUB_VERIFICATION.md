@@ -9,11 +9,13 @@
 Откройте: **https://github.com/vidmichd-lab/lug-date/settings/secrets/actions**
 
 Проверьте:
+
 - [ ] Секрет `YC_SERVICE_ACCOUNT_KEY` создан
 - [ ] Значение скрыто (показывается как `••••••••`)
 - [ ] Имя точно `YC_SERVICE_ACCOUNT_KEY` (без пробелов, регистр важен)
 
 **Как проверить:**
+
 1. Перейдите по ссылке выше
 2. В списке секретов должен быть `YC_SERVICE_ACCOUNT_KEY`
 3. Если его нет - создайте по инструкции в [GITHUB_SETUP.md](GITHUB_SETUP.md)
@@ -23,11 +25,13 @@
 Откройте: **https://github.com/vidmichd-lab/lug-date/settings/environments**
 
 Проверьте:
+
 - [ ] Environment `staging` создан
 - [ ] Environment `production` создан
 - [ ] `production` имеет ограничение на ветку `main` (опционально, но рекомендуется)
 
 **Как проверить:**
+
 1. Перейдите по ссылке выше
 2. В списке environments должны быть `staging` и `production`
 3. Если их нет - создайте по инструкции в [GITHUB_SETUP.md](GITHUB_SETUP.md)
@@ -39,18 +43,21 @@
 Проверьте, что файл содержит:
 
 #### Для staging:
+
 ```yaml
 environment:
   name: staging
 ```
 
 #### Для production:
+
 ```yaml
 environment:
   name: production
 ```
 
 #### Использование секрета:
+
 ```yaml
 yc-sa-json-credentials: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
 ```
@@ -62,6 +69,7 @@ yc-sa-json-credentials: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
 Откройте: **https://github.com/vidmichd-lab/lug-date/actions**
 
 Проверьте:
+
 - [ ] Workflow "Deploy to Yandex Cloud" виден в списке
 - [ ] При пуше в `develop` запускается deploy-staging
 - [ ] При пуше в `main` запускается deploy-production
@@ -69,24 +77,26 @@ yc-sa-json-credentials: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
 **Как протестировать:**
 
 1. **Тест staging:**
+
    ```bash
    git checkout develop
    git commit --allow-empty -m "test: проверка деплоя staging"
    git push
    ```
-   
+
    Затем проверьте:
    - https://github.com/vidmichd-lab/lug-date/actions
    - Должен запуститься workflow
    - Job "Deploy to Staging" должен использовать environment `staging`
 
 2. **Тест production:**
+
    ```bash
    git checkout main
    git commit --allow-empty -m "test: проверка деплоя production"
    git push
    ```
-   
+
    Затем проверьте:
    - https://github.com/vidmichd-lab/lug-date/actions
    - Должен запуститься workflow
@@ -114,6 +124,7 @@ gh auth login
 **Причина:** Секрет не создан или имеет неправильное имя.
 
 **Решение:**
+
 1. Проверьте имя секрета: должно быть точно `YC_SERVICE_ACCOUNT_KEY`
 2. Убедитесь, что секрет создан на уровне репозитория (не environment)
 3. Проверьте, что вы находитесь в правильном репозитории
@@ -123,6 +134,7 @@ gh auth login
 **Причина:** Environment не создан или имеет неправильное имя.
 
 **Решение:**
+
 1. Проверьте имена environments в `.github/workflows/deploy.yml`:
    - Должно быть `environment: staging` для staging
    - Должно быть `environment: production` для production
@@ -133,6 +145,7 @@ gh auth login
 **Причина:** Неправильный формат JSON в YC_SERVICE_ACCOUNT_KEY.
 
 **Решение:**
+
 1. Проверьте, что JSON валидный (можно проверить на jsonlint.com)
 2. Убедитесь, что скопирован весь файл целиком
 3. Проверьте, что нет лишних пробелов или символов в начале/конце
@@ -143,6 +156,7 @@ gh auth login
 **Причина:** Неправильные условия в workflow или проблемы с ветками.
 
 **Решение:**
+
 1. Проверьте, что вы пушите в правильную ветку:
    - `develop` → запускает staging
    - `main` → запускает production
@@ -164,6 +178,3 @@ gh auth login
 - [Подробная инструкция по настройке](GITHUB_SETUP.md)
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
 - [GitHub Environments](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment)
-
-
-

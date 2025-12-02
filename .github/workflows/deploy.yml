@@ -90,7 +90,6 @@ jobs:
         run: npm ci
 
       - name: Build shared package first
-        if: steps.changed-files.outputs.any_changed == 'true'
         run: npm run build --workspace=shared
 
       - name: Install Yandex Cloud CLI
@@ -146,16 +145,15 @@ jobs:
               '};' > admin/public/config.js
             
             echo "✅ Updated admin config.js with backend URL: ${BACKEND_URL}"
-            
-            # Пересобираем frontend с правильным URL бекенда
-            # Всегда пересобираем frontend при изменении backend URL, даже если frontend код не менялся
-            if [ -n "${BACKEND_URL}" ]; then
-              echo "Rebuilding frontend with new backend URL: ${BACKEND_URL}"
-              VITE_API_URL="${BACKEND_URL}" npm run build --workspace=frontend
-            fi
           else
             echo "⚠️  Backend URL not available, using default from config.js"
           fi
+
+      - name: Build frontend
+        if: steps.changed-files.outputs.frontend == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
+        env:
+          VITE_API_URL: ${{ env.BACKEND_URL }}
+        run: NODE_ENV=development npm run build --workspace=frontend
 
       - name: Build backend
         if: steps.changed-files.outputs.backend == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
@@ -487,7 +485,6 @@ jobs:
         run: npm ci
 
       - name: Build shared package first
-        if: steps.changed-files.outputs.any_changed == 'true'
         run: npm run build --workspace=shared
 
       - name: Install Yandex Cloud CLI
@@ -543,16 +540,15 @@ jobs:
               '};' > admin/public/config.js
             
             echo "✅ Updated admin config.js with backend URL: ${BACKEND_URL}"
-            
-            # Пересобираем frontend с правильным URL бекенда
-            # Всегда пересобираем frontend при изменении backend URL, даже если frontend код не менялся
-            if [ -n "${BACKEND_URL}" ]; then
-              echo "Rebuilding frontend with new backend URL: ${BACKEND_URL}"
-              VITE_API_URL="${BACKEND_URL}" npm run build --workspace=frontend
-            fi
           else
             echo "⚠️  Backend URL not available, using default from config.js"
           fi
+
+      - name: Build frontend
+        if: steps.changed-files.outputs.frontend == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
+        env:
+          VITE_API_URL: ${{ env.BACKEND_URL }}
+        run: NODE_ENV=production npm run build --workspace=frontend
 
       - name: Build backend
         if: steps.changed-files.outputs.backend == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
@@ -641,6 +637,7 @@ jobs:
           fi
 
       - name: Deploy Backend
+        if: steps.changed-files.outputs.backend == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
         env:
           YC_SERVICE_ACCOUNT_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
           YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}

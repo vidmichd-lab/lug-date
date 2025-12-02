@@ -7,6 +7,7 @@ Docker конфигурация для локальной разработки �
 ### Локальная разработка
 
 1. Скопируйте `.env.example` в `.env`:
+
 ```bash
 cp docker/.env.example docker/.env
 ```
@@ -14,11 +15,13 @@ cp docker/.env.example docker/.env
 2. Заполните необходимые переменные в `docker/.env`
 
 3. Запустите проект:
+
 ```bash
 make dev
 ```
 
 Или напрямую:
+
 ```bash
 docker-compose -f docker/docker-compose.yml up -d
 ```
@@ -87,16 +90,19 @@ docker-compose -f docker/docker-compose.yml up -d
 ### Подготовка
 
 1. Установите Yandex Cloud CLI:
+
 ```bash
 curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
 ```
 
 2. Авторизуйтесь:
+
 ```bash
 yc init
 ```
 
 3. Настройте Container Registry:
+
 ```bash
 yc container registry create --name dating-registry
 ```
@@ -116,6 +122,7 @@ make deploy-bot
 ### Переменные окружения для деплоя
 
 Добавьте в `.env`:
+
 ```env
 YANDEX_CLOUD_TOKEN=ваш_токен
 YANDEX_CONTAINER_REGISTRY=cr.yandex/ваш_реестр
@@ -151,6 +158,7 @@ docker/
 ### Порты
 
 По умолчанию:
+
 - Frontend: `3000`
 - Backend: `4000`
 - PostgreSQL: `5432`
@@ -163,6 +171,7 @@ docker/
 ### Проблемы с портами
 
 Если порты заняты, измените их в `docker/.env`:
+
 ```env
 FRONTEND_PORT=3001
 BACKEND_PORT=4001
@@ -172,6 +181,7 @@ POSTGRES_PORT=5433
 ### Очистка данных
 
 Полная очистка (включая volumes):
+
 ```bash
 make clean
 ```
@@ -197,6 +207,3 @@ make logs-backend
 - [Docker Compose Documentation](https://docs.docker.com/compose/)
 - [Yandex Cloud Container Registry](https://cloud.yandex.ru/docs/container-registry/)
 - [Yandex Cloud Functions](https://cloud.yandex.ru/docs/functions/)
-
-
-

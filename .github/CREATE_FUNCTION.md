@@ -15,6 +15,7 @@ yc resource-manager folder list
 ### Шаг 2: Создать функцию
 
 **Для Staging (development):**
+
 ```bash
 yc serverless function create \
   --name dating-app-backend-staging \
@@ -23,6 +24,7 @@ yc serverless function create \
 ```
 
 **Для Production:**
+
 ```bash
 yc serverless function create \
   --name dating-app-backend-prod \
@@ -33,6 +35,7 @@ yc serverless function create \
 ### Шаг 3: Добавить Folder ID в GitHub Secrets
 
 Добавьте секрет `YC_FOLDER_ID` в GitHub:
+
 - Перейдите: https://github.com/vidmichd-lab/lug-date/settings/secrets/actions
 - Нажмите "New repository secret"
 - Name: `YC_FOLDER_ID`
@@ -53,6 +56,3 @@ yc serverless function list
 # Информация о функции
 yc serverless function get --name dating-app-backend-staging
 ```
-
-
-

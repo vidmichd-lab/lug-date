@@ -42,6 +42,7 @@ gh api repos/vidmichd-lab/lug-date/environments
 После настройки можно протестировать:
 
 1. Создайте тестовый коммит в ветке `develop`:
+
    ```bash
    git checkout develop
    git commit --allow-empty -m "test: проверка деплоя staging"
@@ -67,6 +68,7 @@ gh api repos/vidmichd-lab/lug-date/environments
 **Причина:** GitHub Actions не имеет доступа к environment.
 
 **Решение:**
+
 1. Settings → Environments → выберите environment
 2. Убедитесь, что нет ограничений на доступ
 3. Или добавьте разрешения для GitHub Actions
@@ -76,6 +78,7 @@ gh api repos/vidmichd-lab/lug-date/environments
 **Причина:** Секрет не создан или имеет другое имя.
 
 **Решение:**
+
 1. Проверьте имя секрета: должно быть точно `YC_SERVICE_ACCOUNT_KEY`
 2. Убедитесь, что секрет создан на уровне репозитория (не environment)
 
@@ -84,9 +87,7 @@ gh api repos/vidmichd-lab/lug-date/environments
 **Причина:** Неправильный формат JSON в YC_SERVICE_ACCOUNT_KEY.
 
 **Решение:**
+
 1. Проверьте, что JSON валидный
 2. Убедитесь, что скопирован весь файл целиком
 3. Проверьте, что нет лишних пробелов или символов
-
-
-

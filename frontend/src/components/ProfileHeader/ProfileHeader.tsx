@@ -60,6 +60,3 @@ export const ProfileHeader: FC<ProfileHeaderProps> = ({
     </header>
   );
 };
-
-
-

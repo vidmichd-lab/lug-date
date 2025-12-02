@@ -15,6 +15,7 @@
 **https://github.com/vidmichd-lab/lug-date/settings/secrets/actions**
 
 Или вручную:
+
 1. Откройте репозиторий: https://github.com/vidmichd-lab/lug-date
 2. Нажмите **Settings** (вкладка вверху)
 3. В левом меню выберите **Secrets and variables** → **Actions**
@@ -24,7 +25,7 @@
 1. Нажмите **New repository secret**
 2. Заполните:
    - **Name:** `YC_SERVICE_ACCOUNT_KEY`
-   - **Secret:** 
+   - **Secret:**
      - Откройте JSON файл сервисного аккаунта Yandex Cloud
      - Скопируйте **весь** его содержимое (весь JSON объект)
      - Вставьте в поле Secret
@@ -33,6 +34,7 @@
 ### 1.3 Проверка формата JSON
 
 JSON должен выглядеть так:
+
 ```json
 {
   "id": "ajek...",
@@ -44,7 +46,8 @@ JSON должен выглядеть так:
 }
 ```
 
-⚠️ **Важно:** 
+⚠️ **Важно:**
+
 - Должен быть валидный JSON
 - Должны быть все поля (id, service_account_id, private_key и т.д.)
 - Скопируйте весь файл целиком, включая фигурные скобки
@@ -57,6 +60,7 @@ JSON должен выглядеть так:
 **https://github.com/vidmichd-lab/lug-date/settings/environments**
 
 Или вручную:
+
 1. Откройте репозиторий: https://github.com/vidmichd-lab/lug-date
 2. Нажмите **Settings**
 3. В левом меню выберите **Environments**
@@ -77,7 +81,7 @@ JSON должен выглядеть так:
 3. Нажмите **Configure environment**
 4. Заполните:
    - **Environment URL:** `https://api.yourdomain.com`
-   - **Deployment branches:** 
+   - **Deployment branches:**
      - Выберите "Selected branches"
      - Добавьте `main` (только main ветка может деплоить в production)
 5. Нажмите **Save environment**
@@ -89,6 +93,7 @@ JSON должен выглядеть так:
 Откройте: https://github.com/vidmichd-lab/lug-date/settings/secrets/actions
 
 Должен быть виден:
+
 - ✅ `YC_SERVICE_ACCOUNT_KEY` (значение скрыто звездочками)
 
 ### 3.2 Проверьте Environments
@@ -96,6 +101,7 @@ JSON должен выглядеть так:
 Откройте: https://github.com/vidmichd-lab/lug-date/settings/environments
 
 Должны быть видны:
+
 - ✅ `staging`
 - ✅ `production`
 
@@ -104,11 +110,13 @@ JSON должен выглядеть так:
 ### 4.1 Тест staging окружения
 
 1. Переключитесь на ветку `develop`:
+
    ```bash
    git checkout develop
    ```
 
 2. Создайте тестовый коммит:
+
    ```bash
    git commit --allow-empty -m "test: проверка деплоя staging"
    git push
@@ -122,11 +130,13 @@ JSON должен выглядеть так:
 ### 4.2 Тест production окружения
 
 1. Переключитесь на ветку `main`:
+
    ```bash
    git checkout main
    ```
 
 2. Создайте тестовый коммит:
+
    ```bash
    git commit --allow-empty -m "test: проверка деплоя production"
    git push
@@ -144,6 +154,7 @@ JSON должен выглядеть так:
 **Причина:** GitHub Actions не имеет доступа к environment.
 
 **Решение:**
+
 1. Settings → Environments → выберите environment
 2. Убедитесь, что нет ограничений на доступ
 3. Или добавьте разрешения для GitHub Actions
@@ -153,6 +164,7 @@ JSON должен выглядеть так:
 **Причина:** Секрет не создан или имеет другое имя.
 
 **Решение:**
+
 1. Проверьте имя секрета: должно быть точно `YC_SERVICE_ACCOUNT_KEY`
 2. Убедитесь, что секрет создан на уровне репозитория (не environment)
 3. Проверьте, что вы находитесь в правильном репозитории
@@ -162,6 +174,7 @@ JSON должен выглядеть так:
 **Причина:** Неправильный формат JSON в YC_SERVICE_ACCOUNT_KEY.
 
 **Решение:**
+
 1. Проверьте, что JSON валидный (можно проверить на jsonlint.com)
 2. Убедитесь, что скопирован весь файл целиком
 3. Проверьте, что нет лишних пробелов или символов в начале/конце
@@ -172,6 +185,7 @@ JSON должен выглядеть так:
 **Причина:** Environment не создан или имеет другое имя.
 
 **Решение:**
+
 1. Проверьте имена environments в `.github/workflows/deploy.yml`:
    - Должно быть `environment: staging` для staging
    - Должно быть `environment: production` для production
@@ -190,6 +204,7 @@ JSON должен выглядеть так:
 ### Структура workflow
 
 Workflow файл находится в `.github/workflows/deploy.yml` и использует:
+
 - `secrets.YC_SERVICE_ACCOUNT_KEY` - для авторизации в Yandex Cloud
 - `environment: staging` - для staging деплоя
 - `environment: production` - для production деплоя
@@ -207,6 +222,3 @@ Workflow файл находится в `.github/workflows/deploy.yml` и исп
 - [GitHub Environments](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment)
 - [GitHub Secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets)
 - [Yandex Cloud CLI](https://cloud.yandex.ru/docs/cli/quickstart)
-
-
-

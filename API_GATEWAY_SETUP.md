@@ -28,6 +28,7 @@ yc serverless api-gateway get --name dating-app-api --format json | jq -r '.doma
 ```
 
 Или через консоль:
+
 1. Откройте [Yandex Cloud Console](https://console.cloud.yandex.ru/)
 2. Перейдите в **Serverless** → **API Gateway**
 3. Найдите `dating-app-api`
@@ -48,7 +49,7 @@ curl https://<gateway-id>.apigw.yandexcloud.net/health
 
 ```javascript
 window.ADMIN_CONFIG = {
-  API_URL: 'https://<gateway-id>.apigw.yandexcloud.net'
+  API_URL: 'https://<gateway-id>.apigw.yandexcloud.net',
 };
 ```
 
@@ -82,6 +83,7 @@ BACKEND_URL='https://<gateway-id>.apigw.yandexcloud.net' npm run deploy:admin
 ### Вариант 2: Через Yandex Cloud CLI
 
 1. **Создайте API Gateway:**
+
    ```bash
    yc serverless api-gateway create \
      --name dating-app-api \
@@ -90,6 +92,7 @@ BACKEND_URL='https://<gateway-id>.apigw.yandexcloud.net' npm run deploy:admin
    ```
 
 2. **Получите информацию о Gateway:**
+
    ```bash
    yc serverless api-gateway get --name dating-app-api
    ```
@@ -138,8 +141,9 @@ curl https://<gateway-id>.apigw.yandexcloud.net/health
 ```
 
 Ожидаемый ответ:
+
 ```json
-{"status":"ok","service":"backend"}
+{ "status": "ok", "service": "backend" }
 ```
 
 ### 2. API Endpoints
@@ -164,6 +168,7 @@ curl -X OPTIONS https://<gateway-id>.apigw.yandexcloud.net/api/admin/management/
 ```
 
 Должны быть заголовки:
+
 - `Access-Control-Allow-Origin: https://lug-admin-deploy.website.yandexcloud.net`
 - `Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH`
 
@@ -172,14 +177,16 @@ curl -X OPTIONS https://<gateway-id>.apigw.yandexcloud.net/api/admin/management/
 После получения URL Gateway:
 
 1. **Обновите config.js:**
+
    ```bash
    # Установите переменную окружения
    export BACKEND_URL='https://<gateway-id>.apigw.yandexcloud.net'
-   
+
    # Или обновите admin/public/config.js вручную
    ```
 
 2. **Задеплойте админку:**
+
    ```bash
    BACKEND_URL='https://<gateway-id>.apigw.yandexcloud.net' npm run deploy:admin
    ```
@@ -194,6 +201,7 @@ curl -X OPTIONS https://<gateway-id>.apigw.yandexcloud.net/api/admin/management/
 ### Ошибка: "Function not found"
 
 **Решение:** Проверьте, что ID функции правильный:
+
 ```bash
 yc serverless function list
 ```
@@ -201,18 +209,21 @@ yc serverless function list
 ### Ошибка: "Access denied"
 
 **Решение:** Проверьте права доступа:
+
 - Убедитесь, что service account имеет права на вызов функции
 - Проверьте настройки функции (публичный доступ)
 
 ### Ошибка: "CORS not working"
 
-**Решение:** 
+**Решение:**
+
 - Проверьте настройки CORS в бекенде (`backend/src/index.ts`)
 - Убедитесь, что origin админки добавлен в `ALLOWED_ORIGINS` или в список по умолчанию
 
 ### Ошибка: "Gateway timeout"
 
 **Решение:**
+
 - Увеличьте timeout в спецификации Gateway
 - Проверьте, что функция отвечает быстро
 
@@ -227,6 +238,7 @@ yc serverless api-gateway logs --name dating-app-api
 ### Просмотр метрик
 
 В Yandex Cloud Console:
+
 - **Serverless** → **API Gateway** → `dating-app-api` → **Метрики**
 
 ## 🔐 Безопасность
@@ -259,4 +271,3 @@ yc serverless api-gateway logs --name dating-app-api
 ---
 
 **После настройки API Gateway админка должна работать корректно!**
-

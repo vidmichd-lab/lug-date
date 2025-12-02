@@ -7,6 +7,3 @@ export interface CategoryTabsProps {
   selected: string;
   onChange: (category: string) => void;
 }
-
-
-

@@ -3,8 +3,9 @@
 ## Проблема с ключами
 
 Ошибка `The request signature we calculated does not match` означает, что:
+
 1. Бакет `lug-admin-deploy` не существует, ИЛИ
-2. Ключи доступа неправильные, ИЛИ  
+2. Ключи доступа неправильные, ИЛИ
 3. Ключи не имеют прав на запись в бакет
 
 ## ✅ Быстрое решение
@@ -28,6 +29,7 @@
 ### Шаг 3: Обновите .env
 
 Добавьте в `.env`:
+
 ```env
 ADMIN_STORAGE_BUCKET_DEV=lug-admin-deploy
 ADMIN_STORAGE_ACCESS_KEY_DEV=ВАШ_ACCESS_KEY_ID
@@ -84,16 +86,14 @@ URL: `https://lug-admin-deploy.website.yandexcloud.net/`
 ## ✅ После успешного деплоя
 
 Вы увидите:
+
 ```
 ✨ Deployment complete!
    ✅ Uploaded: 11 files
-   
+
 🌐 URLs:
    Storage: https://storage.yandexcloud.net/lug-admin-deploy/
    Website: https://lug-admin-deploy.website.yandexcloud.net/
 ```
 
 Админка будет доступна по Website URL! 🎉
-
-
-

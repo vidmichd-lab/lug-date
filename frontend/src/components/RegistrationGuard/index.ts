@@ -3,6 +3,3 @@
  */
 
 export { RegistrationGuard } from './RegistrationGuard';
-
-
-

@@ -30,6 +30,3 @@ export const InterestTag: FC<InterestTagProps> = ({
     </button>
   );
 };
-
-
-

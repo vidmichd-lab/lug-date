@@ -12,6 +12,3 @@ export function LoadingFallback() {
     </div>
   );
 }
-
-
-

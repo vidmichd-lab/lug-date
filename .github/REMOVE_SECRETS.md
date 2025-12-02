@@ -23,11 +23,13 @@ GitHub блокирует push из-за секретов в старых ком
 Если репозиторий публичный или вы хотите полностью удалить секреты:
 
 1. **Создайте резервную копию:**
+
    ```bash
    git branch backup-develop
    ```
 
 2. **Используйте git filter-branch для удаления секретов:**
+
    ```bash
    git filter-branch --force --index-filter \
      "git rm --cached --ignore-unmatch docs/STORAGE_KEYS_SETUP.md ADMIN_DEPLOY_FIX.md ADMIN_DEPLOY_QUICKSTART.md docs/ADMIN_DEPLOY.md scripts/deploy-admin-to-storage.ts" \
@@ -35,6 +37,7 @@ GitHub блокирует push из-за секретов в старых ком
    ```
 
 3. **Или используйте BFG Repo-Cleaner (рекомендуется):**
+
    ```bash
    # Скачайте BFG: https://rtyley.github.io/bfg-repo-cleaner/
    java -jar bfg.jar --replace-text passwords.txt
@@ -51,6 +54,3 @@ GitHub блокирует push из-за секретов в старых ком
 
 Для приватного репозитория используйте **Вариант 1** (разрешить через веб-интерфейс).
 Для публичного репозитория используйте **Вариант 2** (удалить из истории).
-
-
-

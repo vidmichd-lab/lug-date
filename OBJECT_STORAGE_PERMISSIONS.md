@@ -3,6 +3,7 @@
 ## Проблема
 
 При загрузке архива в Object Storage возникает ошибка:
+
 ```
 AccessDenied: Access Denied
 ```
@@ -52,7 +53,7 @@ yc resource-manager folder add-access-binding $FOLDER_ID \
 ```hcl
 resource "yandex_storage_bucket" "backend_deploy" {
   bucket = "your-bucket-name"
-  
+
   grant {
     type        = "ServiceAccount"
     id          = "aje0defcl8b2577p01hg"
@@ -94,4 +95,3 @@ yc iam service-account get --id aje0defcl8b2577p01hg
 
 - [Документация Yandex Cloud: Права доступа к Object Storage](https://cloud.yandex.ru/docs/storage/security/)
 - [Документация Yandex Cloud: Роли для Object Storage](https://cloud.yandex.ru/docs/storage/security/roles/)
-

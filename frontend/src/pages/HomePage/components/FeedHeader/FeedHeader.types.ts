@@ -12,6 +12,3 @@ export interface FeedHeaderProps {
   categories: string[];
   showCategories: boolean;
 }
-
-
-

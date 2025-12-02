@@ -1,6 +1,11 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
-import { FigmaVariable, FigmaVariableCollection, FigmaTextStyle, FigmaEffect } from '../utils/figma-api';
+import {
+  FigmaVariable,
+  FigmaVariableCollection,
+  FigmaTextStyle,
+  FigmaEffect,
+} from '../utils/figma-api';
 
 interface TokenData {
   variables?: { variables: FigmaVariable[]; collections: FigmaVariableCollection[] };
@@ -8,16 +13,13 @@ interface TokenData {
   effectStyles?: FigmaEffect[];
 }
 
-export async function generateTokens(
-  data: TokenData,
-  outputPath: string
-): Promise<number> {
+export async function generateTokens(data: TokenData, outputPath: string): Promise<number> {
   let tokenCount = 0;
 
   // Генерация токенов из Variables
   if (data.variables) {
     const { variables, collections } = data.variables;
-    
+
     // Группировка переменных по типам
     const colors: Record<string, any> = {};
     const spacing: Record<string, number> = {};
@@ -35,13 +37,11 @@ export async function generateTokens(
     variables.forEach((variable) => {
       const collection = collections.find((c) => c.id === variable.variableCollectionId);
       const modeName = collection?.modes[0]?.name || 'default';
-      
+
       // Конвертация имени: "colors/primary/500" -> "colorsPrimary500"
       const name = variable.name
         .split('/')
-        .map((part, index) => 
-          index === 0 ? part : part.charAt(0).toUpperCase() + part.slice(1)
-        )
+        .map((part, index) => (index === 0 ? part : part.charAt(0).toUpperCase() + part.slice(1)))
         .join('')
         .replace(/[^a-zA-Z0-9]/g, '');
 
@@ -57,13 +57,17 @@ export async function generateTokens(
           }
           break;
         case 'FLOAT':
-          if (variable.name.toLowerCase().includes('spacing') || 
-              variable.name.toLowerCase().includes('gap') ||
-              variable.name.toLowerCase().includes('padding') ||
-              variable.name.toLowerCase().includes('margin')) {
+          if (
+            variable.name.toLowerCase().includes('spacing') ||
+            variable.name.toLowerCase().includes('gap') ||
+            variable.name.toLowerCase().includes('padding') ||
+            variable.name.toLowerCase().includes('margin')
+          ) {
             spacing[name] = value;
-          } else if (variable.name.toLowerCase().includes('radius') ||
-                     variable.name.toLowerCase().includes('border')) {
+          } else if (
+            variable.name.toLowerCase().includes('radius') ||
+            variable.name.toLowerCase().includes('border')
+          ) {
             radius[name] = value;
           }
           break;
@@ -109,11 +113,11 @@ function rgbaToHex(color: { r: number; g: number; b: number; a?: number }): stri
   const g = Math.round(color.g * 255);
   const b = Math.round(color.b * 255);
   const a = color.a !== undefined ? color.a : 1;
-  
+
   if (a < 1) {
     return `rgba(${r}, ${g}, ${b}, ${a})`;
   }
-  return `#${[r, g, b].map(x => x.toString(16).padStart(2, '0')).join('')}`;
+  return `#${[r, g, b].map((x) => x.toString(16).padStart(2, '0')).join('')}`;
 }
 
 async function generateColorsFile(colors: Record<string, any>, outputPath: string) {
@@ -262,11 +266,9 @@ async function generateShadowsFile(effects: FigmaEffect[], outputPath: string) {
     if (effect.type === 'DROP_SHADOW' || effect.type === 'INNER_SHADOW') {
       const name = `shadow${index + 1}`;
       const offset = effect.offset || { x: 0, y: 0 };
-      const color = effect.color
-        ? rgbaToHex(effect.color)
-        : 'rgba(0, 0, 0, 0.1)';
+      const color = effect.color ? rgbaToHex(effect.color) : 'rgba(0, 0, 0, 0.1)';
       const spread = effect.spread || 0;
-      
+
       shadows[name] = `${offset.x}px ${offset.y}px ${effect.radius}px ${spread}px ${color}`;
     }
   });
@@ -377,6 +379,3 @@ async function generateCSSFile(outputPath: string) {
 
   await fs.writeFile(path.join(outputPath, 'tokens.css'), cssContent);
 }
-
-
-

@@ -3,13 +3,17 @@
 ## ✅ Работающие сервисы
 
 ### 1. Admin панель
+
 **URL:** https://lug-admin-deploy.website.yandexcloud.net/
+
 - ✅ Работает (200 OK)
 - ✅ Настроена на backend
 - ✅ Можно открыть в браузере
 
 ### 2. Backend API
+
 **URL:** https://functions.yandexcloud.net/d4er75rsvc5mopabt70v
+
 - ✅ Работает
 - Health check: `https://functions.yandexcloud.net/d4er75rsvc5mopabt70v/api/v1/health`
 - API endpoints: `https://functions.yandexcloud.net/d4er75rsvc5mopabt70v/api/v1/*`
@@ -19,21 +23,25 @@
 ## ❌ Не работает
 
 ### Frontend (Telegram Mini App)
+
 **Проблема:** Frontend не задеплоен в Object Storage
 
-**Причина:** 
+**Причина:**
+
 - Локальный деплой не сработал (неправильные ключи доступа)
 - GitHub Actions может не запуститься, если нет секретов
 
 **Решение:**
 
 #### Вариант 1: Проверить GitHub Actions (самый простой)
+
 1. Откройте: https://github.com/vidmichd-lab/lug-date/actions
 2. Найдите workflow "Deploy Frontend to Yandex Object Storage"
 3. Если он не запустился - нажмите "Run workflow" вручную
 4. Если запустился, но упал - проверьте секреты в GitHub Settings → Secrets
 
 #### Вариант 2: Задеплоить вручную (если есть правильные ключи)
+
 1. Убедитесь, что в `.env` правильные ключи:
    ```env
    FRONTEND_STORAGE_BUCKET_DEV=ваш-бакет
@@ -43,6 +51,7 @@
 2. Запустите: `npm run deploy:frontend`
 
 #### Вариант 3: Использовать GitHub Actions с правильными секретами
+
 1. Добавьте секреты в GitHub:
    - Settings → Secrets and variables → Actions
    - Добавьте:
@@ -56,18 +65,21 @@
 ## 🔍 Как проверить статус
 
 ### Admin панель
+
 ```bash
 curl https://lug-admin-deploy.website.yandexcloud.net/
 # Должен вернуть HTML (200 OK)
 ```
 
 ### Backend API
+
 ```bash
 curl https://functions.yandexcloud.net/d4er75rsvc5mopabt70v/api/v1/health
 # Должен вернуть: {"status":"ok","service":"backend"}
 ```
 
 ### Frontend
+
 ```bash
 # После деплоя проверьте URL бакета:
 curl https://ВАШ-БАКЕТ.website.yandexcloud.net/
@@ -100,6 +112,3 @@ curl https://ВАШ-БАКЕТ.website.yandexcloud.net/
 ---
 
 **Последнее обновление:** $(date)
-
-
-

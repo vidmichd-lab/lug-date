@@ -10,6 +10,3 @@ export interface SettingsScreenProps {
   onDeleteAccount: () => void;
   onUpdateSettings: (settings: Partial<UserProfile>) => void;
 }
-
-
-

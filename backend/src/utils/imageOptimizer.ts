@@ -128,6 +128,3 @@ export async function generateAllSizes(imageBuffer: Buffer): Promise<{
 
   return { thumbnail, medium, full };
 }
-
-
-

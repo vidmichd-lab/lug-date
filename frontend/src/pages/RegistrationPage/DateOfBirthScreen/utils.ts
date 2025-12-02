@@ -24,11 +24,7 @@ export function isValidDate(day: number, month: number, year: number): boolean {
   // Check if date exists in calendar
   const date = new Date(year, month - 1, day);
 
-  return (
-    date.getFullYear() === year &&
-    date.getMonth() === month - 1 &&
-    date.getDate() === day
-  );
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
 }
 
 /**
@@ -85,6 +81,3 @@ export function validateDateOfBirth(
 
   return { isValid: true, error: null, age };
 }
-
-
-

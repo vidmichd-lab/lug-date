@@ -29,6 +29,3 @@ export interface GetSavedEventsResponse {
   events: SavedEvent[];
   total: number;
 }
-
-
-

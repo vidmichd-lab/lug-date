@@ -37,22 +37,19 @@ export const InterestsSelectorModal: FC<InterestsSelectorModalProps> = ({
     };
   }, [isOpen]);
 
-  const handleToggleInterest = useCallback(
-    (interestId: string) => {
-      setLocalSelected((prev) => {
-        const isSelected = prev.includes(interestId);
-        if (isSelected) {
-          return prev.filter((id) => id !== interestId);
-        } else {
-          if (prev.length < MAX_INTERESTS) {
-            return [...prev, interestId];
-          }
-          return prev;
+  const handleToggleInterest = useCallback((interestId: string) => {
+    setLocalSelected((prev) => {
+      const isSelected = prev.includes(interestId);
+      if (isSelected) {
+        return prev.filter((id) => id !== interestId);
+      } else {
+        if (prev.length < MAX_INTERESTS) {
+          return [...prev, interestId];
         }
-      });
-    },
-    []
-  );
+        return prev;
+      }
+    });
+  }, []);
 
   const handleSave = useCallback(() => {
     onSelect(localSelected);
@@ -102,6 +99,3 @@ export const InterestsSelectorModal: FC<InterestsSelectorModalProps> = ({
     </div>
   );
 };
-
-
-

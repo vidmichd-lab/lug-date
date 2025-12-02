@@ -11,6 +11,3 @@ export interface ProfileViewProps {
   onLogout: () => void;
   onThreeDotMenu?: () => void;
 }
-
-
-

@@ -11,11 +11,11 @@ export function preloadResource(href: string, as: 'script' | 'style' | 'font' | 
   link.rel = 'preload';
   link.href = href;
   link.as = as;
-  
+
   if (as === 'font') {
     link.crossOrigin = 'anonymous';
   }
-  
+
   document.head.appendChild(link);
 }
 
@@ -74,6 +74,3 @@ export function initPerformanceMonitoring() {
     measurePerformance();
   }
 }
-
-
-

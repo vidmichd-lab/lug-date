@@ -76,7 +76,11 @@ export function cropImageToSquare(file: File): Promise<Blob> {
 /**
  * Optimize image (resize if needed)
  */
-export function optimizeImage(imageBlob: Blob, maxDimension: number = 1200, quality: number = 0.85): Promise<Blob> {
+export function optimizeImage(
+  imageBlob: Blob,
+  maxDimension: number = 1200,
+  quality: number = 0.85
+): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const imageUrl = URL.createObjectURL(imageBlob);
@@ -160,6 +164,3 @@ export function validateImageFile(file: File): { valid: boolean; error?: string 
 
   return { valid: true };
 }
-
-
-

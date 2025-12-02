@@ -13,7 +13,9 @@
   border-radius: var(--radius-md, 8px);
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.2s, transform 0.2s;
+  transition:
+    background 0.2s,
+    transform 0.2s;
   font-size: 0.875rem;
 }
 
@@ -25,6 +27,3 @@
 .button:active {
   transform: translateY(0);
 }
-
-
-

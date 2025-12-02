@@ -6,6 +6,3 @@ export interface ProfilePopupProps {
   userId: string;
   onClose: () => void;
 }
-
-
-

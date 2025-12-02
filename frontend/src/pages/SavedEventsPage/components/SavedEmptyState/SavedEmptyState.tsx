@@ -17,6 +17,3 @@ export const SavedEmptyState: FC = () => {
     </div>
   );
 };
-
-
-

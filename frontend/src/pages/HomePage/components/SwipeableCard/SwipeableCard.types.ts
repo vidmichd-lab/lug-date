@@ -22,6 +22,3 @@ export interface SwipeableCardProps {
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
 }
-
-
-

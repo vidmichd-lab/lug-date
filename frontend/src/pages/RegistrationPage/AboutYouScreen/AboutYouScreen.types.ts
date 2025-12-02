@@ -14,6 +14,3 @@ export interface AboutYouScreenProps {
   onBack: () => void;
   initialData?: Partial<AboutYouFormData>;
 }
-
-
-

@@ -19,6 +19,3 @@ export interface EventCardProps {
   onLike?: () => void;
   onDislike?: () => void;
 }
-
-
-

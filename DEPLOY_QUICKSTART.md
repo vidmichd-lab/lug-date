@@ -9,6 +9,7 @@
 ### Вариант 1: Через GitHub Actions (Рекомендуется)
 
 **Автоматический деплой при push:**
+
 ```bash
 # Закоммить изменения
 git commit -m "Fix backend deployment: proper env variable escaping"
@@ -20,6 +21,7 @@ git push origin main     # для production
 ```
 
 **Ручной запуск workflow:**
+
 1. Откройте: https://github.com/vidmichd-lab/lug-date/actions
 2. Найдите workflow "Deploy Backend to Yandex Cloud Functions"
 3. Нажмите "Run workflow"
@@ -75,16 +77,19 @@ yc serverless function version create \
 После успешного деплоя проверьте:
 
 1. **Статус функции:**
+
    ```bash
    yc serverless function get --id d4enks8erf8eentnojj9
    ```
 
 2. **URL функции:**
+
    ```
    https://functions.yandexcloud.net/d4enks8erf8eentnojj9
    ```
 
 3. **API Gateway:**
+
    ```
    https://d5dc4655gjtafu92k0od.yl4tuxdu.apigw.yandexcloud.net
    ```
@@ -107,4 +112,3 @@ yc serverless function version create \
 2. Дождаться завершения деплоя в GitHub Actions
 3. Проверить работу функции через API Gateway
 4. Обновить конфигурацию фронтенда/админки при необходимости
-

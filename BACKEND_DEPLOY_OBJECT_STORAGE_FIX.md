@@ -3,6 +3,7 @@
 ## Проблема
 
 При деплое бекенда возникала ошибка:
+
 ```
 ERROR: zip archive content exceeds the maximum size 3.5 MB, use object storage to upload the content
 ```
@@ -16,6 +17,7 @@ ERROR: zip archive content exceeds the maximum size 3.5 MB, use object storage t
 ## Изменения в workflow
 
 ### 1. Добавлен шаг установки AWS CLI
+
 ```yaml
 - name: Setup AWS CLI for Object Storage
   run: |
@@ -24,6 +26,7 @@ ERROR: zip archive content exceeds the maximum size 3.5 MB, use object storage t
 ```
 
 ### 2. Добавлен шаг загрузки архива в Object Storage
+
 ```yaml
 - name: Upload archive to Object Storage
   run: |
@@ -36,10 +39,11 @@ ERROR: zip archive content exceeds the maximum size 3.5 MB, use object storage t
 ```
 
 ### 3. Изменен шаг деплоя для использования URL из Object Storage
+
 ```yaml
 yc serverless function version create \
-  --source-path "$FUNCTION_ARCHIVE_URL" \
-  # ... остальные параметры
+--source-path "$FUNCTION_ARCHIVE_URL" \
+# ... остальные параметры
 ```
 
 ## Требования
@@ -53,6 +57,7 @@ yc serverless function version create \
 ## Формат URL
 
 Yandex Cloud Functions поддерживает URL из Object Storage в формате:
+
 ```
 https://storage.yandexcloud.net/{bucket}/{key}
 ```
@@ -69,11 +74,13 @@ https://storage.yandexcloud.net/{bucket}/{key}
 После деплоя проверьте:
 
 1. **Архив загружен в Object Storage:**
+
    ```bash
    yc storage ls s3://${BUCKET}/function-*
    ```
 
 2. **Функция задеплоена:**
+
    ```bash
    yc serverless function get --id d4enks8erf8eentnojj9
    ```
@@ -88,4 +95,3 @@ https://storage.yandexcloud.net/{bucket}/{key}
 - Архивы хранятся с уникальными именами, включающими SHA коммита и timestamp
 - Старые архивы можно удалить вручную или настроить автоматическую очистку
 - Service Account функции должен иметь права на чтение из Object Storage
-

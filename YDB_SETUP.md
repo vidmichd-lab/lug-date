@@ -51,12 +51,10 @@ npm run migrate
 ## Примечание
 
 YDB SDK автоматически ищет учетные данные в следующем порядке:
+
 1. `YDB_TOKEN` - токен доступа
 2. `YC_SERVICE_ACCOUNT_KEY_FILE` - путь к файлу с ключом
 3. `YC_SERVICE_ACCOUNT_KEY` - JSON ключ как строка
 4. Metadata service (при запуске в Yandex Cloud)
 
 Если у вас есть файл `yc-service-account-key.json`, просто добавьте `YC_SERVICE_ACCOUNT_KEY_FILE=./yc-service-account-key.json` в `.env`.
-
-
-

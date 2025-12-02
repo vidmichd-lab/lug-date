@@ -40,6 +40,3 @@ export function sortCards(cards: Card[], hasCategory: boolean): Card[] {
     );
   }
 }
-
-
-

@@ -55,6 +55,7 @@ GET /health
 ```
 
 **Response:**
+
 ```json
 {
   "status": "ok",
@@ -75,6 +76,7 @@ GET /api/admin/analytics/overview
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -112,9 +114,11 @@ GET /api/admin/analytics/users-chart?period=7d
 ```
 
 **Query Parameters:**
+
 - `period` (optional): `7d` | `30d` (default: `7d`)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -135,9 +139,11 @@ GET /api/admin/analytics/events-top?limit=10
 ```
 
 **Query Parameters:**
+
 - `limit` (optional): количество событий (default: 10)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -160,6 +166,7 @@ GET /api/admin/analytics/funnel
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -190,6 +197,7 @@ GET /api/admin/analytics/activity-heatmap
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -210,9 +218,11 @@ GET /api/admin/analytics/recent-matches?limit=10
 ```
 
 **Query Parameters:**
+
 - `limit` (optional): количество матчей (default: 10)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -246,6 +256,7 @@ POST /api/v1/matches
 ```
 
 **Request Body:**
+
 ```json
 {
   "userId1": "user-123",
@@ -255,6 +266,7 @@ POST /api/v1/matches
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -275,12 +287,14 @@ GET /api/v1/matches
 ```
 
 **Query Parameters:**
+
 - `userId` (optional): фильтр по пользователю
 - `eventId` (optional): фильтр по событию
 - `limit` (optional): количество результатов (default: 20)
 - `offset` (optional): смещение (default: 0)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -313,10 +327,12 @@ Content-Type: multipart/form-data
 ```
 
 **Form Data:**
+
 - `photo` (file): изображение (max 10MB)
 - `userId` (string): ID пользователя
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -342,6 +358,7 @@ Content-Type: multipart/form-data
 ```
 
 **Ошибки:**
+
 - `400`: Неверные параметры (отсутствует userId или photo)
 - `413`: Файл слишком большой (> 10MB)
 - `415`: Неподдерживаемый формат файла
@@ -353,35 +370,35 @@ Content-Type: multipart/form-data
 
 ### HTTP Status Codes
 
-| Код | Описание |
-|-----|----------|
-| 200 | Успешный запрос |
-| 201 | Ресурс создан |
-| 400 | Неверные параметры запроса |
-| 401 | Не авторизован |
-| 403 | Доступ запрещен |
-| 404 | Ресурс не найден |
+| Код | Описание                      |
+| --- | ----------------------------- |
+| 200 | Успешный запрос               |
+| 201 | Ресурс создан                 |
+| 400 | Неверные параметры запроса    |
+| 401 | Не авторизован                |
+| 403 | Доступ запрещен               |
+| 404 | Ресурс не найден              |
 | 409 | Конфликт (например, дубликат) |
-| 413 | Файл слишком большой |
-| 415 | Неподдерживаемый формат |
-| 429 | Слишком много запросов |
-| 500 | Внутренняя ошибка сервера |
-| 503 | Сервис недоступен |
+| 413 | Файл слишком большой          |
+| 415 | Неподдерживаемый формат       |
+| 429 | Слишком много запросов        |
+| 500 | Внутренняя ошибка сервера     |
+| 503 | Сервис недоступен             |
 
 ### Error Codes
 
-| Код | Описание |
-|-----|----------|
-| `VALIDATION_ERROR` | Ошибка валидации данных |
-| `UNAUTHORIZED` | Требуется аутентификация |
-| `FORBIDDEN` | Доступ запрещен |
-| `NOT_FOUND` | Ресурс не найден |
-| `DUPLICATE_ENTRY` | Дубликат записи |
-| `FILE_TOO_LARGE` | Файл слишком большой |
-| `UNSUPPORTED_FORMAT` | Неподдерживаемый формат |
-| `DATABASE_ERROR` | Ошибка базы данных |
-| `EXTERNAL_SERVICE_ERROR` | Ошибка внешнего сервиса |
-| `INTERNAL_ERROR` | Внутренняя ошибка |
+| Код                      | Описание                 |
+| ------------------------ | ------------------------ |
+| `VALIDATION_ERROR`       | Ошибка валидации данных  |
+| `UNAUTHORIZED`           | Требуется аутентификация |
+| `FORBIDDEN`              | Доступ запрещен          |
+| `NOT_FOUND`              | Ресурс не найден         |
+| `DUPLICATE_ENTRY`        | Дубликат записи          |
+| `FILE_TOO_LARGE`         | Файл слишком большой     |
+| `UNSUPPORTED_FORMAT`     | Неподдерживаемый формат  |
+| `DATABASE_ERROR`         | Ошибка базы данных       |
+| `EXTERNAL_SERVICE_ERROR` | Ошибка внешнего сервиса  |
+| `INTERNAL_ERROR`         | Внутренняя ошибка        |
 
 ## Rate Limiting
 
@@ -398,6 +415,7 @@ API имеет ограничения на количество запросов
 ### cURL
 
 **Создать матч:**
+
 ```bash
 curl -X POST http://localhost:4000/api/v1/matches \
   -H "Content-Type: application/json" \
@@ -410,6 +428,7 @@ curl -X POST http://localhost:4000/api/v1/matches \
 ```
 
 **Загрузить фото:**
+
 ```bash
 curl -X POST http://localhost:4000/api/v1/photos \
   -H "Authorization: Bearer <token>" \
@@ -425,13 +444,13 @@ const response = await fetch('http://localhost:4000/api/v1/matches', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': 'Bearer <token>'
+    Authorization: 'Bearer <token>',
   },
   body: JSON.stringify({
     userId1: 'user-123',
     userId2: 'user-456',
-    eventId: 'event-789'
-  })
+    eventId: 'event-789',
+  }),
 });
 
 const data = await response.json();
@@ -442,11 +461,7 @@ const data = await response.json();
 ```typescript
 import { useMutation } from '@tanstack/react-query';
 
-const createMatch = async (matchData: {
-  userId1: string;
-  userId2: string;
-  eventId?: string;
-}) => {
+const createMatch = async (matchData: { userId1: string; userId2: string; eventId?: string }) => {
   const response = await fetch('/api/v1/matches', {
     method: 'POST',
     headers: {
@@ -454,11 +469,11 @@ const createMatch = async (matchData: {
     },
     body: JSON.stringify(matchData),
   });
-  
+
   if (!response.ok) {
     throw new Error('Failed to create match');
   }
-  
+
   return response.json();
 };
 
@@ -474,6 +489,7 @@ const { mutate } = useMutation({
 ## Версионирование
 
 API использует версионирование через URL:
+
 - `/api/v1/` - текущая версия
 - `/api/v2/` - будущая версия (при необходимости)
 
@@ -482,9 +498,7 @@ API использует версионирование через URL:
 ## Changelog
 
 ### v1.0.0 (2024-01-01)
+
 - Первый релиз API
 - Endpoints для матчей и фото
 - Admin analytics endpoints
-
-
-

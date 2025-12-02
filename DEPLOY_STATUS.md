@@ -21,6 +21,7 @@
    - `FRONTEND_STORAGE_SECRET_KEY_DEV`
 
 2. Сделайте push в `develop`:
+
    ```bash
    git push origin develop
    ```
@@ -35,6 +36,7 @@
    - Создайте новые Static Keys или используйте существующие
 
 2. Обновите `.env`:
+
    ```env
    YANDEX_STORAGE_BUCKET=dating-app-storage
    YANDEX_STORAGE_ACCESS_KEY=<правильный-ключ>
@@ -49,10 +51,12 @@
 ## 📋 Backend - ГОТОВ К ДЕПЛОЮ
 
 **Функции созданы:**
+
 - Staging: `dating-app-backend-staging` (ID: d4er75rsvc5mopabt70v)
 - Production: `dating-app-backend-prod` (ID: d4ecebdokiksrq5fkl9b)
 
 **Что нужно:**
+
 1. Добавить секреты в GitHub (см. `AUTOMATIC_DEPLOY_SETUP.md`)
 2. Сделать push в `develop`
 3. GitHub Actions автоматически задеплоит backend
@@ -64,6 +68,3 @@
 - ⏳ Backend готов к деплою (после добавления секретов)
 
 После добавления секретов в GitHub и push - все будет работать автоматически!
-
-
-

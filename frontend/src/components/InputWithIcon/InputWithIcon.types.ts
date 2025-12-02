@@ -14,6 +14,3 @@ export interface InputWithIconProps {
   rows?: number;
   className?: string;
 }
-
-
-

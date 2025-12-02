@@ -11,6 +11,3 @@ export interface OnboardingSlideProps {
   onNext: () => void;
   totalSteps: number;
 }
-
-
-

@@ -19,9 +19,11 @@ Backend автоматически деплоится в Yandex Cloud Functions 
 Добавьте следующие секреты в GitHub → Settings → Secrets and variables → Actions:
 
 ### Общие секреты:
+
 - `YC_SERVICE_ACCOUNT_KEY` - JSON ключ сервисного аккаунта Yandex Cloud
 
 ### Для Development (ветка develop):
+
 - `YDB_ENDPOINT_DEV` - Endpoint YDB для development
 - `YDB_DATABASE_DEV` - Имя базы данных YDB для development
 - `YDB_TOKEN_DEV` - Токен доступа к YDB (опционально)
@@ -31,6 +33,7 @@ Backend автоматически деплоится в Yandex Cloud Functions 
 - `YANDEX_STORAGE_SECRET_KEY_DEV` - Secret Key для Object Storage
 
 ### Для Production (ветка main):
+
 - `YDB_ENDPOINT_PROD` - Endpoint YDB для production
 - `YDB_DATABASE_PROD` - Имя базы данных YDB для production
 - `YDB_TOKEN_PROD` - Токен доступа к YDB (опционально)
@@ -40,6 +43,7 @@ Backend автоматически деплоится в Yandex Cloud Functions 
 - `YANDEX_STORAGE_SECRET_KEY_PROD` - Secret Key для Object Storage
 
 ### Общие для всех окружений:
+
 - `TELEGRAM_ALERT_BOT_TOKEN` - Токен бота для алертов
 - `TELEGRAM_ALERT_CHAT_ID` - ID чата для алертов
 
@@ -65,6 +69,7 @@ yc serverless api-gateway create --name dating-app-api
 ### 3. Обновите конфигурацию frontend и admin
 
 После деплоя получите URL функции и обновите:
+
 - `admin/public/config.js` - установите `API_URL`
 - `frontend/.env` - установите `VITE_API_URL`
 
@@ -73,6 +78,7 @@ yc serverless api-gateway create --name dating-app-api
 После деплоя проверьте:
 
 1. **Health check:**
+
    ```bash
    curl https://functions.yandexcloud.net/<function-id>/health
    ```
@@ -92,9 +98,7 @@ yc serverless api-gateway create --name dating-app-api
 ## 🔄 Автоматический деплой
 
 Workflow запускается автоматически при:
+
 - Push в ветку `develop` или `main`
 - Изменениях в `backend/**` или `shared/**`
 - Ручном запуске через GitHub Actions UI
-
-
-

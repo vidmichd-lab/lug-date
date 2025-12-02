@@ -3,6 +3,7 @@
 ## Проблема
 
 При деплое бекенда через GitHub Actions возникала ошибка:
+
 ```
 /home/runner/work/_temp/.../sh: line 46: ajejjmpvqbgb79s58mtt: No such file or directory
 Error: Process completed with exit code 1.
@@ -25,14 +26,16 @@ Error: Process completed with exit code 1.
 ## Изменения
 
 ### До:
+
 ```yaml
 YDB_ENDPOINT="${{ secrets.YDB_ENDPOINT_PROD }}"
 if [ -n "$YDB_ENDPOINT" ]; then
-  ENV_STRING="${ENV_STRING},YDB_ENDPOINT=${YDB_ENDPOINT}"
+ENV_STRING="${ENV_STRING},YDB_ENDPOINT=${YDB_ENDPOINT}"
 fi
 ```
 
 ### После:
+
 ```yaml
 env:
   YDB_ENDPOINT_VAL: ${{ secrets.YDB_ENDPOINT_PROD }}
@@ -59,4 +62,3 @@ run: |
 1. Запустите деплой через GitHub Actions
 2. Проверьте логи деплоя на наличие ошибок
 3. Убедитесь, что функция работает корректно после деплоя
-

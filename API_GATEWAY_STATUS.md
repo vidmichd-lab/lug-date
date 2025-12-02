@@ -10,8 +10,11 @@
 ## ⚠️ Проблема: 502 Bad Gateway
 
 При обращении к Gateway функция возвращает ошибку 502:
+
 ```json
-{"message":"request to function 'd4enks8erf8eentnojj9' failed, reason: Response code 502 (Bad Gateway)"}
+{
+  "message": "request to function 'd4enks8erf8eentnojj9' failed, reason: Response code 502 (Bad Gateway)"
+}
 ```
 
 ## 🔍 Возможные причины
@@ -44,12 +47,14 @@ yc serverless function list-versions --id d4enks8erf8eentnojj9
 ### 4. Проверить handler
 
 Убедитесь, что функция использует правильный handler:
+
 - Entrypoint: `dist/handler.handler`
 - Файл должен экспортировать функцию `handler`
 
 ### 5. Проверить формат ответа
 
 Функция должна возвращать ответ в формате:
+
 ```javascript
 {
   statusCode: 200,
@@ -84,4 +89,3 @@ yc serverless function list-versions --id d4enks8erf8eentnojj9
 
 - [Документация Yandex API Gateway](https://cloud.yandex.ru/docs/api-gateway/)
 - [Обработка ошибок в API Gateway](https://cloud.yandex.ru/docs/api-gateway/concepts/errors)
-

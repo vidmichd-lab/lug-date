@@ -15,6 +15,3 @@ export interface InterestTagProps {
   onClick: () => void;
   disabled?: boolean;
 }
-
-
-

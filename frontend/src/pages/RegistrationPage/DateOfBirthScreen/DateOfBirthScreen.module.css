@@ -46,7 +46,9 @@
   font-family: var(--font-family);
   text-align: center;
   box-sizing: border-box;
-  transition: border-color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+  transition:
+    border-color 0.2s ease-in-out,
+    background-color 0.2s ease-in-out;
 }
 
 .dateInput::placeholder {
@@ -94,7 +96,9 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+  transition:
+    background-color 0.2s ease-in-out,
+    border-color 0.2s ease-in-out;
 }
 
 .checkboxChecked {
@@ -159,7 +163,9 @@
   font-size: var(--font-body-size, 16px);
   font-weight: 500;
   cursor: pointer;
-  transition: opacity 0.2s ease-in-out, background-color 0.2s ease-in-out;
+  transition:
+    opacity 0.2s ease-in-out,
+    background-color 0.2s ease-in-out;
   font-family: var(--font-family);
 }
 
@@ -177,6 +183,3 @@
   cursor: not-allowed;
   opacity: 0.6;
 }
-
-
-

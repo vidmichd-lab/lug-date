@@ -6,6 +6,3 @@ export interface DeleteAccountModalProps {
   onConfirm: () => void;
   onCancel: () => void;
 }
-
-
-

@@ -20,14 +20,9 @@ export const EventCard: FC<EventCardProps> = ({ event }) => {
             <span className={styles.eventDate}>{event.date}</span>
             <span className={styles.eventPrice}>{event.price}</span>
           </div>
-          {event.description && (
-            <p className={styles.eventDescription}>{event.description}</p>
-          )}
+          {event.description && <p className={styles.eventDescription}>{event.description}</p>}
         </div>
       </div>
     </div>
   );
 };
-
-
-

@@ -77,9 +77,7 @@ export const SettingsPage: React.FC = () => {
   };
 
   const updateCategory = (id: string, updates: Partial<Category>) => {
-    setCategories(
-      categories.map((c) => (c.id === id ? { ...c, ...updates } : c))
-    );
+    setCategories(categories.map((c) => (c.id === id ? { ...c, ...updates } : c)));
   };
 
   if (loading || !settings) {
@@ -113,7 +111,9 @@ export const SettingsPage: React.FC = () => {
                 type="number"
                 placeholder="Порядок"
                 value={category.order || 0}
-                onChange={(e) => updateCategory(category.id, { order: parseInt(e.target.value) || 0 })}
+                onChange={(e) =>
+                  updateCategory(category.id, { order: parseInt(e.target.value) || 0 })
+                }
                 className={styles.inputSmall}
               />
               <label className={styles.checkboxLabel}>
@@ -124,10 +124,7 @@ export const SettingsPage: React.FC = () => {
                 />
                 Активна
               </label>
-              <button
-                onClick={() => removeCategory(category.id)}
-                className={styles.removeButton}
-              >
+              <button onClick={() => removeCategory(category.id)} className={styles.removeButton}>
                 Удалить
               </button>
             </div>
@@ -159,7 +156,9 @@ export const SettingsPage: React.FC = () => {
               <input
                 type="number"
                 value={settings.minAge}
-                onChange={(e) => setSettings({ ...settings, minAge: parseInt(e.target.value) || 18 })}
+                onChange={(e) =>
+                  setSettings({ ...settings, minAge: parseInt(e.target.value) || 18 })
+                }
                 className={styles.input}
               />
             </label>
@@ -168,7 +167,9 @@ export const SettingsPage: React.FC = () => {
               <input
                 type="number"
                 value={settings.maxAge}
-                onChange={(e) => setSettings({ ...settings, maxAge: parseInt(e.target.value) || 100 })}
+                onChange={(e) =>
+                  setSettings({ ...settings, maxAge: parseInt(e.target.value) || 100 })
+                }
                 className={styles.input}
               />
             </label>
@@ -181,7 +182,10 @@ export const SettingsPage: React.FC = () => {
               onChange={(e) =>
                 setSettings({
                   ...settings,
-                  cities: e.target.value.split(',').map((c) => c.trim()).filter(Boolean),
+                  cities: e.target.value
+                    .split(',')
+                    .map((c) => c.trim())
+                    .filter(Boolean),
                 })
               }
               className={styles.input}
@@ -195,6 +199,3 @@ export const SettingsPage: React.FC = () => {
     </div>
   );
 };
-
-
-

@@ -3,6 +3,7 @@
 ## Текущая ситуация
 
 ✅ **Что работает:**
+
 - `YDB_ENDPOINT_DEV` установлен: `grpcs://ydb.serverless.yandexcloud.net:2135`
 - `YDB_DATABASE_DEV` установлен: `/ru-central1/b1g6a1tnrohoeas9v0k6/etn8n7ptmkui9808eo6b`
 - `YC_SERVICE_ACCOUNT_KEY_FILE` установлен: `./yc-service-account-key.json`
@@ -10,21 +11,25 @@
 - Credentials загружаются успешно
 
 ❌ **Проблема:**
+
 - YDB driver initialization timeout (30 секунд)
 - Подключение не устанавливается
 
 ## Возможные причины
 
 ### 1. Сетевые проблемы
+
 - Firewall блокирует подключение к порту 2135
 - Нужен VPN для доступа к Yandex Cloud
 - Проблемы с DNS
 
 ### 2. Неправильный endpoint
+
 - Endpoint может быть другим для вашего региона
 - Проверьте в консоли Yandex Cloud правильный endpoint
 
 ### 3. Проблемы с сервисным аккаунтом
+
 - Недостаточно прав у сервисного аккаунта
 - Сервисный аккаунт не имеет доступа к YDB
 
@@ -40,16 +45,19 @@
 ### Решение 2: Проверьте права сервисного аккаунта
 
 Убедитесь, что сервисный аккаунт имеет роль:
+
 - `ydb.editor` или `ydb.admin` для работы с базой данных
 
 ### Решение 3: Используйте токен вместо сервисного аккаунта
 
 В `.env` добавьте:
+
 ```bash
 YDB_TOKEN_DEV=ваш-токен-здесь
 ```
 
 Токен можно получить через:
+
 ```bash
 yc iam create-token
 ```
@@ -57,6 +65,7 @@ yc iam create-token
 ### Решение 4: Проверьте сетевую доступность
 
 Попробуйте подключиться вручную:
+
 ```bash
 # Установите YDB CLI если еще не установлен
 # Затем попробуйте:
@@ -83,14 +92,13 @@ YC_SERVICE_ACCOUNT_KEY_FILE=./yc-service-account-key.json
 ## Логи для диагностики
 
 Запустите с максимальным логированием:
+
 ```bash
 LOG_LEVEL=debug npm run migrate
 ```
 
 Обратите внимание на:
+
 - `ydb_credentials_loaded` - credentials загружены успешно
 - `ydb_driver_creating` - драйвер создается
 - `ydb_driver_timeout` - timeout подключения
-
-
-

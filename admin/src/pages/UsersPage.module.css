@@ -135,7 +135,7 @@
   font-size: 1rem;
 }
 
-.form input[type="checkbox"] {
+.form input[type='checkbox'] {
   width: auto;
   margin-right: 0.5rem;
 }
@@ -184,11 +184,8 @@
   .content {
     grid-template-columns: 1fr;
   }
-  
+
   .editPanel {
     position: static;
   }
 }
-
-
-

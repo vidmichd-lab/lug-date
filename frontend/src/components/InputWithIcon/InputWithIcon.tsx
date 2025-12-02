@@ -166,6 +166,3 @@ export const InputWithIcon: FC<InputWithIconProps> = ({
     </div>
   );
 };
-
-
-

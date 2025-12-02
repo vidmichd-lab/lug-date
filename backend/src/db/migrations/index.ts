@@ -170,6 +170,3 @@ export async function getMigrationStatus(): Promise<{
     pending,
   };
 }
-
-
-

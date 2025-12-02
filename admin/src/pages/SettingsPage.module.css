@@ -135,11 +135,8 @@
   .categoryItem {
     grid-template-columns: 1fr;
   }
-  
+
   .row {
     grid-template-columns: 1fr;
   }
 }
-
-
-

@@ -1,0 +1,18 @@
+{
+  "root": true,
+  "ignorePatterns": ["node_modules", "dist", "build", "*.config.js", "*.config.ts"],
+  "overrides": [
+    {
+      "files": ["scripts/**/*.ts"],
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "ecmaVersion": 2020,
+        "sourceType": "module"
+      },
+      "rules": {
+        "no-console": "off",
+        "no-unused-vars": "off"
+      }
+    }
+  ]
+}

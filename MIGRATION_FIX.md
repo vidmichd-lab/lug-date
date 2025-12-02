@@ -3,6 +3,7 @@
 ## Проблема
 
 Миграции не запускались из-за:
+
 1. `initYDB()` в development режиме не бросала ошибку при неудаче подключения
 2. Использовались устаревшие поля `endpoint` и `database` вместо `connectionString`
 
@@ -17,6 +18,7 @@
 ### 2. Обновлены скрипты миграций
 
 **Файлы:**
+
 - `backend/src/db/migrations/run.ts` - использует `initYDBForMigrations()`
 - `backend/src/db/migrations/status.ts` - использует `initYDBForMigrations()`
 
@@ -25,6 +27,7 @@
 **Файл:** `backend/src/db/connection.ts`
 
 Теперь используется `connectionString` вместо устаревших `endpoint` и `database`:
+
 ```typescript
 const connectionString = `${endpoint}?database=${encodeURIComponent(database)}`;
 ```
@@ -59,9 +62,7 @@ npm run migrate
 ## Следующие шаги
 
 Если проблема сохраняется, проверьте логи более детально:
+
 ```bash
 LOG_LEVEL=debug npm run migrate
 ```
-
-
-

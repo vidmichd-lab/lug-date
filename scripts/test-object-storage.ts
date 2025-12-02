@@ -1,7 +1,7 @@
 /**
  * Test script for Object Storage upload
  * Usage: npm run test:storage
- * 
+ *
  * This script tests uploading a test image to Yandex Object Storage
  */
 
@@ -49,15 +49,10 @@ async function testObjectStorage() {
     console.log(`📤 Uploading test image to: ${testKey}`);
 
     // Upload test image
-    const url = await objectStorageService.uploadFile(
-      testKey,
-      testImageBuffer,
-      'image/png',
-      {
-        test: 'true',
-        uploadedAt: new Date().toISOString(),
-      }
-    );
+    const url = await objectStorageService.uploadFile(testKey, testImageBuffer, 'image/png', {
+      test: 'true',
+      uploadedAt: new Date().toISOString(),
+    });
 
     console.log('✅ Upload successful!');
     console.log(`   URL: ${url}\n`);
@@ -86,6 +81,3 @@ async function testObjectStorage() {
 }
 
 testObjectStorage();
-
-
-

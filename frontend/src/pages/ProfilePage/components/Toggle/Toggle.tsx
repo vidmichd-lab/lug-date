@@ -26,6 +26,3 @@ export const Toggle: FC<ToggleProps> = ({ checked, onChange, label, disabled = f
     </div>
   );
 };
-
-
-

@@ -60,27 +60,21 @@ async function fixComponentImports(componentDir: string, componentName: string):
 
     if (actualTsxName && actualTypesName) {
       // Replace imports with actual file names (lowercase)
-      content = content.replace(
-        /from ['"]\.\/([A-Z][a-zA-Z0-9]+)['"]/g,
-        (match, name) => {
-          const lowerName = name.toLowerCase();
-          if (lowerName === actualTsxName.toLowerCase()) {
-            return `from './${actualTsxName}'`;
-          }
-          return match;
+      content = content.replace(/from ['"]\.\/([A-Z][a-zA-Z0-9]+)['"]/g, (match, name) => {
+        const lowerName = name.toLowerCase();
+        if (lowerName === actualTsxName.toLowerCase()) {
+          return `from './${actualTsxName}'`;
         }
-      );
+        return match;
+      });
 
-      content = content.replace(
-        /from ['"]\.\/([A-Z][a-zA-Z0-9]+)\.types['"]/g,
-        (match, name) => {
-          const lowerName = name.toLowerCase();
-          if (lowerName === actualTypesName.toLowerCase()) {
-            return `from './${actualTypesName}.types'`;
-          }
-          return match;
+      content = content.replace(/from ['"]\.\/([A-Z][a-zA-Z0-9]+)\.types['"]/g, (match, name) => {
+        const lowerName = name.toLowerCase();
+        if (lowerName === actualTypesName.toLowerCase()) {
+          return `from './${actualTypesName}.types'`;
         }
-      );
+        return match;
+      });
 
       if (content !== originalContent) {
         await writeFile(indexPath, content, 'utf-8');
@@ -113,16 +107,13 @@ async function fixComponentImports(componentDir: string, componentName: string):
       );
 
       // Fix types import
-      content = content.replace(
-        /from ['"]\.\/([A-Z][a-zA-Z0-9]+)\.types['"]/g,
-        (match, name) => {
-          const lowerName = name.toLowerCase();
-          if (lowerName === actualTypesName.toLowerCase()) {
-            return `from './${actualTypesName}.types'`;
-          }
-          return match;
+      content = content.replace(/from ['"]\.\/([A-Z][a-zA-Z0-9]+)\.types['"]/g, (match, name) => {
+        const lowerName = name.toLowerCase();
+        if (lowerName === actualTypesName.toLowerCase()) {
+          return `from './${actualTypesName}.types'`;
         }
-      );
+        return match;
+      });
 
       if (content !== originalContent) {
         await writeFile(tsxPath, content, 'utf-8');
@@ -143,7 +134,7 @@ async function main() {
 
   for (const component of components) {
     const componentPath = join(DESIGN_SYSTEM_PATH, component);
-    const stat = await import('fs/promises').then(m => m.stat(componentPath));
+    const stat = await import('fs/promises').then((m) => m.stat(componentPath));
 
     if (stat.isDirectory()) {
       const changed = await fixComponentImports(componentPath, component);
@@ -157,6 +148,3 @@ async function main() {
 }
 
 main().catch(console.error);
-
-
-

@@ -78,14 +78,21 @@ export const INTERESTS_DATA: Interest[] = [
   { id: 'management', label: 'Менеджмент', iconComponent: Whatmanager, color: '#FFC107' },
   { id: 'marketing', label: 'Маркетинг', iconComponent: Whatmarketing, color: '#4CAF50' },
   { id: 'plants', label: 'Растения', iconComponent: Whatplants, color: '#8D6E63' },
-  { id: 'charity', label: 'Благотворительность и НКО', iconComponent: Whatcharity, color: '#2196F3' },
+  {
+    id: 'charity',
+    label: 'Благотворительность и НКО',
+    iconComponent: Whatcharity,
+    color: '#2196F3',
+  },
   { id: 'business', label: 'Бизнес', iconComponent: Whateconomic, color: '#9C27B0' },
   { id: 'economics', label: 'Экономика', iconComponent: Whateconomic, color: '#E91E63' },
   { id: 'ai', label: 'AI', iconComponent: Whatai, color: '#9E9E9E' },
   { id: 'medicine', label: 'Медицина', iconComponent: Whatmed, color: '#FFC107' },
   { id: 'yoga', label: 'Йога', iconComponent: Whatyoga, color: '#9E9E9E' },
-  { id: 'education', label: 'Преподавание и образование', iconComponent: Whatteach, color: '#9C27B0' },
+  {
+    id: 'education',
+    label: 'Преподавание и образование',
+    iconComponent: Whatteach,
+    color: '#9C27B0',
+  },
 ];
-
-
-

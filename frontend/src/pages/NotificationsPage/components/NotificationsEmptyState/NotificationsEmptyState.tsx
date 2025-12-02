@@ -17,6 +17,3 @@ export const NotificationsEmptyState: FC = () => {
     </div>
   );
 };
-
-
-

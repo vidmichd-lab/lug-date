@@ -20,19 +20,14 @@ export const OnboardingSlide: FC<OnboardingSlideProps> = ({
   return (
     <div className={styles.slideContainer}>
       <OnboardingProgress currentStep={step} totalSteps={totalSteps} />
-      
+
       <div className={styles.contentContainer}>
         <div className={styles.descriptionContainer}>
           <h1 className={styles.title}>{title}</h1>
           <p className={styles.subtitle}>{subtitle}</p>
-          
+
           {illustration ? (
-            <img
-              src={illustration}
-              alt=""
-              className={styles.illustration}
-              loading="lazy"
-            />
+            <img src={illustration} alt="" className={styles.illustration} loading="lazy" />
           ) : (
             <div className={styles.illustrationPlaceholder}>
               {/* Placeholder for future illustration */}
@@ -42,17 +37,10 @@ export const OnboardingSlide: FC<OnboardingSlideProps> = ({
       </div>
 
       <div className={styles.buttonContainer}>
-        <button
-          className={styles.button}
-          onClick={onNext}
-          type="button"
-        >
+        <button className={styles.button} onClick={onNext} type="button">
           {buttonText}
         </button>
       </div>
     </div>
   );
 };
-
-
-

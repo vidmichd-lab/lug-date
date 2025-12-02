@@ -7,6 +7,3 @@ export interface ArchiveConfirmationModalProps {
   onConfirm: () => void;
   onCancel: () => void;
 }
-
-
-

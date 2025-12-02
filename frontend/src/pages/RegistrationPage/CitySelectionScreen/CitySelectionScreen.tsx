@@ -29,12 +29,9 @@ export const CitySelectionScreen: React.FC<CitySelectionScreenProps> = ({
   // For now, use default cities
   const availableCities = DEFAULT_CITIES.filter((city) => city.isActive);
 
-  const handleCitySelect = useCallback(
-    (cityId: string) => {
-      setSelectedCityId(cityId);
-    },
-    []
-  );
+  const handleCitySelect = useCallback((cityId: string) => {
+    setSelectedCityId(cityId);
+  }, []);
 
   const handleNext = useCallback(() => {
     if (selectedCityId) {
@@ -80,11 +77,7 @@ export const CitySelectionScreen: React.FC<CitySelectionScreenProps> = ({
           ))}
         </div>
 
-        <button
-          className={styles.helpLink}
-          onClick={handleOpenModal}
-          type="button"
-        >
+        <button className={styles.helpLink} onClick={handleOpenModal} type="button">
           {t('registration.citySelection.helpLink')}
         </button>
 
@@ -104,6 +97,3 @@ export const CitySelectionScreen: React.FC<CitySelectionScreenProps> = ({
     </div>
   );
 };
-
-
-

@@ -29,26 +29,23 @@ export const InterestsScreen: React.FC<InterestsScreenProps> = ({
     [selectedInterests.length]
   );
 
-  const handleToggleInterest = useCallback(
-    (interestId: string) => {
-      setSelectedInterests((prev) => {
-        const isSelected = prev.includes(interestId);
+  const handleToggleInterest = useCallback((interestId: string) => {
+    setSelectedInterests((prev) => {
+      const isSelected = prev.includes(interestId);
 
-        if (isSelected) {
-          // Remove from selection
-          return prev.filter((id) => id !== interestId);
-        } else {
-          // Add to selection if limit not reached
-          if (prev.length < MAX_INTERESTS) {
-            return [...prev, interestId];
-          }
-          // TODO: Show toast notification about limit
-          return prev;
+      if (isSelected) {
+        // Remove from selection
+        return prev.filter((id) => id !== interestId);
+      } else {
+        // Add to selection if limit not reached
+        if (prev.length < MAX_INTERESTS) {
+          return [...prev, interestId];
         }
-      });
-    },
-    []
-  );
+        // TODO: Show toast notification about limit
+        return prev;
+      }
+    });
+  }, []);
 
   const handleNext = useCallback(() => {
     onNext(selectedInterests);
@@ -114,6 +111,3 @@ export const InterestsScreen: React.FC<InterestsScreenProps> = ({
     </div>
   );
 };
-
-
-

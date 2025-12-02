@@ -30,7 +30,9 @@ export async function generateComponents(
 
       generatedCount++;
     } catch (error) {
-      console.warn(`⚠️  Пропущен компонент ${component.name}: ${error instanceof Error ? error.message : String(error)}`);
+      console.warn(
+        `⚠️  Пропущен компонент ${component.name}: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -66,7 +68,7 @@ import styles from './${componentName}.module.css';
 /**
  * ${component.description || `${componentName} component`}
  * 
- * ${component.documentationLinks?.map(link => `Documentation: ${link.uri}`).join('\n') || ''}
+ * ${component.documentationLinks?.map((link) => `Documentation: ${link.uri}`).join('\n') || ''}
  */
 export const ${componentName}: React.FC<${propsInterface}> = ({
   children,
@@ -92,13 +94,16 @@ async function generateComponentTypes(
   componentDir: string
 ) {
   const hasVariants = component.componentSetId !== undefined;
-  
+
   let variantType = '';
   if (hasVariants) {
     // Определяем варианты из имени (например, "Button/Primary" -> variant: 'primary' | 'secondary')
     const nameParts = component.name.split('/');
     if (nameParts.length > 1) {
-      const variants = nameParts.slice(1).map(v => `'${v.toLowerCase()}'`).join(' | ');
+      const variants = nameParts
+        .slice(1)
+        .map((v) => `'${v.toLowerCase()}'`)
+        .join(' | ');
       variantType = `  variant?: ${variants};\n`;
     } else {
       variantType = `  variant?: 'default' | 'primary' | 'secondary';\n`;
@@ -147,16 +152,10 @@ async function generateComponentCSS(
   await fs.writeFile(path.join(componentDir, `${componentName}.module.css`), cssContent);
 }
 
-async function generateComponentIndex(
-  componentName: string,
-  componentDir: string
-) {
+async function generateComponentIndex(componentName: string, componentDir: string) {
   const indexContent = `export { ${componentName} } from './${componentName}';
 export type { I${componentName}Props } from './${componentName}.types';
 `;
 
   await fs.writeFile(path.join(componentDir, 'index.ts'), indexContent);
 }
-
-
-

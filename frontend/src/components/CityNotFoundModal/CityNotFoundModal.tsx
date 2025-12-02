@@ -38,9 +38,7 @@ export const CityNotFoundModal: FC<CityNotFoundModalProps> = ({ isOpen, onClose 
       <div className={styles.modal}>
         <div className={styles.modalContent}>
           <h2 className={styles.title}>{t('registration.citySelection.modal.title')}</h2>
-          <p className={styles.description}>
-            {t('registration.citySelection.modal.description')}
-          </p>
+          <p className={styles.description}>{t('registration.citySelection.modal.description')}</p>
           <div className={styles.buttonContainer}>
             <button className={styles.button} onClick={onClose} type="button">
               {t('registration.citySelection.modal.okay')}
@@ -51,6 +49,3 @@ export const CityNotFoundModal: FC<CityNotFoundModalProps> = ({ isOpen, onClose 
     </>
   );
 };
-
-
-

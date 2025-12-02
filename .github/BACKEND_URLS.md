@@ -25,6 +25,7 @@ BACKEND_URL=https://functions.yandexcloud.net/d4er75rsvc5mopabt70v npm run deplo
 ### Для frontend:
 
 Добавьте в `.env`:
+
 ```env
 VITE_API_URL=https://functions.yandexcloud.net/d4er75rsvc5mopabt70v
 ```
@@ -48,6 +49,3 @@ yc serverless function logs --name dating-app-backend-staging
 # Production
 yc serverless function logs --name dating-app-backend-prod
 ```
-
-
-

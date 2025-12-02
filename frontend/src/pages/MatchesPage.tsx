@@ -10,6 +10,3 @@ export function MatchesPage() {
     </div>
   );
 }
-
-
-

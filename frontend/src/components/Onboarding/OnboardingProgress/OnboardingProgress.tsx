@@ -7,10 +7,7 @@ import { FC } from 'react';
 import styles from './OnboardingProgress.module.css';
 import type { OnboardingProgressProps } from './OnboardingProgress.types';
 
-export const OnboardingProgress: FC<OnboardingProgressProps> = ({
-  currentStep,
-  totalSteps,
-}) => {
+export const OnboardingProgress: FC<OnboardingProgressProps> = ({ currentStep, totalSteps }) => {
   return (
     <div className={styles.progressContainer}>
       {Array.from({ length: totalSteps }, (_, index) => {
@@ -31,6 +28,3 @@ export const OnboardingProgress: FC<OnboardingProgressProps> = ({
     </div>
   );
 };
-
-
-

@@ -51,7 +51,11 @@ export const GoalSelectionScreen: React.FC<GoalSelectionScreenProps> = ({
         <h2 className={styles.title}>{t('registration.goalSelection.title')}</h2>
         <p className={styles.subtitle}>{t('registration.goalSelection.subtitle')}</p>
 
-        <div className={styles.goalsContainer} role="radiogroup" aria-label={t('registration.goalSelection.title')}>
+        <div
+          className={styles.goalsContainer}
+          role="radiogroup"
+          aria-label={t('registration.goalSelection.title')}
+        >
           {GOAL_OPTIONS.map((option) => (
             <button
               key={option.id}
@@ -83,6 +87,3 @@ export const GoalSelectionScreen: React.FC<GoalSelectionScreenProps> = ({
     </div>
   );
 };
-
-
-

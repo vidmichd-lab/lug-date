@@ -110,6 +110,3 @@ export const AboutYouScreen: React.FC<AboutYouScreenProps> = ({
     </div>
   );
 };
-
-
-

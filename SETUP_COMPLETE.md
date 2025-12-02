@@ -9,6 +9,7 @@
 **Файл:** `backend/src/routes/admin.ts`
 
 Все 6 endpoints теперь используют реальные запросы к базе данных:
+
 - `/api/admin/analytics/overview` - общая статистика
 - `/api/admin/analytics/users-chart` - график регистраций
 - `/api/admin/analytics/events-top` - топ событий
@@ -21,6 +22,7 @@
 **Файл:** `backend/src/repositories/analyticsRepository.ts`
 
 Реализованы методы:
+
 - `getUserStats()` - статистика пользователей
 - `getEventStats()` - статистика событий
 - `getMatchStats()` - статистика матчей
@@ -33,6 +35,7 @@
 - `getOnlineUsersCount()` - количество онлайн пользователей
 
 **Особенности:**
+
 - Запросы оптимизированы для YDB
 - Используются отдельные запросы вместо UNION ALL (YDB ограничения)
 - Heatmap использует JavaScript фильтрацию (YDB не поддерживает EXTRACT)
@@ -43,6 +46,7 @@
 **Статус:** Файл существует
 
 **Обнаружено:**
+
 - Отсутствует `YDB_TOKEN_DEV` (не критично, если используется сервисный аккаунт)
 
 **Рекомендация:** Добавить `YDB_TOKEN_DEV` в `.env` если используется токен для авторизации, или настроить сервисный аккаунт.
@@ -54,7 +58,9 @@
 **Причина:** Не настроено подключение к YDB (отсутствует токен или сервисный аккаунт)
 
 **Что нужно сделать:**
+
 1. Настроить YDB подключение в `.env`:
+
    ```bash
    YDB_ENDPOINT_DEV=your-endpoint
    YDB_DATABASE_DEV=your-database
@@ -71,11 +77,13 @@
 **Статус:** Ожидает настройки YDB
 
 **Команда для запуска:**
+
 ```bash
 NODE_ENV=development npm run dev:all
 ```
 
 **Что будет запущено:**
+
 - Frontend на `http://localhost:3000`
 - Backend на `http://localhost:4000`
 - Admin на `http://localhost:5174`
@@ -88,6 +96,7 @@ NODE_ENV=development npm run dev:all
 ### Обязательно перед запуском:
 
 1. **Настроить YDB:**
+
    ```bash
    # В .env файле
    YDB_ENDPOINT_DEV=grpcs://ydb.serverless.yandexcloud.net:2135
@@ -96,11 +105,13 @@ NODE_ENV=development npm run dev:all
    ```
 
 2. **Запустить миграции:**
+
    ```bash
    npm run migrate
    ```
 
 3. **Проверить статус миграций:**
+
    ```bash
    npm run migrate:status
    ```
@@ -149,6 +160,3 @@ NODE_ENV=development npm run dev:all
 **Готовность к разработке: 95%** ✅
 
 Осталось только настроить YDB подключение и можно начинать разработку!
-
-
-

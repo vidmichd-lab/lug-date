@@ -17,11 +17,7 @@ export const OnboardingAuthSelection: FC<OnboardingAuthSelectionProps> = ({
   return (
     <div className={styles.container}>
       <div className={styles.buttonContainer}>
-        <button
-          className={styles.primaryButton}
-          onClick={onTelegramAuth}
-          type="button"
-        >
+        <button className={styles.primaryButton} onClick={onTelegramAuth} type="button">
           <svg
             className={styles.telegramIcon}
             viewBox="0 0 24 24"
@@ -32,17 +28,10 @@ export const OnboardingAuthSelection: FC<OnboardingAuthSelectionProps> = ({
           {t('onboarding.authSelection.telegramAuth')}
         </button>
 
-        <button
-          className={styles.secondaryButton}
-          onClick={onContinueGuest}
-          type="button"
-        >
+        <button className={styles.secondaryButton} onClick={onContinueGuest} type="button">
           {t('onboarding.authSelection.continueGuest')}
         </button>
       </div>
     </div>
   );
 };
-
-
-
