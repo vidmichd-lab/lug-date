@@ -37,6 +37,10 @@ const REQUIRED_SECRETS: Secret[] = [
   { name: 'TELEGRAM_ALERT_BOT_TOKEN', required: false, description: 'Telegram alert bot token' },
   { name: 'TELEGRAM_ALERT_CHAT_ID', required: false, description: 'Telegram alert chat ID' },
   { name: 'YC_REGISTRY_ID', required: true, description: 'Yandex Container Registry ID for Docker images' },
+  { name: 'YC_BACKEND_FUNCTION_ID_STAGING', required: true, description: 'Yandex Cloud Function ID for backend (staging)' },
+  { name: 'YC_BACKEND_FUNCTION_ID_PROD', required: true, description: 'Yandex Cloud Function ID for backend (production)' },
+  { name: 'YC_BOT_FUNCTION_ID_STAGING', required: true, description: 'Yandex Cloud Function ID for bot (staging)' },
+  { name: 'YC_BOT_FUNCTION_ID_PROD', required: true, description: 'Yandex Cloud Function ID for bot (production)' },
 ];
 
 const REQUIRED_ENVIRONMENTS: Environment[] = [
