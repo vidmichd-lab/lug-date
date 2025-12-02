@@ -100,23 +100,51 @@ jobs:
           fi
           
           # Create new version
-          # Build environment variables string
-          ENV_VARS="NODE_ENV=${{ github.ref == 'refs/heads/main' && 'production' || 'development' }},PORT=8080"
-          ENV_VARS="$ENV_VARS,YDB_ENDPOINT=${{ github.ref == 'refs/heads/main' && secrets.YDB_ENDPOINT_PROD || secrets.YDB_ENDPOINT_DEV }}"
-          ENV_VARS="$ENV_VARS,YDB_DATABASE=${{ github.ref == 'refs/heads/main' && secrets.YDB_DATABASE_PROD || secrets.YDB_DATABASE_DEV }}"
-          ENV_VARS="$ENV_VARS,YDB_TOKEN=${{ github.ref == 'refs/heads/main' && secrets.YDB_TOKEN_PROD || secrets.YDB_TOKEN_DEV }}"
-          ENV_VARS="$ENV_VARS,YC_SERVICE_ACCOUNT_KEY=${{ secrets.YC_SERVICE_ACCOUNT_KEY }}"
-          ENV_VARS="$ENV_VARS,TELEGRAM_BOT_TOKEN=${{ github.ref == 'refs/heads/main' && secrets.TELEGRAM_BOT_TOKEN_PROD || secrets.TELEGRAM_BOT_TOKEN_DEV }}"
-          ENV_VARS="$ENV_VARS,YANDEX_STORAGE_BUCKET=${{ github.ref == 'refs/heads/main' && secrets.YANDEX_STORAGE_BUCKET_PROD || secrets.YANDEX_STORAGE_BUCKET_DEV }}"
-          ENV_VARS="$ENV_VARS,YANDEX_STORAGE_ACCESS_KEY=${{ github.ref == 'refs/heads/main' && secrets.YANDEX_STORAGE_ACCESS_KEY_PROD || secrets.YANDEX_STORAGE_ACCESS_KEY_DEV }}"
-          ENV_VARS="$ENV_VARS,YANDEX_STORAGE_SECRET_KEY=${{ github.ref == 'refs/heads/main' && secrets.YANDEX_STORAGE_SECRET_KEY_PROD || secrets.YANDEX_STORAGE_SECRET_KEY_DEV }}"
-          ENV_VARS="$ENV_VARS,TELEGRAM_ALERT_ENABLED=true"
-          ENV_VARS="$ENV_VARS,TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }}"
-          ENV_VARS="$ENV_VARS,TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}"
-          ENV_VARS="$ENV_VARS,ALLOWED_ORIGINS=https://dating-app-storage.website.yandexcloud.net,https://lug-admin-deploy.website.yandexcloud.net"
+          # Build environment variables string safely
+          NODE_ENV_VAL="${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}"
+          YDB_ENDPOINT_VAL="${{ github.ref == 'refs/heads/main' && secrets.YDB_ENDPOINT_PROD || secrets.YDB_ENDPOINT_DEV }}"
+          YDB_DATABASE_VAL="${{ github.ref == 'refs/heads/main' && secrets.YDB_DATABASE_PROD || secrets.YDB_DATABASE_DEV }}"
+          YDB_TOKEN_VAL="${{ github.ref == 'refs/heads/main' && secrets.YDB_TOKEN_PROD || secrets.YDB_TOKEN_DEV }}"
+          YC_SA_KEY_VAL="${{ secrets.YC_SERVICE_ACCOUNT_KEY }}"
+          TELEGRAM_BOT_TOKEN_VAL="${{ github.ref == 'refs/heads/main' && secrets.TELEGRAM_BOT_TOKEN_PROD || secrets.TELEGRAM_BOT_TOKEN_DEV }}"
+          YANDEX_STORAGE_BUCKET_VAL="${{ github.ref == 'refs/heads/main' && secrets.YANDEX_STORAGE_BUCKET_PROD || secrets.YANDEX_STORAGE_BUCKET_DEV }}"
+          YANDEX_STORAGE_ACCESS_KEY_VAL="${{ github.ref == 'refs/heads/main' && secrets.YANDEX_STORAGE_ACCESS_KEY_PROD || secrets.YANDEX_STORAGE_ACCESS_KEY_DEV }}"
+          YANDEX_STORAGE_SECRET_KEY_VAL="${{ github.ref == 'refs/heads/main' && secrets.YANDEX_STORAGE_SECRET_KEY_PROD || secrets.YANDEX_STORAGE_SECRET_KEY_DEV }}"
+          TELEGRAM_ALERT_BOT_TOKEN_VAL="${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }}"
+          TELEGRAM_ALERT_CHAT_ID_VAL="${{ secrets.TELEGRAM_ALERT_CHAT_ID }}"
+          
+          ENV_VARS="NODE_ENV=${NODE_ENV_VAL},PORT=8080"
+          ENV_VARS="${ENV_VARS},YDB_ENDPOINT=${YDB_ENDPOINT_VAL}"
+          ENV_VARS="${ENV_VARS},YDB_DATABASE=${YDB_DATABASE_VAL}"
+          if [ -n "${YDB_TOKEN_VAL}" ]; then
+            ENV_VARS="${ENV_VARS},YDB_TOKEN=${YDB_TOKEN_VAL}"
+          fi
+          if [ -n "${YC_SA_KEY_VAL}" ]; then
+            ENV_VARS="${ENV_VARS},YC_SERVICE_ACCOUNT_KEY=${YC_SA_KEY_VAL}"
+          fi
+          if [ -n "${TELEGRAM_BOT_TOKEN_VAL}" ]; then
+            ENV_VARS="${ENV_VARS},TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN_VAL}"
+          fi
+          if [ -n "${YANDEX_STORAGE_BUCKET_VAL}" ]; then
+            ENV_VARS="${ENV_VARS},YANDEX_STORAGE_BUCKET=${YANDEX_STORAGE_BUCKET_VAL}"
+          fi
+          if [ -n "${YANDEX_STORAGE_ACCESS_KEY_VAL}" ]; then
+            ENV_VARS="${ENV_VARS},YANDEX_STORAGE_ACCESS_KEY=${YANDEX_STORAGE_ACCESS_KEY_VAL}"
+          fi
+          if [ -n "${YANDEX_STORAGE_SECRET_KEY_VAL}" ]; then
+            ENV_VARS="${ENV_VARS},YANDEX_STORAGE_SECRET_KEY=${YANDEX_STORAGE_SECRET_KEY_VAL}"
+          fi
+          ENV_VARS="${ENV_VARS},TELEGRAM_ALERT_ENABLED=true"
+          if [ -n "${TELEGRAM_ALERT_BOT_TOKEN_VAL}" ]; then
+            ENV_VARS="${ENV_VARS},TELEGRAM_ALERT_BOT_TOKEN=${TELEGRAM_ALERT_BOT_TOKEN_VAL}"
+          fi
+          if [ -n "${TELEGRAM_ALERT_CHAT_ID_VAL}" ]; then
+            ENV_VARS="${ENV_VARS},TELEGRAM_ALERT_CHAT_ID=${TELEGRAM_ALERT_CHAT_ID_VAL}"
+          fi
+          ENV_VARS="${ENV_VARS},ALLOWED_ORIGINS=https://dating-app-storage.website.yandexcloud.net,https://lug-admin-deploy.website.yandexcloud.net"
           
           yc serverless function version create \
-            --function-id $FUNCTION_ID \
+            --function-id "$FUNCTION_ID" \
             --runtime nodejs18 \
             --entrypoint handler.handler \
             --memory 128m \
