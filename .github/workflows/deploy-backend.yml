@@ -38,15 +38,21 @@ jobs:
       - name: Build all packages
         run: NODE_ENV=development npm run build:all
 
+      - name: Install Yandex Cloud CLI
+        run: |
+          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
+          export PATH=$PATH:$HOME/yandex-cloud/bin
+          echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
+
       - name: Configure Yandex Cloud CLI
-        uses: yandex-cloud/actions-yc-cli@v1
-        with:
-          yc-sa-json-credentials: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
+        run: |
+          echo '${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' > /tmp/yc-sa-key.json
+          export YC_SERVICE_ACCOUNT_KEY_FILE=/tmp/yc-sa-key.json
+          yc config set service-account-key /tmp/yc-sa-key.json
 
       - name: Run database migrations
         run: |
           # Export service account key for YDB SDK
-          echo '${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' > /tmp/yc-sa-key.json
           export YC_SERVICE_ACCOUNT_KEY_FILE=/tmp/yc-sa-key.json
           NODE_ENV=development \
           YDB_ENDPOINT_DEV=${{ secrets.YDB_ENDPOINT_DEV }} \
@@ -122,15 +128,21 @@ jobs:
       - name: Build all packages
         run: NODE_ENV=production npm run build:all
 
+      - name: Install Yandex Cloud CLI
+        run: |
+          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
+          export PATH=$PATH:$HOME/yandex-cloud/bin
+          echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
+
       - name: Configure Yandex Cloud CLI
-        uses: yandex-cloud/actions-yc-cli@v1
-        with:
-          yc-sa-json-credentials: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
+        run: |
+          echo '${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' > /tmp/yc-sa-key.json
+          export YC_SERVICE_ACCOUNT_KEY_FILE=/tmp/yc-sa-key.json
+          yc config set service-account-key /tmp/yc-sa-key.json
 
       - name: Run database migrations
         run: |
           # Export service account key for YDB SDK
-          echo '${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' > /tmp/yc-sa-key.json
           export YC_SERVICE_ACCOUNT_KEY_FILE=/tmp/yc-sa-key.json
           NODE_ENV=production \
           YDB_ENDPOINT_PROD=${{ secrets.YDB_ENDPOINT_PROD }} \
