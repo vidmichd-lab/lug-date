@@ -36,7 +36,7 @@ const REQUIRED_SECRETS: Secret[] = [
   { name: 'YANDEX_STORAGE_SECRET_KEY_PROD', required: true, description: 'Object Storage secret key for production' },
   { name: 'TELEGRAM_ALERT_BOT_TOKEN', required: false, description: 'Telegram alert bot token' },
   { name: 'TELEGRAM_ALERT_CHAT_ID', required: false, description: 'Telegram alert chat ID' },
-  { name: 'CR_REGISTRY_ID', required: true, description: 'Yandex Container Registry ID for Docker images' },
+  { name: 'YC_REGISTRY_ID', required: true, description: 'Yandex Container Registry ID for Docker images' },
 ];
 
 const REQUIRED_ENVIRONMENTS: Environment[] = [

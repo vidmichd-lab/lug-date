@@ -91,17 +91,17 @@ function createRegistry(): string {
 
 function addSecretToGitHub(registryId: string): void {
   try {
-    console.log('🔐 Adding CR_REGISTRY_ID to GitHub Secrets...\n');
+    console.log('🔐 Adding YC_REGISTRY_ID to GitHub Secrets...\n');
     
     // Check if secret already exists
     try {
       const existing = execSync(
-        `gh secret list --json name --jq '.[] | select(.name == "CR_REGISTRY_ID") | .name'`,
+        `gh secret list --json name --jq '.[] | select(.name == "YC_REGISTRY_ID") | .name'`,
         { encoding: 'utf-8', stdio: 'pipe' }
       ).trim();
       
-      if (existing === 'CR_REGISTRY_ID') {
-        console.log('⚠️  Secret CR_REGISTRY_ID already exists');
+      if (existing === 'YC_REGISTRY_ID') {
+        console.log('⚠️  Secret YC_REGISTRY_ID already exists');
         console.log('   Updating with new value...\n');
       }
     } catch {
@@ -110,16 +110,16 @@ function addSecretToGitHub(registryId: string): void {
     
     // Set secret
     execSync(
-      `echo "${registryId}" | gh secret set CR_REGISTRY_ID`,
+      `echo "${registryId}" | gh secret set YC_REGISTRY_ID`,
       { stdio: 'inherit' }
     );
     
-    console.log('✅ Secret CR_REGISTRY_ID added to GitHub!\n');
+    console.log('✅ Secret YC_REGISTRY_ID added to GitHub!\n');
   } catch (error: any) {
     console.error('❌ Failed to add secret to GitHub');
     console.error(`   Error: ${error.message}`);
     console.error('\n💡 You can add it manually:');
-    console.error(`   gh secret set CR_REGISTRY_ID --body "${registryId}"`);
+    console.error(`   gh secret set YC_REGISTRY_ID --body "${registryId}"`);
     throw error;
   }
 }
@@ -144,11 +144,11 @@ function verifySetup(registryId: string): void {
   try {
     // Verify GitHub secret
     const secret = execSync(
-      `gh secret list --json name --jq '.[] | select(.name == "CR_REGISTRY_ID") | .name'`,
+      `gh secret list --json name --jq '.[] | select(.name == "YC_REGISTRY_ID") | .name'`,
       { encoding: 'utf-8', stdio: 'pipe' }
     ).trim();
     
-    if (secret === 'CR_REGISTRY_ID') {
+    if (secret === 'YC_REGISTRY_ID') {
       console.log('✅ GitHub secret verified');
     } else {
       console.log('⚠️  GitHub secret not found');
@@ -222,7 +222,7 @@ function main() {
   console.log('\n' + '='.repeat(50));
   console.log('\n✅ Setup completed successfully!\n');
   console.log(`📦 Container Registry ID: ${registryId}`);
-  console.log('🔐 GitHub Secret: CR_REGISTRY_ID\n');
+  console.log('🔐 GitHub Secret: YC_REGISTRY_ID\n');
   console.log('🚀 You can now deploy backend using Docker images!\n');
 }
 

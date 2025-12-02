@@ -24,24 +24,30 @@ yc container registry list
 
 Добавьте в GitHub Secrets:
 
-- `CR_REGISTRY_ID` - ID вашего Container Registry (например, `crp1234567890abcdef`)
+- `YC_REGISTRY_ID` - ID вашего Container Registry (например, `crp1234567890abcdef`)
 
-Или используйте переменную окружения в workflow (по умолчанию используется значение из secrets).
+Или используйте автоматическую настройку:
+
+```bash
+npm run setup:container-registry
+```
 
 ### 3. Структура деплоя
 
-1. **Сборка Docker образа** - собирается из корня проекта с использованием `backend/Dockerfile`
-2. **Загрузка в Container Registry** - образ загружается с тегами:
-   - `staging-<commit-sha>` или `prod-<commit-sha>` - для конкретного коммита
-   - `staging-latest` или `prod-latest` - последняя версия
-3. **Создание версии функции** - используется `--runtime container` и `--image` вместо `--source-path`
+1. **Сборка кода** - `npm run build:all` собирает TypeScript в `dist/`
+2. **Сборка Docker образа** - собирается из корня проекта с использованием `backend/Dockerfile`
+   - Копирует уже собранные `backend/dist` и `shared/dist`
+   - Устанавливает только production зависимости
+3. **Загрузка в Container Registry** - образ загружается с тегом `<commit-sha:7>`
+4. **Создание версии функции** - используется `--runtime container` и `--image` вместо `--source-path`
 
 ## Dockerfile
 
-Dockerfile находится в `backend/Dockerfile` и оптимизирован для serverless:
-- Multi-stage build для минимального размера
-- Только production зависимости
-- Правильная структура для handler.handler
+Dockerfile находится в `backend/Dockerfile` и использует упрощенный подход:
+- Копирует уже собранные `dist` файлы (код должен быть собран до сборки образа)
+- Обновляет ссылку на shared пакет для локальной установки
+- Устанавливает только production зависимости
+- Настраивает PORT=8080 для Cloud Functions
 
 ## Команды деплоя
 
@@ -96,8 +102,8 @@ docker run -p 3000:3000 \
 ### Ошибка аутентификации в Container Registry
 
 ```bash
-# Получить IAM token
-yc iam create-token | docker login --username iam --password-stdin cr.yandex
+# Настроить Docker для работы с Container Registry
+yc container registry configure-docker
 ```
 
 ### Проверка образа в registry
