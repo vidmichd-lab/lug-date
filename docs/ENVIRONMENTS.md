@@ -18,8 +18,10 @@
 NODE_ENV=development
 
 # Telegram Bot Tokens
-TELEGRAM_BOT_TOKEN_PROD=8232314768:AAEabExGz6iDfe2wTrDSB600Qu97kyl1ta4
-TELEGRAM_BOT_TOKEN_DEV=8232314768:AAEabExGz6iDfe2wTrDSB600Qu97kyl1ta4
+# ⚠️ ВАЖНО: Получите реальные токены в @BotFather
+# НЕ коммитьте реальные токены в репозиторий!
+TELEGRAM_BOT_TOKEN_PROD=<ваш_prod_bot_token>
+TELEGRAM_BOT_TOKEN_DEV=<ваш_dev_bot_token>
 
 # YDB Database (Production)
 YDB_ENDPOINT_PROD=your-prod-endpoint
@@ -86,6 +88,7 @@ npm run seed:dev
 ```
 
 Скрипт создаст:
+
 - 50 пользователей с фейковыми фото
 - 20 событий в разных категориях
 - 200 случайных лайков
@@ -98,10 +101,10 @@ npm run seed:dev
 В development режиме автоматически подключается **Eruda** - инструмент для отладки в мобильных браузерах.
 
 Eruda предоставляет:
+
 - Консоль браузера прямо в приложении
 - Network inspector для просмотра запросов
 - Storage viewer для просмотра localStorage/sessionStorage
 - Elements inspector для DOM
 
 Eruda загружается только в dev режиме и не включается в production сборку.
-

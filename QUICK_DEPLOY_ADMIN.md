@@ -67,11 +67,14 @@ URL: `https://lug-admin-deploy.website.yandexcloud.net/`
 2. **Измените скрипт деплоя** чтобы загружать в подпапку, ИЛИ
 
 3. **Используйте другой бакет:**
+
    ```env
    ADMIN_STORAGE_BUCKET_DEV=dating-app-storage
-   ADMIN_STORAGE_ACCESS_KEY_DEV=YCAJEFWGCM6PElVufehzMxGRU
-   ADMIN_STORAGE_SECRET_KEY_DEV=ВАШ_SECRET_KEY
+   ADMIN_STORAGE_ACCESS_KEY_DEV=<ваш_access_key_id>
+   ADMIN_STORAGE_SECRET_KEY_DEV=<ваш_secret_access_key>
    ```
+
+   **⚠️ ВАЖНО:** Получите реальные ключи в Yandex Cloud Console → IAM → Service Accounts → Access Keys
 
 ---
 

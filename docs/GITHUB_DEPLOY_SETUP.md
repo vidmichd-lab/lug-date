@@ -7,78 +7,101 @@
 ### 🔴 Обязательные (для работы деплоя)
 
 #### 1. YC_SERVICE_ACCOUNT_KEY
+
 **Описание:** JSON ключ сервисного аккаунта Yandex Cloud  
 **Где взять:** Yandex Cloud Console → IAM → Service accounts → Create JSON key  
 **Формат:** Полный JSON объект (весь файл целиком)
 
 #### 2. TELEGRAM_BOT_TOKEN_DEV
+
 **Описание:** Токен Telegram бота для staging  
 **Где взять:** @BotFather в Telegram  
-**Пример:** `8232314768:AAEabExGz6iDfe2wTrDSB600Qu97kyl1ta4`
+**Пример:** `<ваш_bot_token>` (формат: `1234567890:ABCdefGHIjklMNOpqrsTUVwxyz`)
+
+**⚠️ ВАЖНО:** НЕ используйте реальные токены в примерах! Получите токен в @BotFather.
 
 #### 3. TELEGRAM_BOT_TOKEN_PROD
+
 **Описание:** Токен Telegram бота для production  
 **Где взять:** @BotFather в Telegram  
-**Пример:** `8232314768:AAEabExGz6iDfe2wTrDSB600Qu97kyl1ta4`
+**Пример:** `<ваш_bot_token>` (формат: `1234567890:ABCdefGHIjklMNOpqrsTUVwxyz`)
+
+**⚠️ ВАЖНО:** НЕ используйте реальные токены в примерах! Получите токен в @BotFather.
 
 #### 4. YDB_ENDPOINT_DEV
+
 **Описание:** Endpoint YDB базы данных для staging  
 **Пример:** `grpcs://ydb.serverless.yandexcloud.net:2135`
 
 #### 5. YDB_DATABASE_DEV
+
 **Описание:** Путь к базе данных YDB для staging  
 **Пример:** `/ru-central1/b1g6a1tnrohoeas9v0k6/etn8n7ptmkui9808eo6b`
 
 #### 6. YDB_TOKEN_DEV (опционально)
+
 **Описание:** Токен для доступа к YDB (staging)  
 **Где взять:** Из service account key или IAM токен  
 **Примечание:** Не обязателен, если используется YC_SERVICE_ACCOUNT_KEY. SDK автоматически использует credentials из service account key.
 
 #### 7. YDB_ENDPOINT_PROD
+
 **Описание:** Endpoint YDB базы данных для production  
 **Пример:** `grpcs://ydb.serverless.yandexcloud.net:2135`
 
 #### 8. YDB_DATABASE_PROD
+
 **Описание:** Путь к базе данных YDB для production  
 **Пример:** `/ru-central1/b1g6a1tnrohoeas9v0k6/etn8n7ptmkui9808eo6b`
 
 #### 9. YDB_TOKEN_PROD (опционально)
+
 **Описание:** Токен для доступа к YDB (production)  
 **Где взять:** Из service account key или IAM токен  
 **Примечание:** Не обязателен, если используется YC_SERVICE_ACCOUNT_KEY. SDK автоматически использует credentials из service account key.
 
 #### 10. YANDEX_STORAGE_BUCKET_DEV
+
 **Описание:** Имя бакета Object Storage для staging  
 **Пример:** `dating-app-storage`
 
 #### 11. YANDEX_STORAGE_ACCESS_KEY_DEV
+
 **Описание:** Access Key для Object Storage (staging)  
 **Где взять:** Yandex Cloud Console → Object Storage → Service accounts
 
 #### 12. YANDEX_STORAGE_SECRET_KEY_DEV
+
 **Описание:** Secret Key для Object Storage (staging)  
 **Где взять:** Yandex Cloud Console → Object Storage → Service accounts
 
 #### 13. YANDEX_STORAGE_BUCKET_PROD
+
 **Описание:** Имя бакета Object Storage для production  
 **Пример:** `dating-app-storage-prod`
 
 #### 14. YANDEX_STORAGE_ACCESS_KEY_PROD
+
 **Описание:** Access Key для Object Storage (production)  
 **Где взять:** Yandex Cloud Console → Object Storage → Service accounts
 
 #### 15. YANDEX_STORAGE_SECRET_KEY_PROD
+
 **Описание:** Secret Key для Object Storage (production)  
 **Где взять:** Yandex Cloud Console → Object Storage → Service accounts
 
 ### 🟡 Опциональные (для дополнительных функций)
 
 #### 16. TELEGRAM_ALERT_BOT_TOKEN
+
 **Описание:** Токен бота для отправки алертов  
 **Где взять:** @BotFather в Telegram  
-**Пример:** `8354072320:AAFAjqaI_dshIJeeLGG8fAhwO2pqllRbu0c`
+**Пример:** `<ваш_alert_bot_token>` (формат: `1234567890:ABCdefGHIjklMNOpqrsTUVwxyz`)
+
+**⚠️ ВАЖНО:** НЕ используйте реальные токены в примерах! Получите токен в @BotFather.
 
 #### 17. TELEGRAM_ALERT_CHAT_ID
+
 **Описание:** Chat ID для отправки алертов  
 **Где взять:** @userinfobot в Telegram  
 **Пример:** `319315134`
@@ -90,6 +113,7 @@
 Перейдите: **https://github.com/vidmichd-lab/lug-date/settings/secrets/actions**
 
 Или:
+
 1. Откройте репозиторий: https://github.com/vidmichd-lab/lug-date
 2. Settings → Secrets and variables → Actions
 
@@ -205,6 +229,7 @@
 Откройте: https://github.com/vidmichd-lab/lug-date/settings/environments
 
 Должны быть видны:
+
 - ✅ `staging`
 - ✅ `production`
 
@@ -213,11 +238,13 @@
 ### Тест Staging
 
 1. Переключитесь на ветку `develop`:
+
    ```bash
    git checkout develop
    ```
 
 2. Создайте тестовый коммит:
+
    ```bash
    git commit --allow-empty -m "test: проверка деплоя staging"
    git push origin develop
@@ -233,11 +260,13 @@
 ⚠️ **Внимание:** Production деплой запускается только из ветки `main`!
 
 1. Переключитесь на ветку `main`:
+
    ```bash
    git checkout main
    ```
 
 2. Создайте тестовый коммит:
+
    ```bash
    git commit --allow-empty -m "test: проверка деплоя production"
    git push origin main
@@ -257,6 +286,7 @@ npm run check:github-setup
 ```
 
 Скрипт проверит:
+
 - Наличие всех необходимых secrets
 - Наличие environments
 - Корректность имен
@@ -266,6 +296,7 @@ npm run check:github-setup
 ### Ошибка: "Secret not found"
 
 **Решение:**
+
 1. Проверьте имя секрета (должно точно совпадать)
 2. Убедитесь, что секрет создан на уровне репозитория
 3. Проверьте, что вы в правильном репозитории
@@ -273,6 +304,7 @@ npm run check:github-setup
 ### Ошибка: "Environment not found"
 
 **Решение:**
+
 1. Проверьте имена environments в workflow
 2. Убедитесь, что environments созданы
 3. Проверьте права доступа
@@ -280,6 +312,7 @@ npm run check:github-setup
 ### Ошибка: "Invalid JSON credentials"
 
 **Решение:**
+
 1. Проверьте формат JSON (jsonlint.com)
 2. Убедитесь, что скопирован весь файл
 3. Проверьте наличие всех полей
@@ -287,6 +320,7 @@ npm run check:github-setup
 ### Ошибка: "Deployment failed"
 
 **Решение:**
+
 1. Проверьте логи в GitHub Actions
 2. Убедитесь, что все secrets заполнены
 3. Проверьте права сервисного аккаунта в Yandex Cloud
@@ -316,4 +350,3 @@ npm run check:github-setup
 ---
 
 **Последнее обновление:** 2024-12-01
-

@@ -11,8 +11,12 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
     environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -61,4 +65,3 @@ jobs:
           echo ""
           echo "📝 Use this URL in BotFather:"
           echo "   https://${BUCKET}.website.yandexcloud.net/"
-

@@ -16,6 +16,9 @@ jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
 
     steps:
       - name: Checkout code
@@ -44,6 +47,10 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/develop'
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
     environment:
       name: staging
       url: https://staging-api.yourdomain.com
@@ -121,17 +128,23 @@ jobs:
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
 
+          echo "🔍 Getting backend URL..."
+          echo "YC_CONTAINER_ID_STAGING: ${YC_CONTAINER_ID_STAGING:0:20}..."
+          echo "YC_FOLDER_ID: ${YC_FOLDER_ID}"
+
           if [ -n "${YC_CONTAINER_ID_STAGING}" ]; then
             BACKEND_URL=$(yc serverless container get --id="${YC_CONTAINER_ID_STAGING}" --format json | jq -r '.url')
+            echo "✅ Got backend URL from container ID: ${BACKEND_URL}"
           elif [ -n "${YC_FOLDER_ID}" ]; then
             BACKEND_URL=$(yc serverless container get --name=lug-date-backend-staging --folder-id="${YC_FOLDER_ID}" --format json | jq -r '.url')
+            echo "✅ Got backend URL from folder ID: ${BACKEND_URL}"
           else
-            echo "Warning: Cannot get backend URL, will use default from config.js"
+            echo "❌ Warning: Cannot get backend URL - neither YC_CONTAINER_ID_STAGING nor YC_FOLDER_ID is set"
             BACKEND_URL=""
           fi
 
-          if [ -n "${BACKEND_URL}" ]; then
-            echo "Backend URL for admin: ${BACKEND_URL}"
+          if [ -n "${BACKEND_URL}" ] && [ "${BACKEND_URL}" != "null" ]; then
+            echo "✅ Backend URL for admin: ${BACKEND_URL}"
             echo "BACKEND_URL=${BACKEND_URL}" >> $GITHUB_ENV
             
             # Обновляем config.js с правильным URL бекенда
@@ -145,8 +158,17 @@ jobs:
               '};' > admin/public/config.js
             
             echo "✅ Updated admin config.js with backend URL: ${BACKEND_URL}"
+            
+            # Проверяем, что файл создан правильно
+            echo "📄 Config.js content:"
+            cat admin/public/config.js
           else
-            echo "⚠️  Backend URL not available, using default from config.js"
+            echo "❌ ERROR: Backend URL not available! Frontend and admin panel will not work."
+            echo "Please check:"
+            echo "  1. YC_CONTAINER_ID_STAGING or YC_FOLDER_ID is set in GitHub Secrets"
+            echo "  2. Backend container exists in Yandex Cloud"
+            echo "  3. Service account has permissions to read container info"
+            exit 1
           fi
 
       - name: Build frontend
@@ -171,10 +193,7 @@ jobs:
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
           export YC_SERVICE_ACCOUNT_KEY_FILE=/tmp/yc-sa-key.json
-          NODE_ENV=development \
-          YDB_ENDPOINT_DEV=${{ secrets.YDB_ENDPOINT_DEV }} \
-          YDB_DATABASE_DEV=${{ secrets.YDB_DATABASE_DEV }} \
-          npm run migrate || echo "⚠️ Migrations skipped"
+          NODE_ENV=development YDB_ENDPOINT_DEV=${{ secrets.YDB_ENDPOINT_DEV }} YDB_DATABASE_DEV=${{ secrets.YDB_DATABASE_DEV }} npm run migrate || echo "⚠️ Migrations skipped"
         continue-on-error: true
 
       - name: Login to Yandex Container Registry
@@ -318,15 +337,24 @@ jobs:
           elif [ -n "${YC_FOLDER_ID}" ]; then
             BACKEND_URL=$(yc serverless container get --name=lug-date-backend-staging --folder-id="${YC_FOLDER_ID}" --format json | jq -r '.url')
           else
-            echo "Warning: Cannot get backend URL"
-            BACKEND_URL=""
+            echo "❌ ERROR: Cannot get backend URL - neither YC_CONTAINER_ID_STAGING nor YC_FOLDER_ID is set"
+            echo "Please check:"
+            echo "  1. YC_CONTAINER_ID_STAGING or YC_FOLDER_ID is set in GitHub Secrets"
+            echo "  2. Backend container exists in Yandex Cloud"
+            echo "  3. Service account has permissions to read container info"
+            exit 1
           fi
 
-          if [ -n "${BACKEND_URL}" ]; then
-            echo "Backend deployed: ${BACKEND_URL}"
-            echo "Health check: ${BACKEND_URL}/health"
+          if [ -n "${BACKEND_URL}" ] && [ "${BACKEND_URL}" != "null" ]; then
+            echo "✅ Backend deployed: ${BACKEND_URL}"
+            echo "🔍 Health check: ${BACKEND_URL}/health"
           else
-            echo "Warning: Cannot get backend URL"
+            echo "❌ ERROR: Backend URL is empty or null"
+            echo "Please check:"
+            echo "  1. Backend container exists in Yandex Cloud"
+            echo "  2. Container has been deployed successfully"
+            echo "  3. Service account has permissions to read container info"
+            exit 1
           fi
 
       - name: Deploy Frontend
@@ -408,6 +436,8 @@ jobs:
               cp admin/public/config.js admin/dist/config.js
             else
               echo "❌ Error: config.js not found in admin/public either!"
+              echo "config.js is required for admin panel to work. Please ensure it exists in admin/public/config.js"
+              exit 1
             fi
           else
             echo "✅ Config.js found in admin/dist"
@@ -481,6 +511,10 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
     environment:
       name: production
       url: https://api.yourdomain.com
@@ -623,10 +657,7 @@ jobs:
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
           export YC_SERVICE_ACCOUNT_KEY_FILE=/tmp/yc-sa-key.json
-          NODE_ENV=production \
-          YDB_ENDPOINT_PROD=${{ secrets.YDB_ENDPOINT_PROD }} \
-          YDB_DATABASE_PROD=${{ secrets.YDB_DATABASE_PROD }} \
-          npm run migrate
+          NODE_ENV=production YDB_ENDPOINT_PROD=${{ secrets.YDB_ENDPOINT_PROD }} YDB_DATABASE_PROD=${{ secrets.YDB_DATABASE_PROD }} npm run migrate
         continue-on-error: true
 
       - name: Login to Yandex Container Registry
@@ -706,28 +737,6 @@ jobs:
           if [ -n "${YC_CONTAINER_ID_PROD}" ]; then
             yc serverless container revision deploy \
               --container-id="${YC_CONTAINER_ID_PROD}" \
-              --image=${{ env.IMAGE_ID }} \
-              --memory=512m \
-              --cores=1 \
-              --execution-timeout=30s \
-              --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
-              --environment NODE_ENV=production \
-              --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_PROD }} \
-              --environment YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_PROD }} \
-              --environment YDB_DATABASE=${{ secrets.YDB_DATABASE_PROD }} \
-              --environment YC_SERVICE_ACCOUNT_KEY='${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' \
-              --environment YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_PROD }} \
-              --environment YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_PROD }} \
-              --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_PROD }} \
-              --environment TELEGRAM_ALERT_ENABLED=true \
-              --environment TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
-              --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }} \
-              --environment ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS_PROD }} \
-              --environment ADMIN_ORIGINS=${{ secrets.ADMIN_ORIGINS_PROD }}
-          elif [ -n "${YC_FOLDER_ID}" ]; then
-            yc serverless container revision deploy \
-              --container-name=lug-date-backend-prod \
-              --folder-id="${YC_FOLDER_ID}" \
               --image=${{ env.IMAGE_ID }} \
               --memory=512m \
               --cores=1 \

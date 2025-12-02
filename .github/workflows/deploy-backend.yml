@@ -17,6 +17,10 @@ jobs:
     name: Deploy Backend to Staging
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/develop'
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
     environment:
       name: staging
 
@@ -193,12 +197,25 @@ jobs:
           elif [ -n "${YC_FOLDER_ID}" ]; then
             CONTAINER_URL=$(yc serverless container get --name=lug-date-backend-staging --folder-id="${YC_FOLDER_ID}" --format json | jq -r '.url')
           else
-            echo "Warning: Cannot get container URL without YC_CONTAINER_ID_STAGING or YC_FOLDER_ID"
-            exit 0
+            echo "❌ ERROR: Cannot get container URL - neither YC_CONTAINER_ID_STAGING nor YC_FOLDER_ID is set"
+            echo "Please check:"
+            echo "  1. YC_CONTAINER_ID_STAGING or YC_FOLDER_ID is set in GitHub Secrets"
+            echo "  2. Backend container exists in Yandex Cloud"
+            echo "  3. Service account has permissions to read container info"
+            exit 1
           fi
 
-          echo "Container deployed: ${CONTAINER_URL}"
-          echo "Health check: ${CONTAINER_URL}/health"
+          if [ -n "${CONTAINER_URL}" ] && [ "${CONTAINER_URL}" != "null" ]; then
+            echo "✅ Container deployed: ${CONTAINER_URL}"
+            echo "🔍 Health check: ${CONTAINER_URL}/health"
+          else
+            echo "❌ ERROR: Container URL is empty or null"
+            echo "Please check:"
+            echo "  1. Backend container exists in Yandex Cloud"
+            echo "  2. Container has been deployed successfully"
+            echo "  3. Service account has permissions to read container info"
+            exit 1
+          fi
 
       - name: Health check
         run: |
@@ -210,6 +227,10 @@ jobs:
     name: Deploy Backend to Production
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
     environment:
       name: production
 
@@ -386,12 +407,25 @@ jobs:
           elif [ -n "${YC_FOLDER_ID}" ]; then
             CONTAINER_URL=$(yc serverless container get --name=lug-date-backend-prod --folder-id="${YC_FOLDER_ID}" --format json | jq -r '.url')
           else
-            echo "Warning: Cannot get container URL without YC_CONTAINER_ID_PROD or YC_FOLDER_ID"
-            exit 0
+            echo "❌ ERROR: Cannot get container URL - neither YC_CONTAINER_ID_PROD nor YC_FOLDER_ID is set"
+            echo "Please check:"
+            echo "  1. YC_CONTAINER_ID_PROD or YC_FOLDER_ID is set in GitHub Secrets"
+            echo "  2. Backend container exists in Yandex Cloud"
+            echo "  3. Service account has permissions to read container info"
+            exit 1
           fi
 
-          echo "Container deployed: ${CONTAINER_URL}"
-          echo "Health check: ${CONTAINER_URL}/health"
+          if [ -n "${CONTAINER_URL}" ] && [ "${CONTAINER_URL}" != "null" ]; then
+            echo "✅ Container deployed: ${CONTAINER_URL}"
+            echo "🔍 Health check: ${CONTAINER_URL}/health"
+          else
+            echo "❌ ERROR: Container URL is empty or null"
+            echo "Please check:"
+            echo "  1. Backend container exists in Yandex Cloud"
+            echo "  2. Container has been deployed successfully"
+            echo "  3. Service account has permissions to read container info"
+            exit 1
+          fi
 
       - name: Health check
         run: |

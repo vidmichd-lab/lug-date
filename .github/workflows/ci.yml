@@ -9,6 +9,9 @@ on:
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
 
     steps:
       - uses: actions/checkout@v4
@@ -35,6 +38,10 @@ jobs:
     needs: lint-and-test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
 
     steps:
       - uses: actions/checkout@v4

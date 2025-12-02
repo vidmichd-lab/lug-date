@@ -5,18 +5,21 @@
 ## 🎉 Задеплоенные приложения
 
 ### 1. Frontend (Telegram Web App)
+
 - **URL:** https://dating-app-storage.website.yandexcloud.net/
 - **Статус:** ✅ Задеплоен
 - **Файлов:** 25
 - **Бакет:** `dating-app-storage`
 
 ### 2. Admin Panel
+
 - **URL:** https://lug-admin-deploy.website.yandexcloud.net/
 - **Статус:** ✅ Задеплоен
 - **Файлов:** 12
 - **Бакет:** `lug-admin-deploy`
 
 ### 3. Backend API
+
 - **Статус:** ⚠️ Требуется проверка
 - **Деплой:** Через GitHub Actions или вручную в Yandex Cloud Functions
 
@@ -49,28 +52,35 @@
 
 ### 3. Обновление .env файла
 
-Для постоянного использования правильных ключей, добавьте в `.env`:
+**⚠️ ВАЖНО:** НЕ добавляйте реальные ключи в `.env` файл, если он коммитится в репозиторий!
+
+Для локальной разработки используйте `.env.local` (который в `.gitignore`):
 
 ```env
 # Frontend деплой
 FRONTEND_STORAGE_BUCKET_DEV=dating-app-storage
-FRONTEND_STORAGE_ACCESS_KEY_DEV=YCAJEgizqc8bY5Q14h1NHXd6R
-FRONTEND_STORAGE_SECRET_KEY_DEV=<ваш секретный ключ>
+FRONTEND_STORAGE_ACCESS_KEY_DEV=<ваш_access_key_id>
+FRONTEND_STORAGE_SECRET_KEY_DEV=<ваш_secret_access_key>
 ```
+
+**Получите ключи в Yandex Cloud Console → IAM → Service Accounts → Access Keys**
 
 ## 🔄 Обновление приложений
 
 ### Frontend:
+
 ```bash
 npm run deploy:frontend
 ```
 
 ### Admin:
+
 ```bash
 npm run deploy:admin
 ```
 
 ### С полной очисткой:
+
 ```bash
 npm run deploy:frontend:clear
 npm run deploy:admin:clear
@@ -87,4 +97,3 @@ npm run deploy:admin:clear
 - [Инструкция по деплою](DEPLOY_INSTRUCTIONS.md)
 - [Исправление ключей](DEPLOY_FIX_KEYS.md)
 - [Настройка GitHub Actions](docs/GITHUB_DEPLOY_SETUP.md)
-

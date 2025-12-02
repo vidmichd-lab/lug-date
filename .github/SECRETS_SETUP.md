@@ -1,5 +1,16 @@
 # Настройка GitHub Secrets для деплоя
 
+## ⚠️ КРИТИЧЕСКИ ВАЖНО: Безопасность
+
+**ВНИМАНИЕ:** Если вы видите это предупреждение, значит в этом файле ранее были обнаружены реальные секретные ключи Yandex Cloud, которые были скомпрометированы.
+
+**НЕОБХОДИМО НЕМЕДЛЕННО:**
+
+1. Отозвать все старые ключи доступа в Yandex Cloud Console
+2. Создать новые ключи доступа
+3. Обновить их в GitHub Secrets
+4. НЕ коммитить реальные ключи в репозиторий
+
 ## 📋 Какие секреты нужно добавить
 
 ### Для Frontend деплоя:
@@ -10,22 +21,22 @@
 #### Для Development (ветка develop):
 
 - `FRONTEND_STORAGE_BUCKET_DEV` = `telegram-app-frontend`
-- `FRONTEND_STORAGE_ACCESS_KEY_DEV` = `YCAJEHGGHpv7gmDnfalw4tUSD`
-- `FRONTEND_STORAGE_SECRET_KEY_DEV` = `YCPGeks_piY5OqWjkw_Gmg8Qx41PK6B7JfMaaWok`
+- `FRONTEND_STORAGE_ACCESS_KEY_DEV` = `<ваш_access_key_id>` (получите в Yandex Cloud Console)
+- `FRONTEND_STORAGE_SECRET_KEY_DEV` = `<ваш_secret_access_key>` (получите в Yandex Cloud Console)
 
 #### Для Production (ветка main):
 
 - `FRONTEND_STORAGE_BUCKET_PROD` = `telegram-app-frontend` (или отдельный)
-- `FRONTEND_STORAGE_ACCESS_KEY_PROD` = `YCAJEHGGHpv7gmDnfalw4tUSD`
-- `FRONTEND_STORAGE_SECRET_KEY_PROD` = `YCPGeks_piY5OqWjkw_Gmg8Qx41PK6B7JfMaaWok`
+- `FRONTEND_STORAGE_ACCESS_KEY_PROD` = `<ваш_access_key_id>` (получите в Yandex Cloud Console)
+- `FRONTEND_STORAGE_SECRET_KEY_PROD` = `<ваш_secret_access_key>` (получите в Yandex Cloud Console)
 
 ### Для Admin деплоя:
 
 #### Для Development (ветка develop):
 
 - `ADMIN_STORAGE_BUCKET_DEV` = `lug-admin-deploy`
-- `ADMIN_STORAGE_ACCESS_KEY_DEV` = `YCAJEgizqc8bY5Q14h1NHXd6R`
-- `ADMIN_STORAGE_SECRET_KEY_DEV` = `YCMZZX-xGsejY9LZSH6DMY6yPJbegkB5-Csxr8oU`
+- `ADMIN_STORAGE_ACCESS_KEY_DEV` = `<ваш_access_key_id>` (получите в Yandex Cloud Console)
+- `ADMIN_STORAGE_SECRET_KEY_DEV` = `<ваш_secret_access_key>` (получите в Yandex Cloud Console)
 
 #### Для Production (ветка main):
 
@@ -59,20 +70,18 @@
 - `YANDEX_STORAGE_ACCESS_KEY_PROD` = Access key для Yandex Object Storage (production)
 - `YANDEX_STORAGE_SECRET_KEY_PROD` = Secret key для Yandex Object Storage (production)
 
-## ⚠️ Важно: Разрешить push с секретами
+## ⚠️ Важно: Безопасность секретов
 
-После добавления секретов в GitHub Secrets, нужно разрешить push:
+**НИКОГДА не коммитьте реальные секретные ключи в репозиторий!**
 
-1. GitHub все равно будет блокировать push из-за секретов в истории коммитов
-2. Перейдите по этим ссылкам и нажмите "Allow secret":
-   - https://github.com/vidmichd-lab/lug-date/security/secret-scanning/unblock-secret/36Fzc59uI5R6tff6RwKGLWAKJKO
-   - https://github.com/vidmichd-lab/lug-date/security/secret-scanning/unblock-secret/36Fzc4DycBs7bTwMipKg2k0ie5Y
-   - https://github.com/vidmichd-lab/lug-date/security/secret-scanning/unblock-secret/36FzcApbYN8ZVsxr5zs2w7nlmD9
+Если GitHub Secret Scanning обнаружил секреты:
 
-3. После разрешения выполните:
-   ```bash
-   git push origin develop
-   ```
+1. Немедленно отзовите скомпрометированные ключи в Yandex Cloud Console
+2. Создайте новые ключи
+3. Обновите их в GitHub Secrets
+4. Удалите секреты из истории Git (используйте `git filter-branch` или `BFG Repo-Cleaner`)
+
+**GitHub Secret Scanning блокирует push с секретами - это правильное поведение для защиты ваших данных.**
 
 ## ✅ После настройки
 
