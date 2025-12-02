@@ -95,8 +95,14 @@ app.use((req, res, next) => {
   const isDevelopment = config.nodeEnv === 'development';
 
   // Default allowed origins for admin panel
+  // Добавляем поддержку любых bucket админки через переменную окружения
+  const adminOriginsFromEnv = process.env.ADMIN_ORIGINS
+    ? process.env.ADMIN_ORIGINS.split(',').map((o) => o.trim())
+    : [];
+  
   const defaultAdminOrigins = [
     'https://lug-admin-deploy.website.yandexcloud.net',
+    ...adminOriginsFromEnv,
     'http://localhost:5174',
     'http://localhost:5173',
   ];

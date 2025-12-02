@@ -64,9 +64,6 @@ jobs:
       - name: Build shared package first
         run: npm run build --workspace=shared
 
-      - name: Build all packages
-        run: NODE_ENV=development npm run build --workspace=frontend --workspace=backend --workspace=bot --workspace=admin
-
       - name: Install Yandex Cloud CLI
         run: |
           curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
@@ -88,6 +85,44 @@ jobs:
           if [ -n "$YC_FOLDER_ID" ]; then
             yc config set folder-id "$YC_FOLDER_ID" || true
           fi
+
+      - name: Get Backend URL for Admin Config
+        env:
+          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
+          YC_CONTAINER_ID_STAGING: ${{ secrets.YC_CONTAINER_ID_STAGING }}
+        run: |
+          export PATH=$PATH:$HOME/yandex-cloud/bin
+          
+          if [ -n "${YC_CONTAINER_ID_STAGING}" ]; then
+            BACKEND_URL=$(yc serverless container get --id="${YC_CONTAINER_ID_STAGING}" --format json | jq -r '.url')
+          elif [ -n "${YC_FOLDER_ID}" ]; then
+            BACKEND_URL=$(yc serverless container get --name=lug-date-backend-staging --folder-id="${YC_FOLDER_ID}" --format json | jq -r '.url')
+          else
+            echo "Warning: Cannot get backend URL, will use default from config.js"
+            BACKEND_URL=""
+          fi
+          
+          if [ -n "${BACKEND_URL}" ]; then
+            echo "Backend URL for admin: ${BACKEND_URL}"
+            echo "BACKEND_URL=${BACKEND_URL}" >> $GITHUB_ENV
+            
+            # Обновляем config.js с правильным URL бекенда
+            cat > admin/public/config.js << 'CONFIG_EOF'
+// Runtime configuration for admin panel
+// This file is loaded before the app starts
+// You can override API URL by setting window.ADMIN_CONFIG before this script loads
+window.ADMIN_CONFIG = window.ADMIN_CONFIG || {
+  // Backend URL - контейнер Yandex Serverless Containers
+  API_URL: 'BACKEND_URL_PLACEHOLDER'
+};
+CONFIG_EOF
+            sed -i "s|BACKEND_URL_PLACEHOLDER|${BACKEND_URL}|g" admin/public/config.js
+            
+            echo "✅ Updated admin config.js with backend URL: ${BACKEND_URL}"
+          else
+            echo "⚠️  Backend URL not available, using default from config.js"
+          fi
+
 
       - name: Run database migrations
         run: |
@@ -188,7 +223,9 @@ jobs:
               --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_DEV }} \
               --environment TELEGRAM_ALERT_ENABLED=true \
               --environment TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
-              --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+              --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }} \
+              --environment ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS_DEV }} \
+              --environment ADMIN_ORIGINS=${{ secrets.ADMIN_ORIGINS_DEV }}
           elif [ -n "${YC_FOLDER_ID}" ]; then
             yc serverless container revision deploy \
               --container-name=lug-date-backend-staging \
@@ -208,7 +245,9 @@ jobs:
               --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_DEV }} \
               --environment TELEGRAM_ALERT_ENABLED=true \
               --environment TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
-              --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+              --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }} \
+              --environment ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS_DEV }} \
+              --environment ADMIN_ORIGINS=${{ secrets.ADMIN_ORIGINS_DEV }}
           else
             echo "Error: Either YC_CONTAINER_ID_STAGING or YC_FOLDER_ID must be set"
             exit 1
@@ -227,11 +266,15 @@ jobs:
             BACKEND_URL=$(yc serverless container get --name=lug-date-backend-staging --folder-id="${YC_FOLDER_ID}" --format json | jq -r '.url')
           else
             echo "Warning: Cannot get backend URL"
-            exit 0
+            BACKEND_URL=""
           fi
 
-          echo "Backend deployed: ${BACKEND_URL}"
-          echo "Health check: ${BACKEND_URL}/health"
+          if [ -n "${BACKEND_URL}" ]; then
+            echo "Backend deployed: ${BACKEND_URL}"
+            echo "Health check: ${BACKEND_URL}/health"
+          else
+            echo "Warning: Cannot get backend URL"
+          fi
 
       - name: Deploy Frontend
         env:
@@ -266,6 +309,8 @@ jobs:
             admin/dist/ \
             s3://${ADMIN_STORAGE_BUCKET}/ \
             --delete
+          
+          echo "✅ Admin deployed to: https://${ADMIN_STORAGE_BUCKET}.website.yandexcloud.net"
 
       - name: Deploy Bot
         env:
@@ -323,9 +368,6 @@ jobs:
       - name: Build shared package first
         run: npm run build --workspace=shared
 
-      - name: Build all packages
-        run: NODE_ENV=production npm run build --workspace=frontend --workspace=backend --workspace=bot --workspace=admin
-
       - name: Install Yandex Cloud CLI
         run: |
           curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
@@ -347,6 +389,46 @@ jobs:
           if [ -n "$YC_FOLDER_ID" ]; then
             yc config set folder-id "$YC_FOLDER_ID" || true
           fi
+
+      - name: Get Backend URL for Admin Config
+        env:
+          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
+          YC_CONTAINER_ID_PROD: ${{ secrets.YC_CONTAINER_ID_PROD }}
+        run: |
+          export PATH=$PATH:$HOME/yandex-cloud/bin
+          
+          if [ -n "${YC_CONTAINER_ID_PROD}" ]; then
+            BACKEND_URL=$(yc serverless container get --id="${YC_CONTAINER_ID_PROD}" --format json | jq -r '.url')
+          elif [ -n "${YC_FOLDER_ID}" ]; then
+            BACKEND_URL=$(yc serverless container get --name=lug-date-backend-prod --folder-id="${YC_FOLDER_ID}" --format json | jq -r '.url')
+          else
+            echo "Warning: Cannot get backend URL, will use default from config.js"
+            BACKEND_URL=""
+          fi
+          
+          if [ -n "${BACKEND_URL}" ]; then
+            echo "Backend URL for admin: ${BACKEND_URL}"
+            echo "BACKEND_URL=${BACKEND_URL}" >> $GITHUB_ENV
+            
+            # Обновляем config.js с правильным URL бекенда
+            cat > admin/public/config.js << 'CONFIG_EOF'
+// Runtime configuration for admin panel
+// This file is loaded before the app starts
+// You can override API URL by setting window.ADMIN_CONFIG before this script loads
+window.ADMIN_CONFIG = window.ADMIN_CONFIG || {
+  // Backend URL - контейнер Yandex Serverless Containers
+  API_URL: 'BACKEND_URL_PLACEHOLDER'
+};
+CONFIG_EOF
+            sed -i "s|BACKEND_URL_PLACEHOLDER|${BACKEND_URL}|g" admin/public/config.js
+            
+            echo "✅ Updated admin config.js with backend URL: ${BACKEND_URL}"
+          else
+            echo "⚠️  Backend URL not available, using default from config.js"
+          fi
+
+      - name: Build all packages
+        run: NODE_ENV=production npm run build --workspace=frontend --workspace=backend --workspace=bot --workspace=admin
 
       - name: Run database migrations
         run: |
@@ -447,7 +529,9 @@ jobs:
               --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_PROD }} \
               --environment TELEGRAM_ALERT_ENABLED=true \
               --environment TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
-              --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+              --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }} \
+              --environment ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS_PROD }} \
+              --environment ADMIN_ORIGINS=${{ secrets.ADMIN_ORIGINS_PROD }}
           elif [ -n "${YC_FOLDER_ID}" ]; then
             yc serverless container revision deploy \
               --container-name=lug-date-backend-prod \
@@ -467,7 +551,9 @@ jobs:
               --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_PROD }} \
               --environment TELEGRAM_ALERT_ENABLED=true \
               --environment TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
-              --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+              --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }} \
+              --environment ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS_PROD }} \
+              --environment ADMIN_ORIGINS=${{ secrets.ADMIN_ORIGINS_PROD }}
           else
             echo "Error: Either YC_CONTAINER_ID_PROD or YC_FOLDER_ID must be set"
             exit 1
@@ -486,11 +572,15 @@ jobs:
             BACKEND_URL=$(yc serverless container get --name=lug-date-backend-prod --folder-id="${YC_FOLDER_ID}" --format json | jq -r '.url')
           else
             echo "Warning: Cannot get backend URL"
-            exit 0
+            BACKEND_URL=""
           fi
 
-          echo "Backend deployed: ${BACKEND_URL}"
-          echo "Health check: ${BACKEND_URL}/health"
+          if [ -n "${BACKEND_URL}" ]; then
+            echo "Backend deployed: ${BACKEND_URL}"
+            echo "Health check: ${BACKEND_URL}/health"
+          else
+            echo "Warning: Cannot get backend URL"
+          fi
 
       - name: Deploy Frontend
         env:
