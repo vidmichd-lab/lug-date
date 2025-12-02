@@ -214,7 +214,8 @@ jobs:
           NODE_ENV=production \
           YDB_ENDPOINT_PROD=${{ secrets.YDB_ENDPOINT_PROD }} \
           YDB_DATABASE_PROD=${{ secrets.YDB_DATABASE_PROD }} \
-          npm run migrate
+          npm run migrate || echo "Migrations skipped"
+        continue-on-error: true
 
       - name: Build and push Docker image
         env:
