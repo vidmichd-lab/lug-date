@@ -110,6 +110,41 @@ jobs:
             echo "⚠️  Warning: File returned HTTP $HTTP_CODE (may need a moment to propagate)"
           fi
 
+      - name: Download archive from Object Storage
+        env:
+          YC_SERVICE_ACCOUNT_KEY_FILE: /tmp/yc-sa-key.json
+          YANDEX_STORAGE_BUCKET: ${{ github.ref == 'refs/heads/main' && secrets.YANDEX_STORAGE_BUCKET_PROD || secrets.YANDEX_STORAGE_BUCKET_DEV }}
+        run: |
+          export PATH=$PATH:$HOME/yandex-cloud/bin
+          # Extract bucket and object key from FUNCTION_ARCHIVE_URL
+          # URL format: https://storage.yandexcloud.net/<bucket>/<object-key>
+          if [ -z "$FUNCTION_ARCHIVE_URL" ]; then
+            echo "❌ Error: FUNCTION_ARCHIVE_URL is not set"
+            exit 1
+          fi
+
+          echo "📥 Downloading archive from Object Storage: $FUNCTION_ARCHIVE_URL"
+
+          # Extract object key from URL (remove https://storage.yandexcloud.net/<bucket>/ prefix)
+          OBJECT_KEY="${FUNCTION_ARCHIVE_URL#https://storage.yandexcloud.net/${YANDEX_STORAGE_BUCKET}/}"
+
+          echo "📦 Bucket: ${YANDEX_STORAGE_BUCKET}"
+          echo "📦 Object key: ${OBJECT_KEY}"
+
+          # Download archive from Object Storage to local file
+          yc storage s3 cp \
+            s3://${YANDEX_STORAGE_BUCKET}/${OBJECT_KEY} \
+            ./function.zip
+
+          # Verify file was downloaded
+          if [ ! -f ./function.zip ]; then
+            echo "❌ Error: Failed to download archive from Object Storage"
+            exit 1
+          fi
+
+          echo "✅ Archive downloaded successfully"
+          ls -lh ./function.zip
+
       - name: Deploy to Yandex Cloud Functions
         env:
           YC_SERVICE_ACCOUNT_KEY_FILE: /tmp/yc-sa-key.json
@@ -190,13 +225,13 @@ jobs:
 
           ENV_STRING="${ENV_STRING},ALLOWED_ORIGINS=https://dating-app-storage.website.yandexcloud.net,https://lug-admin-deploy.website.yandexcloud.net"
 
-          # Always use Object Storage URL (archive is > 3.5MB)
-          if [ -z "$FUNCTION_ARCHIVE_URL" ]; then
-            echo "❌ Error: FUNCTION_ARCHIVE_URL is not set"
+          # Verify local archive exists
+          if [ ! -f ./function.zip ]; then
+            echo "❌ Error: Local archive ./function.zip not found"
             exit 1
           fi
 
-          echo "📦 Using Object Storage URL: $FUNCTION_ARCHIVE_URL"
+          echo "📦 Using local archive: ./function.zip"
 
           yc serverless function version create \
             --function-id "$FUNCTION_ID" \
@@ -204,9 +239,13 @@ jobs:
             --entrypoint handler.handler \
             --memory 128m \
             --execution-timeout 30s \
-            --source-path "$FUNCTION_ARCHIVE_URL" \
+            --source-path ./function.zip \
             --service-account-id aje0defcl8b2577p01hg \
             --environment "$ENV_STRING"
+
+          # Clean up local archive after deployment
+          rm -f ./function.zip
+          echo "🧹 Cleaned up local archive"
 
           echo "FUNCTION_ID=$FUNCTION_ID" >> $GITHUB_ENV
 
