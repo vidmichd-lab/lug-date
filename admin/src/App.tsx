@@ -16,17 +16,31 @@ function App() {
   useEffect(() => {
     // Check if user is already logged in
     const token = localStorage.getItem('admin_token');
-    setIsAuthenticated(!!token);
+    // Only consider authenticated if token exists and is not empty
+    const hasValidToken = !!token && token.trim().length > 0;
+
+    // If no valid token, clear any invalid token
+    if (!hasValidToken) {
+      localStorage.removeItem('admin_token');
+    }
+
+    setIsAuthenticated(hasValidToken);
   }, []);
 
   const handleLogin = (token: string) => {
-    localStorage.setItem('admin_token', token);
-    setIsAuthenticated(true);
+    if (token && token.trim().length > 0) {
+      localStorage.setItem('admin_token', token);
+      setIsAuthenticated(true);
+    } else {
+      setIsAuthenticated(false);
+    }
   };
 
   const handleLogout = () => {
     localStorage.removeItem('admin_token');
     setIsAuthenticated(false);
+    // Force reload to clear any cached state
+    window.location.reload();
   };
 
   const renderPage = () => {

@@ -75,6 +75,18 @@ export const LoginPage = ({ onLogin }: { onLogin: (token: string) => void }) => 
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
+        <div className={styles.debugInfo}>
+          <button
+            type="button"
+            onClick={() => {
+              localStorage.clear();
+              window.location.reload();
+            }}
+            className={styles.clearButton}
+          >
+            Очистить localStorage и перезагрузить
+          </button>
+        </div>
       </div>
     </div>
   );
