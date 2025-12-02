@@ -144,10 +144,12 @@ jobs:
           fi
 
           if [ -n "${BACKEND_URL}" ] && [ "${BACKEND_URL}" != "null" ]; then
+            # Remove trailing slash from BACKEND_URL
+            BACKEND_URL="${BACKEND_URL%/}"
             echo "✅ Backend URL for admin: ${BACKEND_URL}"
             echo "BACKEND_URL=${BACKEND_URL}" >> $GITHUB_ENV
             
-            # Обновляем config.js с правильным URL бекенда
+            # Обновляем config.js с правильным URL бекенда (без trailing slash)
             printf '%s\n' \
               '// Runtime configuration for admin panel' \
               '// This file is loaded before the app starts' \
