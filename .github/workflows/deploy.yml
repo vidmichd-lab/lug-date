@@ -95,35 +95,19 @@ jobs:
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
           
-          # Verify registry ID is set
-          if [ -z "$REGISTRY_ID" ]; then
-            echo "❌ REGISTRY_ID is empty!"
-            exit 1
-          fi
-          
           echo "📦 Building image..."
           IMAGE_TAG="${REGISTRY}/${REGISTRY_ID}/dating-app-backend:${GITHUB_SHA:0:7}"
           docker build -f backend/Dockerfile -t $IMAGE_TAG .
           
           echo ""
-          echo "🔐 Configuring Docker authentication..."
-          yc container registry configure-docker --folder-id $(yc config get folder-id)
+          echo "🔐 Configuring Docker..."
+          yc container registry configure-docker
           
           echo ""
-          echo "🔍 Verifying registry access..."
-          yc container registry list || echo "⚠️ Could not list registries"
+          echo "📤 Pushing $IMAGE_TAG..."
+          docker push $IMAGE_TAG
           
-          echo ""
-          echo "📤 Pushing image to $IMAGE_TAG..."
-          if docker push $IMAGE_TAG; then
-            echo "✅ Push successful!"
-            echo "IMAGE_URL=$IMAGE_TAG" >> $GITHUB_ENV
-          else
-            echo "❌ Push failed. Checking permissions..."
-            echo "Registry ID: $REGISTRY_ID"
-            yc container registry list
-            exit 1
-          fi
+          echo "IMAGE_URL=$IMAGE_TAG" >> $GITHUB_ENV
 
       - name: Deploy Backend
         env:
@@ -248,35 +232,19 @@ jobs:
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
           
-          # Verify registry ID is set
-          if [ -z "$REGISTRY_ID" ]; then
-            echo "❌ REGISTRY_ID is empty!"
-            exit 1
-          fi
-          
           echo "📦 Building image..."
           IMAGE_TAG="${REGISTRY}/${REGISTRY_ID}/dating-app-backend:${GITHUB_SHA:0:7}"
           docker build -f backend/Dockerfile -t $IMAGE_TAG .
           
           echo ""
-          echo "🔐 Configuring Docker authentication..."
-          yc container registry configure-docker --folder-id $(yc config get folder-id)
+          echo "🔐 Configuring Docker..."
+          yc container registry configure-docker
           
           echo ""
-          echo "🔍 Verifying registry access..."
-          yc container registry list || echo "⚠️ Could not list registries"
+          echo "📤 Pushing $IMAGE_TAG..."
+          docker push $IMAGE_TAG
           
-          echo ""
-          echo "📤 Pushing image to $IMAGE_TAG..."
-          if docker push $IMAGE_TAG; then
-            echo "✅ Push successful!"
-            echo "IMAGE_URL=$IMAGE_TAG" >> $GITHUB_ENV
-          else
-            echo "❌ Push failed. Checking permissions..."
-            echo "Registry ID: $REGISTRY_ID"
-            yc container registry list
-            exit 1
-          fi
+          echo "IMAGE_URL=$IMAGE_TAG" >> $GITHUB_ENV
 
       - name: Deploy Backend
         env:
