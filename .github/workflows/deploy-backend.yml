@@ -78,28 +78,16 @@ jobs:
           # Check archive size
           ls -lh function.zip
 
-      - name: Setup AWS CLI for Object Storage
-        env:
-          ACCESS_KEY: ${{ github.ref == 'refs/heads/main' && secrets.YANDEX_STORAGE_ACCESS_KEY_PROD || secrets.YANDEX_STORAGE_ACCESS_KEY_DEV }}
-          SECRET_KEY: ${{ github.ref == 'refs/heads/main' && secrets.YANDEX_STORAGE_SECRET_KEY_PROD || secrets.YANDEX_STORAGE_SECRET_KEY_DEV }}
-        run: |
-          # Install pip if not available
-          python3 -m pip install --upgrade pip || true
-          pip3 install awscli || python3 -m pip install awscli
-          mkdir -p ~/.aws
-          echo "[default]" > ~/.aws/credentials
-          echo "aws_access_key_id = $ACCESS_KEY" >> ~/.aws/credentials
-          echo "aws_secret_access_key = $SECRET_KEY" >> ~/.aws/credentials
-
       - name: Upload archive to Object Storage
         env:
+          YC_SERVICE_ACCOUNT_KEY_FILE: /tmp/yc-sa-key.json
           YANDEX_STORAGE_BUCKET: ${{ github.ref == 'refs/heads/main' && secrets.YANDEX_STORAGE_BUCKET_PROD || secrets.YANDEX_STORAGE_BUCKET_DEV }}
-          OBJECT_STORAGE_URL: https://storage.yandexcloud.net
         run: |
+          export PATH=$PATH:$HOME/yandex-cloud/bin
           # Generate unique filename with timestamp and commit SHA
           ARCHIVE_NAME="function-${GITHUB_SHA:0:7}-$(date +%s).zip"
-          # Upload to Object Storage
-          aws --endpoint-url=$OBJECT_STORAGE_URL s3 cp backend/function.zip s3://${YANDEX_STORAGE_BUCKET}/${ARCHIVE_NAME}
+          # Upload to Object Storage using yc storage (uses service account)
+          yc storage cp backend/function.zip s3://${YANDEX_STORAGE_BUCKET}/${ARCHIVE_NAME}
           # Use https:// format for Yandex Cloud Functions
           FUNCTION_ARCHIVE_URL="https://storage.yandexcloud.net/${YANDEX_STORAGE_BUCKET}/${ARCHIVE_NAME}"
           echo "FUNCTION_ARCHIVE_URL=${FUNCTION_ARCHIVE_URL}" >> $GITHUB_ENV
