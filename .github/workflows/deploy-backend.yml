@@ -67,37 +67,48 @@ jobs:
           REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
-          
+
           # Аутентификация в Container Registry
           yc container registry configure-docker
-          
+
           # Собрать Docker образ
           docker build -f backend/Dockerfile -t dating-app-backend:latest .
-          
+
           # Тег образа с commit SHA
           IMAGE_TAG="${REGISTRY}/${REGISTRY_ID}/dating-app-backend:${GITHUB_SHA:0:7}"
-          
+
           # Tag и push образа
           docker tag dating-app-backend:latest $IMAGE_TAG
           docker push $IMAGE_TAG
-          
+
           echo "IMAGE_URL=$IMAGE_TAG" >> $GITHUB_ENV
 
       - name: Deploy to Yandex Cloud Functions
         env:
           YC_SERVICE_ACCOUNT_KEY_FILE: /tmp/yc-sa-key.json
+          YC_FUNCTION_ID: ${{ secrets.YC_BACKEND_FUNCTION_ID_STAGING }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
-          
+
           # Создать версию функции из Docker образа
           yc serverless function version create \
-            --function-name dating-app-backend-staging \
+            --function-id "${YC_FUNCTION_ID}" \
             --runtime container \
-            --entrypoint "" \
             --memory 128m \
             --execution-timeout 30s \
-            --image "${{ env.IMAGE_URL }}" \
-            --environment NODE_ENV=development,PORT=8080,TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }},YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_DEV }},YDB_DATABASE=${{ secrets.YDB_DATABASE_DEV }},YC_SERVICE_ACCOUNT_KEY=${{ secrets.YC_SERVICE_ACCOUNT_KEY }},YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_DEV }},YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_DEV }},YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_DEV }},TELEGRAM_ALERT_ENABLED=true,TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }},TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+            --docker-image-url "${{ env.IMAGE_URL }}" \
+            --set-env-variable NODE_ENV=development \
+            --set-env-variable PORT=8080 \
+            --set-env-variable TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }} \
+            --set-env-variable YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_DEV }} \
+            --set-env-variable YDB_DATABASE=${{ secrets.YDB_DATABASE_DEV }} \
+            --set-env-variable YC_SERVICE_ACCOUNT_KEY='${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' \
+            --set-env-variable YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_DEV }} \
+            --set-env-variable YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_DEV }} \
+            --set-env-variable YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_DEV }} \
+            --set-env-variable TELEGRAM_ALERT_ENABLED=true \
+            --set-env-variable TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
+            --set-env-variable TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
 
       - name: Health check
         run: |
@@ -156,37 +167,48 @@ jobs:
           REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
-          
+
           # Аутентификация в Container Registry
           yc container registry configure-docker
-          
+
           # Собрать Docker образ
           docker build -f backend/Dockerfile -t dating-app-backend:latest .
-          
+
           # Тег образа с commit SHA
           IMAGE_TAG="${REGISTRY}/${REGISTRY_ID}/dating-app-backend:${GITHUB_SHA:0:7}"
-          
+
           # Tag и push образа
           docker tag dating-app-backend:latest $IMAGE_TAG
           docker push $IMAGE_TAG
-          
+
           echo "IMAGE_URL=$IMAGE_TAG" >> $GITHUB_ENV
 
       - name: Deploy to Yandex Cloud Functions
         env:
           YC_SERVICE_ACCOUNT_KEY_FILE: /tmp/yc-sa-key.json
+          YC_FUNCTION_ID: ${{ secrets.YC_BACKEND_FUNCTION_ID_PROD }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
-          
+
           # Создать версию функции из Docker образа
           yc serverless function version create \
-            --function-name dating-app-backend-prod \
+            --function-id "${YC_FUNCTION_ID}" \
             --runtime container \
-            --entrypoint "" \
             --memory 256m \
             --execution-timeout 30s \
-            --image "${{ env.IMAGE_URL }}" \
-            --environment NODE_ENV=production,PORT=8080,TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_PROD }},YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_PROD }},YDB_DATABASE=${{ secrets.YDB_DATABASE_PROD }},YC_SERVICE_ACCOUNT_KEY=${{ secrets.YC_SERVICE_ACCOUNT_KEY }},YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_PROD }},YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_PROD }},YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_PROD }},TELEGRAM_ALERT_ENABLED=true,TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }},TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+            --docker-image-url "${{ env.IMAGE_URL }}" \
+            --set-env-variable NODE_ENV=production \
+            --set-env-variable PORT=8080 \
+            --set-env-variable TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_PROD }} \
+            --set-env-variable YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_PROD }} \
+            --set-env-variable YDB_DATABASE=${{ secrets.YDB_DATABASE_PROD }} \
+            --set-env-variable YC_SERVICE_ACCOUNT_KEY='${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' \
+            --set-env-variable YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_PROD }} \
+            --set-env-variable YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_PROD }} \
+            --set-env-variable YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_PROD }} \
+            --set-env-variable TELEGRAM_ALERT_ENABLED=true \
+            --set-env-variable TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
+            --set-env-variable TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
 
       - name: Health check
         run: |
