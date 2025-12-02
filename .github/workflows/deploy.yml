@@ -58,10 +58,22 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v40
+        with:
+          files: |
+            admin/**
+            frontend/**
+            backend/**
+            bot/**
+            shared/**
+
       - name: Install dependencies
         run: npm ci
 
       - name: Build shared package first
+        if: steps.changed-files.outputs.any_changed == 'true'
         run: npm run build --workspace=shared
 
       - name: Install Yandex Cloud CLI
@@ -118,23 +130,30 @@ jobs:
             
             echo "✅ Updated admin config.js with backend URL: ${BACKEND_URL}"
             
-            # Пересобираем frontend с правильным URL бекенда
+            # Пересобираем frontend с правильным URL бекенда только если были изменения
             if [ -n "${BACKEND_URL}" ]; then
-              echo "Rebuilding frontend with API URL: ${BACKEND_URL}"
-              VITE_API_URL="${BACKEND_URL}" npm run build --workspace=frontend
+              if [ "${{ steps.changed-files.outputs.frontend }}" == "true" ] || [ "${{ steps.changed-files.outputs.shared }}" == "true" ]; then
+                echo "Rebuilding frontend with API URL: ${BACKEND_URL}"
+                VITE_API_URL="${BACKEND_URL}" npm run build --workspace=frontend
+              else
+                echo "⏭️  Skipping frontend build - no changes detected"
+              fi
             fi
           else
             echo "⚠️  Backend URL not available, using default from config.js"
           fi
 
-      - name: Build all packages
-        env:
-          VITE_API_URL: ${{ env.BACKEND_URL }}
-        run: |
-          if [ -n "${VITE_API_URL}" ]; then
-            echo "Building with API URL: ${VITE_API_URL}"
-          fi
-          NODE_ENV=development npm run build --workspace=backend --workspace=bot --workspace=admin
+      - name: Build backend
+        if: steps.changed-files.outputs.backend == 'true' || steps.changed-files.outputs.shared == 'true'
+        run: NODE_ENV=development npm run build --workspace=backend
+
+      - name: Build bot
+        if: steps.changed-files.outputs.bot == 'true' || steps.changed-files.outputs.shared == 'true'
+        run: NODE_ENV=development npm run build --workspace=bot
+
+      - name: Build admin
+        if: steps.changed-files.outputs.admin == 'true' || steps.changed-files.outputs.shared == 'true'
+        run: NODE_ENV=development npm run build --workspace=admin
 
       - name: Run database migrations
         run: |
@@ -156,6 +175,7 @@ jobs:
             cr.yandex
 
       - name: Build and push Docker image
+        if: steps.changed-files.outputs.backend == 'true' || steps.changed-files.outputs.shared == 'true'
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
 
@@ -175,6 +195,7 @@ jobs:
 
           # Сохраняем для деплоя
           echo "IMAGE_ID=${IMAGE_NAME}:${IMAGE_TAG}" >> $GITHUB_ENV
+        continue-on-error: true
 
       - name: Create container if not exists
         env:
@@ -209,6 +230,7 @@ jobs:
           fi
 
       - name: Deploy Backend
+        if: steps.changed-files.outputs.backend == 'true' || steps.changed-files.outputs.shared == 'true'
         env:
           YC_SERVICE_ACCOUNT_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
           YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
@@ -289,6 +311,7 @@ jobs:
           fi
 
       - name: Deploy Frontend
+        if: steps.changed-files.outputs.frontend == 'true' || steps.changed-files.outputs.shared == 'true'
         env:
           YANDEX_STORAGE_BUCKET: ${{ secrets.YANDEX_STORAGE_BUCKET_DEV }}
         run: |
@@ -311,6 +334,7 @@ jobs:
           pip3 install awscli --quiet
 
       - name: Deploy Admin
+        if: steps.changed-files.outputs.admin == 'true' || steps.changed-files.outputs.shared == 'true'
         env:
           ADMIN_STORAGE_BUCKET: ${{ secrets.ADMIN_STORAGE_BUCKET_DEV }}
           ADMIN_STORAGE_ACCESS_KEY: ${{ secrets.ADMIN_STORAGE_ACCESS_KEY_DEV }}
@@ -365,6 +389,7 @@ jobs:
           echo "✅ Admin deployed to: https://${ADMIN_STORAGE_BUCKET}.website.yandexcloud.net"
 
       - name: Deploy Bot
+        if: steps.changed-files.outputs.bot == 'true' || steps.changed-files.outputs.shared == 'true'
         env:
           YC_BOT_FUNCTION_ID: ${{ secrets.YC_BOT_FUNCTION_ID_STAGING }}
         run: |
@@ -414,10 +439,22 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v40
+        with:
+          files: |
+            admin/**
+            frontend/**
+            backend/**
+            bot/**
+            shared/**
+
       - name: Install dependencies
         run: npm ci
 
       - name: Build shared package first
+        if: steps.changed-files.outputs.any_changed == 'true'
         run: npm run build --workspace=shared
 
       - name: Install Yandex Cloud CLI
@@ -473,20 +510,31 @@ jobs:
               '};' > admin/public/config.js
             
             echo "✅ Updated admin config.js with backend URL: ${BACKEND_URL}"
+            
+            # Пересобираем frontend с правильным URL бекенда только если были изменения
+            if [ -n "${BACKEND_URL}" ]; then
+              if [ "${{ steps.changed-files.outputs.frontend }}" == "true" ] || [ "${{ steps.changed-files.outputs.shared }}" == "true" ]; then
+                echo "Rebuilding frontend with API URL: ${BACKEND_URL}"
+                VITE_API_URL="${BACKEND_URL}" npm run build --workspace=frontend
+              else
+                echo "⏭️  Skipping frontend build - no changes detected"
+              fi
+            fi
           else
             echo "⚠️  Backend URL not available, using default from config.js"
           fi
 
-      - name: Build all packages
-        env:
-          VITE_API_URL: ${{ env.BACKEND_URL }}
-        run: |
-          if [ -n "${VITE_API_URL}" ]; then
-            echo "Building frontend with API URL: ${VITE_API_URL}"
-          else
-            echo "⚠️  VITE_API_URL not set, frontend will use default"
-          fi
-          NODE_ENV=production npm run build --workspace=frontend --workspace=backend --workspace=bot --workspace=admin
+      - name: Build backend
+        if: steps.changed-files.outputs.backend == 'true' || steps.changed-files.outputs.shared == 'true'
+        run: NODE_ENV=production npm run build --workspace=backend
+
+      - name: Build bot
+        if: steps.changed-files.outputs.bot == 'true' || steps.changed-files.outputs.shared == 'true'
+        run: NODE_ENV=production npm run build --workspace=bot
+
+      - name: Build admin
+        if: steps.changed-files.outputs.admin == 'true' || steps.changed-files.outputs.shared == 'true'
+        run: NODE_ENV=production npm run build --workspace=admin
 
       - name: Run database migrations
         run: |
@@ -508,6 +556,7 @@ jobs:
             cr.yandex
 
       - name: Build and push Docker image
+        if: steps.changed-files.outputs.backend == 'true' || steps.changed-files.outputs.shared == 'true'
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
 
@@ -527,6 +576,7 @@ jobs:
 
           # Сохраняем для деплоя
           echo "IMAGE_ID=${IMAGE_NAME}:${IMAGE_TAG}" >> $GITHUB_ENV
+        continue-on-error: true
 
       - name: Create container if not exists
         env:
