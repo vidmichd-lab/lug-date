@@ -6,7 +6,7 @@
   "engines": {
     "node": ">=20.0.0"
   },
-  "description": "Backend for Telegram Dating App",
+  "description": "Backend for Telegram Dating App - Serverless Container",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
