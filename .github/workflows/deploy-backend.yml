@@ -155,7 +155,7 @@ jobs:
           echo "📦 Bucket: ${YANDEX_STORAGE_BUCKET}"
           echo "📦 Object key: ${OBJECT_KEY}"
 
-          # Step 3: Prepare function deployment
+          # Step 3: Prepare function deployment (before download to fail early if function doesn't exist)
           FUNCTION_NAME=${{ github.ref == 'refs/heads/main' && 'dating-app-backend-prod' || 'dating-app-backend-staging' }}
           FUNCTION_ID=${{ github.ref == 'refs/heads/main' && 'd4enks8erf8eentnojj9' || 'd4enks8erf8eentnojj9' }}
 
@@ -219,9 +219,63 @@ jobs:
 
           ENV_STRING="${ENV_STRING},ALLOWED_ORIGINS=https://dating-app-storage.website.yandexcloud.net,https://lug-admin-deploy.website.yandexcloud.net"
 
-          # Step 4: Create function version with archive from Object Storage
-          echo "🚀 Creating function version from Object Storage..."
-          echo "📦 Source: s3://${YANDEX_STORAGE_BUCKET}/${OBJECT_KEY}"
+          # Step 3: Check available source flags for debugging
+          echo "🔍 Checking available source flags in yc CLI..."
+          yc serverless function version create --help | grep -i source || echo "No source flags found in help"
+
+          # Step 4: Download archive from Object Storage
+          echo "📥 Downloading archive from Object Storage..."
+          yc storage s3 cp \
+            s3://${YANDEX_STORAGE_BUCKET}/${OBJECT_KEY} \
+            ./temp-function.zip
+
+          # Check if download was successful
+          if [ $? -ne 0 ]; then
+            echo "❌ Error: Failed to download archive from Object Storage"
+            exit 1
+          fi
+
+          # Verify file exists and is not empty
+          if [ ! -f ./temp-function.zip ]; then
+            echo "❌ Error: Archive file ./temp-function.zip not found after download"
+            exit 1
+          fi
+
+          FILE_SIZE=$(stat -f%z ./temp-function.zip 2>/dev/null || stat -c%s ./temp-function.zip 2>/dev/null || echo "0")
+          if [ "$FILE_SIZE" -eq 0 ]; then
+            echo "❌ Error: Archive file is empty (size: $FILE_SIZE bytes)"
+            rm -f ./temp-function.zip
+            exit 1
+          fi
+
+          echo "✅ Archive downloaded successfully"
+          echo "📊 Archive size: $(ls -lh ./temp-function.zip | awk '{print $5}')"
+
+          # Step 5: Extract archive
+          echo "📦 Extracting archive..."
+          mkdir -p ./function-contents
+          unzip -q ./temp-function.zip -d ./function-contents
+
+          if [ $? -ne 0 ]; then
+            echo "❌ Error: Failed to extract archive"
+            rm -f ./temp-function.zip
+            exit 1
+          fi
+
+          # Verify extraction was successful
+          if [ ! -d ./function-contents ] || [ -z "$(ls -A ./function-contents)" ]; then
+            echo "❌ Error: Archive extraction failed or directory is empty"
+            rm -f ./temp-function.zip
+            rm -rf ./function-contents
+            exit 1
+          fi
+
+          echo "✅ Archive extracted successfully"
+          echo "📊 Extracted contents size: $(du -sh ./function-contents | awk '{print $1}')"
+
+          # Step 6: Create function version from extracted directory
+          echo "🚀 Creating function version from extracted directory..."
+          echo "📦 Source path: ./function-contents"
 
           yc serverless function version create \
             --function-id "$FUNCTION_ID" \
@@ -229,14 +283,19 @@ jobs:
             --entrypoint handler.handler \
             --memory 128m \
             --execution-timeout 30s \
-            --source-object-storage \
-            --source-bucket "${YANDEX_STORAGE_BUCKET}" \
-            --source-object "${OBJECT_KEY}" \
+            --source-path ./function-contents \
             --service-account-id aje0defcl8b2577p01hg \
             --environment "$ENV_STRING"
 
           # Check if deployment was successful
-          if [ $? -ne 0 ]; then
+          DEPLOY_EXIT_CODE=$?
+
+          # Step 7: Clean up temporary files
+          echo "🧹 Cleaning up temporary files..."
+          rm -f ./temp-function.zip
+          rm -rf ./function-contents
+
+          if [ $DEPLOY_EXIT_CODE -ne 0 ]; then
             echo "❌ Error: Failed to create function version"
             exit 1
           fi
