@@ -87,9 +87,10 @@ jobs:
           # Generate unique filename with timestamp and commit SHA
           ARCHIVE_NAME="function-${GITHUB_SHA:0:7}-$(date +%s).zip"
           # Upload to Object Storage using yc storage (uses service account)
+          echo "📦 Uploading archive to s3://${YANDEX_STORAGE_BUCKET}/${ARCHIVE_NAME}..."
           yc storage cp backend/function.zip s3://${YANDEX_STORAGE_BUCKET}/${ARCHIVE_NAME}
-          # Use https:// format for Yandex Cloud Functions
-          FUNCTION_ARCHIVE_URL="https://storage.yandexcloud.net/${YANDEX_STORAGE_BUCKET}/${ARCHIVE_NAME}"
+          # Use s3:// format for Yandex Cloud Functions (it supports this format)
+          FUNCTION_ARCHIVE_URL="s3://${YANDEX_STORAGE_BUCKET}/${ARCHIVE_NAME}"
           echo "FUNCTION_ARCHIVE_URL=${FUNCTION_ARCHIVE_URL}" >> $GITHUB_ENV
           echo "✅ Archive uploaded to Object Storage: ${FUNCTION_ARCHIVE_URL}"
 
