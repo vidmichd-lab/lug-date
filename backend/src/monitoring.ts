@@ -18,12 +18,15 @@ export function initErrorMonitoring() {
   const environment = process.env.NODE_ENV || 'development';
 
   if (CATCHER_ENABLED) {
-    console.log('✅ Catcher error monitoring enabled');
+    logger.info({ type: 'monitoring_init', message: 'Catcher error monitoring enabled' });
   } else {
-    console.log('⚠️  Catcher not configured. Using Yandex Cloud Logging only.');
+    logger.warn({
+      type: 'monitoring_init',
+      message: 'Catcher not configured. Using Yandex Cloud Logging only.',
+    });
   }
 
-  console.log(`✅ Error monitoring initialized for ${environment} environment`);
+  logger.info({ type: 'monitoring_init', environment, message: 'Error monitoring initialized' });
 }
 
 /**
@@ -91,22 +94,25 @@ async function reportToCatcher(
   }
 
   try {
-    const response = await fetch(`https://api.catcher.io/v1/projects/${CATCHER_PROJECT_ID}/errors`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${CATCHER_API_KEY}`,
-      },
-      body: JSON.stringify({
-        message: error.message,
-        stack: error.stack,
-        level: 'error',
-        tags: context?.tags || {},
-        extra: context?.extra || {},
-        user: context?.user,
-        timestamp: new Date().toISOString(),
-      }),
-    });
+    const response = await fetch(
+      `https://api.catcher.io/v1/projects/${CATCHER_PROJECT_ID}/errors`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${CATCHER_API_KEY}`,
+        },
+        body: JSON.stringify({
+          message: error.message,
+          stack: error.stack,
+          level: 'error',
+          tags: context?.tags || {},
+          extra: context?.extra || {},
+          user: context?.user,
+          timestamp: new Date().toISOString(),
+        }),
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`Catcher API error: ${response.statusText}`);
@@ -151,6 +157,3 @@ export function captureMessage(
     ...context,
   });
 }
-
-
-

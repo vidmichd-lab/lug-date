@@ -1,8 +1,13 @@
 import React from 'react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import * as XLSX from 'xlsx';
-import { useAnalyticsOverview, useUsersChart, useEventsTop, useFunnel } from '../../hooks/useAnalytics';
+import ExcelJS from 'exceljs';
+import {
+  useAnalyticsOverview,
+  useUsersChart,
+  useEventsTop,
+  useFunnel,
+} from '../../hooks/useAnalytics';
 import styles from './ExportButtons.module.css';
 
 export const ExportButtons: React.FC = () => {
@@ -13,7 +18,7 @@ export const ExportButtons: React.FC = () => {
 
   const exportToPDF = () => {
     const doc = new jsPDF();
-    
+
     // Заголовок
     doc.setFontSize(20);
     doc.text('Отчет по аналитике', 14, 22);
@@ -116,60 +121,73 @@ export const ExportButtons: React.FC = () => {
     doc.save(`analytics-report-${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
-  const exportToExcel = () => {
-    const workbook = XLSX.utils.book_new();
+  const exportToExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
 
     // Общая статистика
     if (overview) {
-      const overviewData = [
-        ['Метрика', 'Значение'],
-        ['Пользователей всего', overview.users.total],
-        ['Новых за неделю', overview.users.newThisWeek],
-        ['Активных событий', overview.events.active],
-        ['Всего матчей', overview.matches.total],
-        ['Матчей сегодня', overview.matches.today],
-        ['Конверсия лайки→матчи', overview.conversionRate.likesToMatches],
-        ['Онлайн пользователей', overview.onlineUsers],
-      ];
-      const overviewSheet = XLSX.utils.aoa_to_sheet(overviewData);
-      XLSX.utils.book_append_sheet(workbook, overviewSheet, 'Общая статистика');
+      const overviewSheet = workbook.addWorksheet('Общая статистика');
+      overviewSheet.addRow(['Метрика', 'Значение']);
+      overviewSheet.addRow(['Пользователей всего', overview.users.total]);
+      overviewSheet.addRow(['Новых за неделю', overview.users.newThisWeek]);
+      overviewSheet.addRow(['Активных событий', overview.events.active]);
+      overviewSheet.addRow(['Всего матчей', overview.matches.total]);
+      overviewSheet.addRow(['Матчей сегодня', overview.matches.today]);
+      overviewSheet.addRow(['Конверсия лайки→матчи', overview.conversionRate.likesToMatches]);
+      overviewSheet.addRow(['Онлайн пользователей', overview.onlineUsers]);
+
+      // Стилизация заголовка
+      overviewSheet.getRow(1).font = { bold: true };
     }
 
     // График пользователей
     if (usersChart && usersChart.length > 0) {
-      const chartData = [
-        ['Дата', 'Регистрации', 'Активные'],
-        ...usersChart.map((item) => [
+      const chartSheet = workbook.addWorksheet('Регистрации');
+      chartSheet.addRow(['Дата', 'Регистрации', 'Активные']);
+      chartSheet.getRow(1).font = { bold: true };
+
+      usersChart.forEach((item) => {
+        chartSheet.addRow([
           new Date(item.date).toLocaleDateString('ru-RU'),
           item.registrations,
           item.active,
-        ]),
-      ];
-      const chartSheet = XLSX.utils.aoa_to_sheet(chartData);
-      XLSX.utils.book_append_sheet(workbook, chartSheet, 'Регистрации');
+        ]);
+      });
     }
 
     // Топ событий
     if (eventsTop && eventsTop.length > 0) {
-      const eventsData = [
-        ['Событие', 'Лайки', 'Просмотры', 'Матчи'],
-        ...eventsTop.map((event) => [event.title, event.likes, event.views, event.matches]),
-      ];
-      const eventsSheet = XLSX.utils.aoa_to_sheet(eventsData);
-      XLSX.utils.book_append_sheet(workbook, eventsSheet, 'Топ событий');
+      const eventsSheet = workbook.addWorksheet('Топ событий');
+      eventsSheet.addRow(['Событие', 'Лайки', 'Просмотры', 'Матчи']);
+      eventsSheet.getRow(1).font = { bold: true };
+
+      eventsTop.forEach((event) => {
+        eventsSheet.addRow([event.title, event.likes, event.views, event.matches]);
+      });
     }
 
     // Воронка
     if (funnel && funnel.length > 0) {
-      const funnelData = [
-        ['Этап', 'Количество', 'Процент'],
-        ...funnel.map((item) => [item.stage, item.count, item.percentage]),
-      ];
-      const funnelSheet = XLSX.utils.aoa_to_sheet(funnelData);
-      XLSX.utils.book_append_sheet(workbook, funnelSheet, 'Воронка');
+      const funnelSheet = workbook.addWorksheet('Воронка');
+      funnelSheet.addRow(['Этап', 'Количество', 'Процент']);
+      funnelSheet.getRow(1).font = { bold: true };
+
+      funnel.forEach((item) => {
+        funnelSheet.addRow([item.stage, item.count, item.percentage]);
+      });
     }
 
-    XLSX.writeFile(workbook, `analytics-report-${new Date().toISOString().split('T')[0]}.xlsx`);
+    // Сохранение файла
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `analytics-report-${new Date().toISOString().split('T')[0]}.xlsx`;
+    link.click();
+    window.URL.revokeObjectURL(url);
   };
 
   return (
@@ -183,6 +201,3 @@ export const ExportButtons: React.FC = () => {
     </div>
   );
 };
-
-
-

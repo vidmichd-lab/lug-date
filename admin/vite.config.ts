@@ -25,7 +25,7 @@ export default defineConfig({
           'query-vendor': ['@tanstack/react-query'],
           'charts-vendor': ['recharts'],
           'pdf-vendor': ['jspdf', 'jspdf-autotable'],
-          'utils-vendor': ['axios', 'date-fns', 'xlsx'],
+          'utils-vendor': ['axios', 'date-fns', 'exceljs'],
         },
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
@@ -48,4 +48,3 @@ export default defineConfig({
     'process.env': {},
   },
 });
-
