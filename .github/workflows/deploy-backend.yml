@@ -13,7 +13,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -38,7 +38,7 @@ jobs:
           curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
           export PATH=$PATH:$HOME/yandex-cloud/bin
           echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
-      
+
       - name: Configure Yandex Cloud CLI
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
@@ -74,7 +74,10 @@ jobs:
           rm -f package.json.bak
           npm install --production --ignore-scripts
           cd ..
-          zip -r function.zip deploy-package/
+          # Create zip with files in root (not in deploy-package/ folder)
+          cd deploy-package
+          zip -r ../function.zip . -x "*.git*" "*.DS_Store"
+          cd ..
           # Check archive size
           ls -lh function.zip
 
@@ -97,7 +100,7 @@ jobs:
           FUNCTION_ARCHIVE_URL="https://storage.yandexcloud.net/${YANDEX_STORAGE_BUCKET}/${ARCHIVE_NAME}"
           echo "FUNCTION_ARCHIVE_URL=${FUNCTION_ARCHIVE_URL}" >> $GITHUB_ENV
           echo "✅ Archive uploaded to Object Storage: ${FUNCTION_ARCHIVE_URL}"
-          
+
           # Verify file is accessible
           echo "🔍 Verifying file accessibility..."
           sleep 2
@@ -126,7 +129,7 @@ jobs:
           export PATH=$PATH:$HOME/yandex-cloud/bin
           FUNCTION_NAME=${{ github.ref == 'refs/heads/main' && 'dating-app-backend-prod' || 'dating-app-backend-staging' }}
           FUNCTION_ID=${{ github.ref == 'refs/heads/main' && 'd4enks8erf8eentnojj9' || 'd4enks8erf8eentnojj9' }}
-          
+
           # Use existing function ID or create new function
           if [ -z "$FUNCTION_ID" ] || [ "$FUNCTION_ID" = "d4enks8erf8eentnojj9" ]; then
             # Use existing function
@@ -141,12 +144,12 @@ jobs:
               --folder-id $FOLDER_ID || echo "Function already exists"
             FUNCTION_ID=$(yc serverless function get --name $FUNCTION_NAME --format json | jq -r '.id')
           fi
-          
+
           # Create new version
           # Build environment variables string
           # Values are passed through env section, so they're already safely escaped by GitHub Actions
           ENV_STRING="NODE_ENV=${{ github.ref == 'refs/heads/main' && 'production' || 'development' }},PORT=8080"
-          
+
           # Helper function to safely add environment variable to ENV_STRING
           # This function properly escapes commas (YCF uses comma as separator)
           add_env_var() {
@@ -160,12 +163,12 @@ jobs:
               ENV_STRING="${ENV_STRING},${key}=${value}"
             fi
           }
-          
+
           # Add variables from env section (already safely passed by GitHub Actions)
           add_env_var "YDB_ENDPOINT" "$YDB_ENDPOINT_VAL"
           add_env_var "YDB_DATABASE" "$YDB_DATABASE_VAL"
           add_env_var "YDB_TOKEN" "$YDB_TOKEN_VAL"
-          
+
           # For JSON values (YC_SERVICE_ACCOUNT_KEY), use base64 encoding to avoid issues with special characters
           if [ -n "$YC_SA_KEY_VAL" ] && [ "$YC_SA_KEY_VAL" != "null" ]; then
             # Encode to base64 to safely handle JSON with special characters
@@ -175,27 +178,27 @@ jobs:
             # Note: This might fail if JSON contains commas, but we'll try
             ENV_STRING="${ENV_STRING},YC_SERVICE_ACCOUNT_KEY=${YC_SA_KEY_VAL}"
           fi
-          
+
           add_env_var "TELEGRAM_BOT_TOKEN" "$TELEGRAM_BOT_TOKEN_VAL"
           add_env_var "YANDEX_STORAGE_BUCKET" "$YANDEX_STORAGE_BUCKET_VAL"
           add_env_var "YANDEX_STORAGE_ACCESS_KEY" "$YANDEX_STORAGE_ACCESS_KEY_VAL"
           add_env_var "YANDEX_STORAGE_SECRET_KEY" "$YANDEX_STORAGE_SECRET_KEY_VAL"
-          
+
           ENV_STRING="${ENV_STRING},TELEGRAM_ALERT_ENABLED=true"
-          
+
           add_env_var "TELEGRAM_ALERT_BOT_TOKEN" "$TELEGRAM_ALERT_BOT_TOKEN_VAL"
           add_env_var "TELEGRAM_ALERT_CHAT_ID" "$TELEGRAM_ALERT_CHAT_ID_VAL"
-          
+
           ENV_STRING="${ENV_STRING},ALLOWED_ORIGINS=https://dating-app-storage.website.yandexcloud.net,https://lug-admin-deploy.website.yandexcloud.net"
-          
+
           # Always use Object Storage URL (archive is > 3.5MB)
           if [ -z "$FUNCTION_ARCHIVE_URL" ]; then
             echo "❌ Error: FUNCTION_ARCHIVE_URL is not set"
             exit 1
           fi
-          
+
           echo "📦 Using Object Storage URL: $FUNCTION_ARCHIVE_URL"
-          
+
           yc serverless function version create \
             --function-id "$FUNCTION_ID" \
             --runtime nodejs18 \
@@ -205,7 +208,7 @@ jobs:
             --source-path "$FUNCTION_ARCHIVE_URL" \
             --service-account-id aje0defcl8b2577p01hg \
             --environment "$ENV_STRING"
-          
+
           echo "FUNCTION_ID=$FUNCTION_ID" >> $GITHUB_ENV
 
       - name: Get function URL
@@ -226,4 +229,3 @@ jobs:
           echo "✅ Backend deployment completed!"
           echo "🌐 Backend URL: ${{ steps.get-url.outputs.url }}"
           echo "📝 Update frontend and admin config.js with this URL"
-
