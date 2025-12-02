@@ -96,38 +96,55 @@ jobs:
           # Показываем размер
           docker images ${IMAGE_NAME}:${IMAGE_TAG}
 
-      - name: Deploy to Yandex Cloud Function
+      - name: Create container if not exists
         env:
-          YC_FUNCTION_ID: ${{ secrets.YC_BACKEND_FUNCTION_ID_STAGING }}
           YC_SERVICE_ACCOUNT_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
 
-          yc serverless function version create \
-            --function-id="${YC_FUNCTION_ID}" \
-            --runtime=container \
-            --source-image=${{ env.IMAGE_ID }} \
-            --memory=512m \
-            --execution-timeout=30s \
-            --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
-            --set-env-variable NODE_ENV=development \
-            --set-env-variable PORT=8080 \
-            --set-env-variable TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }} \
-            --set-env-variable YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_DEV }} \
-            --set-env-variable YDB_DATABASE=${{ secrets.YDB_DATABASE_DEV }} \
-            --set-env-variable YC_SERVICE_ACCOUNT_KEY='${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' \
-            --set-env-variable YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_DEV }} \
-            --set-env-variable YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_DEV }} \
-            --set-env-variable YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_DEV }} \
-            --set-env-variable TELEGRAM_ALERT_ENABLED=true \
-            --set-env-variable TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
-            --set-env-variable TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+          # Создаем контейнер, если его еще нет
+          yc serverless container create --name=lug-date-backend-staging || echo "Container already exists"
 
-      - name: Get Function URL
+          # Устанавливаем service account, если контейнер был только что создан
+          if [ $? -eq 0 ]; then
+            yc serverless container set-access-bindings \
+              --name=lug-date-backend-staging \
+              --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
+              --role=serverless.containers.invoker || true
+          fi
+
+      - name: Deploy to Yandex Cloud Container
+        env:
+          YC_SERVICE_ACCOUNT_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
-          FUNCTION_ID=$(yc serverless function get --id ${{ secrets.YC_BACKEND_FUNCTION_ID_STAGING }} --format json | jq -r '.id')
-          echo "Function deployed: https://functions.yandexcloud.net/${FUNCTION_ID}"
+
+          yc serverless container revision deploy \
+            --container-name=lug-date-backend-staging \
+            --image=${{ env.IMAGE_ID }} \
+            --memory=512m \
+            --cores=1 \
+            --execution-timeout=30s \
+            --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
+            --environment NODE_ENV=development \
+            --environment PORT=8080 \
+            --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }} \
+            --environment YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_DEV }} \
+            --environment YDB_DATABASE=${{ secrets.YDB_DATABASE_DEV }} \
+            --environment YC_SERVICE_ACCOUNT_KEY='${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' \
+            --environment YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_DEV }} \
+            --environment YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_DEV }} \
+            --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_DEV }} \
+            --environment TELEGRAM_ALERT_ENABLED=true \
+            --environment TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
+            --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+
+      - name: Get Container URL
+        run: |
+          export PATH=$PATH:$HOME/yandex-cloud/bin
+          CONTAINER_URL=$(yc serverless container get --name=lug-date-backend-staging --format json | jq -r '.url')
+          echo "Container deployed: ${CONTAINER_URL}"
+          echo "Health check: ${CONTAINER_URL}/health"
 
       - name: Health check
         run: |
@@ -218,18 +235,34 @@ jobs:
           # Показываем размер
           docker images ${IMAGE_NAME}:${IMAGE_TAG}
 
-      - name: Deploy to Yandex Cloud Function
+      - name: Create container if not exists
         env:
-          YC_FUNCTION_ID: ${{ secrets.YC_BACKEND_FUNCTION_ID_PROD }}
           YC_SERVICE_ACCOUNT_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
 
-          yc serverless function version create \
-            --function-id="${YC_FUNCTION_ID}" \
-            --runtime=custom-image \
+          # Создаем контейнер, если его еще нет
+          yc serverless container create --name=lug-date-backend-prod || echo "Container already exists"
+
+          # Устанавливаем service account, если контейнер был только что создан
+          if [ $? -eq 0 ]; then
+            yc serverless container set-access-bindings \
+              --name=lug-date-backend-prod \
+              --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
+              --role=serverless.containers.invoker || true
+          fi
+
+      - name: Deploy to Yandex Cloud Container
+        env:
+          YC_SERVICE_ACCOUNT_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+        run: |
+          export PATH=$PATH:$HOME/yandex-cloud/bin
+
+          yc serverless container revision deploy \
+            --container-name=lug-date-backend-prod \
             --image=${{ env.IMAGE_ID }} \
             --memory=512m \
+            --cores=1 \
             --execution-timeout=30s \
             --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
             --environment NODE_ENV=production \
@@ -245,11 +278,12 @@ jobs:
             --environment TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
             --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
 
-      - name: Get Function URL
+      - name: Get Container URL
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
-          FUNCTION_ID=$(yc serverless function get --id ${{ secrets.YC_BACKEND_FUNCTION_ID_PROD }} --format json | jq -r '.id')
-          echo "Function deployed: https://functions.yandexcloud.net/${FUNCTION_ID}"
+          CONTAINER_URL=$(yc serverless container get --name=lug-date-backend-prod --format json | jq -r '.url')
+          echo "Container deployed: ${CONTAINER_URL}"
+          echo "Health check: ${CONTAINER_URL}/health"
 
       - name: Health check
         run: |
