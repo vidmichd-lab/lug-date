@@ -75,9 +75,10 @@ jobs:
           # Проверяем сообщение коммита на наличие флагов принудительного деплоя
           COMMIT_MSG=$(git log -1 --pretty=%B)
           # Если нет изменений в файлах, но это не первый коммит - деплоим все
-          if [ "${{ steps.changed-files.outputs.any_changed }}" != "true" ]; then
+          # Также деплоим все при ручном запуске workflow
+          if [ "${{ steps.changed-files.outputs.any_changed }}" != "true" ] || [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             echo "force_all=true" >> $GITHUB_OUTPUT
-            echo "🚀 No file changes detected, deploying all components"
+            echo "🚀 No file changes detected or manual trigger, deploying all components"
           elif echo "$COMMIT_MSG" | grep -qiE "(force|deploy all|redeploy|full deploy)"; then
             echo "force_all=true" >> $GITHUB_OUTPUT
             echo "🚀 Force deploy all components detected"
@@ -211,7 +212,6 @@ jobs:
 
           # Сохраняем для деплоя
           echo "IMAGE_ID=${IMAGE_NAME}:${IMAGE_TAG}" >> $GITHUB_ENV
-        continue-on-error: true
 
       - name: Create container if not exists
         env:
@@ -304,6 +304,7 @@ jobs:
           fi
 
       - name: Get Backend URL
+        if: steps.changed-files.outputs.backend == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
         env:
           YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
           YC_CONTAINER_ID_STAGING: ${{ secrets.YC_CONTAINER_ID_STAGING }}
@@ -346,6 +347,7 @@ jobs:
             --recursive
 
       - name: Install AWS CLI
+        if: steps.changed-files.outputs.admin == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
         run: |
           pip3 install awscli --quiet
 
@@ -472,9 +474,10 @@ jobs:
           # Проверяем сообщение коммита на наличие флагов принудительного деплоя
           COMMIT_MSG=$(git log -1 --pretty=%B)
           # Если нет изменений в файлах, но это не первый коммит - деплоим все
-          if [ "${{ steps.changed-files.outputs.any_changed }}" != "true" ]; then
+          # Также деплоим все при ручном запуске workflow
+          if [ "${{ steps.changed-files.outputs.any_changed }}" != "true" ] || [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             echo "force_all=true" >> $GITHUB_OUTPUT
-            echo "🚀 No file changes detected, deploying all components"
+            echo "🚀 No file changes detected or manual trigger, deploying all components"
           elif echo "$COMMIT_MSG" | grep -qiE "(force|deploy all|redeploy|full deploy)"; then
             echo "force_all=true" >> $GITHUB_OUTPUT
             echo "🚀 Force deploy all components detected"
@@ -608,7 +611,6 @@ jobs:
 
           # Сохраняем для деплоя
           echo "IMAGE_ID=${IMAGE_NAME}:${IMAGE_TAG}" >> $GITHUB_ENV
-        continue-on-error: true
 
       - name: Create container if not exists
         env:
@@ -700,6 +702,7 @@ jobs:
           fi
 
       - name: Get Backend URL
+        if: steps.changed-files.outputs.backend == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
         env:
           YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
           YC_CONTAINER_ID_PROD: ${{ secrets.YC_CONTAINER_ID_PROD }}
@@ -723,6 +726,7 @@ jobs:
           fi
 
       - name: Deploy Frontend
+        if: steps.changed-files.outputs.frontend == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
         env:
           YANDEX_STORAGE_BUCKET: ${{ secrets.YANDEX_STORAGE_BUCKET_PROD }}
         run: |
@@ -793,6 +797,7 @@ jobs:
             --delete
 
       - name: Deploy Bot
+        if: steps.changed-files.outputs.bot == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
         env:
           YC_BOT_FUNCTION_ID: ${{ secrets.YC_BOT_FUNCTION_ID_PROD }}
         run: |
@@ -820,5 +825,5 @@ jobs:
       - name: Health check
         run: |
           echo "⏳ Waiting for services to stabilize..."
-          sleep 15
+          sleep 30
           echo "✅ Production deployment completed"
