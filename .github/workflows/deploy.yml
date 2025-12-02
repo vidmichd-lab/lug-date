@@ -3,8 +3,8 @@ name: Deploy to Yandex Cloud
 on:
   push:
     branches:
-      - main      # Production
-      - develop   # Staging
+      - main # Production
+      - develop # Staging
   pull_request:
     branches:
       - main
@@ -16,23 +16,23 @@ jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Run linter
         run: npm run lint
-      
+
       - name: Build all packages
         run: npm run build:all
 
@@ -44,28 +44,28 @@ jobs:
     environment:
       name: staging
       url: https://staging-api.yourdomain.com
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Build all packages
         run: NODE_ENV=development npm run build:all
-      
+
       - name: Configure Yandex Cloud CLI
         uses: yandex-cloud/actions-yc-cli@v1
         with:
           yc-sa-json-credentials: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
-      
+
       - name: Run database migrations
         run: |
           # Export service account key for YDB SDK
@@ -76,7 +76,7 @@ jobs:
           YDB_DATABASE_DEV=${{ secrets.YDB_DATABASE_DEV }} \
           npm run migrate || echo "Migrations failed, but continuing deployment"
         continue-on-error: true
-      
+
       - name: Deploy Backend
         run: |
           yc serverless function version create \
@@ -87,12 +87,13 @@ jobs:
             --execution-timeout 10s \
             --source-path backend/dist \
             --environment NODE_ENV=development,TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }},YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_DEV }},YDB_DATABASE=${{ secrets.YDB_DATABASE_DEV }},YC_SERVICE_ACCOUNT_KEY=${{ secrets.YC_SERVICE_ACCOUNT_KEY }},YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_DEV }},YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_DEV }},YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_DEV }},TELEGRAM_ALERT_ENABLED=true,TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }},TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
-      
+
       - name: Deploy Frontend
         run: |
-          yc storage cp --recursive frontend/dist/* \
-            s3://dating-app-frontend-staging/
-      
+          yc storage s3 cp frontend/dist/ \
+            s3://dating-app-frontend-staging/ \
+            --recursive
+
       - name: Deploy Bot
         run: |
           yc serverless function version create \
@@ -103,7 +104,7 @@ jobs:
             --execution-timeout 10s \
             --source-path bot/dist \
             --environment NODE_ENV=development,TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }}
-      
+
       - name: Health check
         run: |
           echo "Waiting for services to start..."
@@ -119,28 +120,28 @@ jobs:
     environment:
       name: production
       url: https://api.yourdomain.com
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Build all packages
         run: NODE_ENV=production npm run build:all
-      
+
       - name: Configure Yandex Cloud CLI
         uses: yandex-cloud/actions-yc-cli@v1
         with:
           yc-sa-json-credentials: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
-      
+
       - name: Run database migrations
         run: |
           # Export service account key for YDB SDK
@@ -150,7 +151,7 @@ jobs:
           YDB_ENDPOINT_PROD=${{ secrets.YDB_ENDPOINT_PROD }} \
           YDB_DATABASE_PROD=${{ secrets.YDB_DATABASE_PROD }} \
           npm run migrate
-      
+
       - name: Deploy Backend
         run: |
           yc serverless function version create \
@@ -161,12 +162,13 @@ jobs:
             --execution-timeout 30s \
             --source-path backend/dist \
             --environment NODE_ENV=production,TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_PROD }},YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_PROD }},YDB_DATABASE=${{ secrets.YDB_DATABASE_PROD }},YC_SERVICE_ACCOUNT_KEY=${{ secrets.YC_SERVICE_ACCOUNT_KEY }},YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_PROD }},YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_PROD }},YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_PROD }},TELEGRAM_ALERT_ENABLED=true,TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }},TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
-      
+
       - name: Deploy Frontend
         run: |
-          yc storage cp --recursive frontend/dist/* \
-            s3://dating-app-frontend-prod/
-      
+          yc storage s3 cp frontend/dist/ \
+            s3://dating-app-frontend-prod/ \
+            --recursive
+
       - name: Deploy Bot
         run: |
           yc serverless function version create \
@@ -177,12 +179,10 @@ jobs:
             --execution-timeout 10s \
             --source-path bot/dist \
             --environment NODE_ENV=production,TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_PROD }}
-      
+
       - name: Health check
         run: |
           echo "Waiting for services to start..."
           sleep 15
           # Add actual health check URL when available
           echo "Health check completed"
-      
-
