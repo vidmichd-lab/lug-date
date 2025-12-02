@@ -19,9 +19,9 @@ export function initSentry() {
   // Try to import Sentry (optional dependency)
   // Using require() is acceptable for optional dependencies
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const Sentry = require('@sentry/node');
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { ProfilingIntegration } = require('@sentry/profiling-node');
 
     Sentry.init({
