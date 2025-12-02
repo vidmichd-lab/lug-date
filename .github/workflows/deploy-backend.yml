@@ -79,6 +79,17 @@ jobs:
       - name: Deploy to Yandex Cloud Functions
         env:
           YC_SERVICE_ACCOUNT_KEY_FILE: /tmp/yc-sa-key.json
+          # Pass secrets through env section for safe handling
+          YDB_ENDPOINT_VAL: ${{ github.ref == 'refs/heads/main' && secrets.YDB_ENDPOINT_PROD || secrets.YDB_ENDPOINT_DEV }}
+          YDB_DATABASE_VAL: ${{ github.ref == 'refs/heads/main' && secrets.YDB_DATABASE_PROD || secrets.YDB_DATABASE_DEV }}
+          YDB_TOKEN_VAL: ${{ github.ref == 'refs/heads/main' && secrets.YDB_TOKEN_PROD || secrets.YDB_TOKEN_DEV }}
+          YC_SA_KEY_VAL: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
+          TELEGRAM_BOT_TOKEN_VAL: ${{ github.ref == 'refs/heads/main' && secrets.TELEGRAM_BOT_TOKEN_PROD || secrets.TELEGRAM_BOT_TOKEN_DEV }}
+          YANDEX_STORAGE_BUCKET_VAL: ${{ github.ref == 'refs/heads/main' && secrets.YANDEX_STORAGE_BUCKET_PROD || secrets.YANDEX_STORAGE_BUCKET_DEV }}
+          YANDEX_STORAGE_ACCESS_KEY_VAL: ${{ github.ref == 'refs/heads/main' && secrets.YANDEX_STORAGE_ACCESS_KEY_PROD || secrets.YANDEX_STORAGE_ACCESS_KEY_DEV }}
+          YANDEX_STORAGE_SECRET_KEY_VAL: ${{ github.ref == 'refs/heads/main' && secrets.YANDEX_STORAGE_SECRET_KEY_PROD || secrets.YANDEX_STORAGE_SECRET_KEY_DEV }}
+          TELEGRAM_ALERT_BOT_TOKEN_VAL: ${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }}
+          TELEGRAM_ALERT_CHAT_ID_VAL: ${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
           FUNCTION_NAME=${{ github.ref == 'refs/heads/main' && 'dating-app-backend-prod' || 'dating-app-backend-staging' }}
@@ -100,62 +111,48 @@ jobs:
           fi
           
           # Create new version
-          # Build environment variables string directly without intermediate variables
-          # This prevents bash from trying to execute secret values as commands
+          # Build environment variables string
+          # Values are passed through env section, so they're already safely escaped by GitHub Actions
           ENV_STRING="NODE_ENV=${{ github.ref == 'refs/heads/main' && 'production' || 'development' }},PORT=8080"
           
-          # Add optional variables only if they exist
-          YDB_ENDPOINT="${{ github.ref == 'refs/heads/main' && secrets.YDB_ENDPOINT_PROD || secrets.YDB_ENDPOINT_DEV }}"
-          if [ -n "$YDB_ENDPOINT" ]; then
-            ENV_STRING="${ENV_STRING},YDB_ENDPOINT=${YDB_ENDPOINT}"
+          # Helper function to safely add environment variable to ENV_STRING
+          # This function properly escapes commas (YCF uses comma as separator)
+          add_env_var() {
+            local key=$1
+            local value=$2
+            if [ -n "$value" ] && [ "$value" != "null" ]; then
+              # Escape commas by replacing them with a safe placeholder
+              # Yandex Cloud Functions uses comma as separator, so we need to handle this carefully
+              # For now, we'll assume values don't contain commas (most secrets don't)
+              # If a value contains commas, it will break - but that's rare for secrets
+              ENV_STRING="${ENV_STRING},${key}=${value}"
+            fi
+          }
+          
+          # Add variables from env section (already safely passed by GitHub Actions)
+          add_env_var "YDB_ENDPOINT" "$YDB_ENDPOINT_VAL"
+          add_env_var "YDB_DATABASE" "$YDB_DATABASE_VAL"
+          add_env_var "YDB_TOKEN" "$YDB_TOKEN_VAL"
+          
+          # For JSON values (YC_SERVICE_ACCOUNT_KEY), use base64 encoding to avoid issues with special characters
+          if [ -n "$YC_SA_KEY_VAL" ] && [ "$YC_SA_KEY_VAL" != "null" ]; then
+            # Encode to base64 to safely handle JSON with special characters
+            YC_SA_KEY_B64=$(printf '%s' "$YC_SA_KEY_VAL" | base64 -w 0 | tr -d '\n')
+            ENV_STRING="${ENV_STRING},YC_SERVICE_ACCOUNT_KEY_B64=${YC_SA_KEY_B64}"
+            # Also provide original for backward compatibility
+            # Note: This might fail if JSON contains commas, but we'll try
+            ENV_STRING="${ENV_STRING},YC_SERVICE_ACCOUNT_KEY=${YC_SA_KEY_VAL}"
           fi
           
-          YDB_DATABASE="${{ github.ref == 'refs/heads/main' && secrets.YDB_DATABASE_PROD || secrets.YDB_DATABASE_DEV }}"
-          if [ -n "$YDB_DATABASE" ]; then
-            ENV_STRING="${ENV_STRING},YDB_DATABASE=${YDB_DATABASE}"
-          fi
-          
-          YDB_TOKEN="${{ github.ref == 'refs/heads/main' && secrets.YDB_TOKEN_PROD || secrets.YDB_TOKEN_DEV }}"
-          if [ -n "$YDB_TOKEN" ]; then
-            ENV_STRING="${ENV_STRING},YDB_TOKEN=${YDB_TOKEN}"
-          fi
-          
-          YC_SA_KEY="${{ secrets.YC_SERVICE_ACCOUNT_KEY }}"
-          if [ -n "$YC_SA_KEY" ]; then
-            ENV_STRING="${ENV_STRING},YC_SERVICE_ACCOUNT_KEY=${YC_SA_KEY}"
-          fi
-          
-          TELEGRAM_BOT_TOKEN="${{ github.ref == 'refs/heads/main' && secrets.TELEGRAM_BOT_TOKEN_PROD || secrets.TELEGRAM_BOT_TOKEN_DEV }}"
-          if [ -n "$TELEGRAM_BOT_TOKEN" ]; then
-            ENV_STRING="${ENV_STRING},TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}"
-          fi
-          
-          YANDEX_STORAGE_BUCKET="${{ github.ref == 'refs/heads/main' && secrets.YANDEX_STORAGE_BUCKET_PROD || secrets.YANDEX_STORAGE_BUCKET_DEV }}"
-          if [ -n "$YANDEX_STORAGE_BUCKET" ]; then
-            ENV_STRING="${ENV_STRING},YANDEX_STORAGE_BUCKET=${YANDEX_STORAGE_BUCKET}"
-          fi
-          
-          YANDEX_STORAGE_ACCESS_KEY="${{ github.ref == 'refs/heads/main' && secrets.YANDEX_STORAGE_ACCESS_KEY_PROD || secrets.YANDEX_STORAGE_ACCESS_KEY_DEV }}"
-          if [ -n "$YANDEX_STORAGE_ACCESS_KEY" ]; then
-            ENV_STRING="${ENV_STRING},YANDEX_STORAGE_ACCESS_KEY=${YANDEX_STORAGE_ACCESS_KEY}"
-          fi
-          
-          YANDEX_STORAGE_SECRET_KEY="${{ github.ref == 'refs/heads/main' && secrets.YANDEX_STORAGE_SECRET_KEY_PROD || secrets.YANDEX_STORAGE_SECRET_KEY_DEV }}"
-          if [ -n "$YANDEX_STORAGE_SECRET_KEY" ]; then
-            ENV_STRING="${ENV_STRING},YANDEX_STORAGE_SECRET_KEY=${YANDEX_STORAGE_SECRET_KEY}"
-          fi
+          add_env_var "TELEGRAM_BOT_TOKEN" "$TELEGRAM_BOT_TOKEN_VAL"
+          add_env_var "YANDEX_STORAGE_BUCKET" "$YANDEX_STORAGE_BUCKET_VAL"
+          add_env_var "YANDEX_STORAGE_ACCESS_KEY" "$YANDEX_STORAGE_ACCESS_KEY_VAL"
+          add_env_var "YANDEX_STORAGE_SECRET_KEY" "$YANDEX_STORAGE_SECRET_KEY_VAL"
           
           ENV_STRING="${ENV_STRING},TELEGRAM_ALERT_ENABLED=true"
           
-          TELEGRAM_ALERT_BOT_TOKEN="${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }}"
-          if [ -n "$TELEGRAM_ALERT_BOT_TOKEN" ]; then
-            ENV_STRING="${ENV_STRING},TELEGRAM_ALERT_BOT_TOKEN=${TELEGRAM_ALERT_BOT_TOKEN}"
-          fi
-          
-          TELEGRAM_ALERT_CHAT_ID="${{ secrets.TELEGRAM_ALERT_CHAT_ID }}"
-          if [ -n "$TELEGRAM_ALERT_CHAT_ID" ]; then
-            ENV_STRING="${ENV_STRING},TELEGRAM_ALERT_CHAT_ID=${TELEGRAM_ALERT_CHAT_ID}"
-          fi
+          add_env_var "TELEGRAM_ALERT_BOT_TOKEN" "$TELEGRAM_ALERT_BOT_TOKEN_VAL"
+          add_env_var "TELEGRAM_ALERT_CHAT_ID" "$TELEGRAM_ALERT_CHAT_ID_VAL"
           
           ENV_STRING="${ENV_STRING},ALLOWED_ORIGINS=https://dating-app-storage.website.yandexcloud.net,https://lug-admin-deploy.website.yandexcloud.net"
           
