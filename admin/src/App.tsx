@@ -12,19 +12,31 @@ type Page = 'dashboard' | 'users' | 'events' | 'settings';
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
     // Check if user is already logged in
-    const token = localStorage.getItem('admin_token');
-    // Only consider authenticated if token exists and is not empty
-    const hasValidToken = !!token && token.trim().length > 0;
+    const checkAuth = async () => {
+      const token = localStorage.getItem('admin_token');
 
-    // If no valid token, clear any invalid token
-    if (!hasValidToken) {
-      localStorage.removeItem('admin_token');
-    }
+      // If no token, show login immediately
+      if (!token || token.trim().length === 0) {
+        localStorage.removeItem('admin_token');
+        setIsAuthenticated(false);
+        setIsCheckingAuth(false);
+        console.log('🔍 No token found, showing login form');
+        return;
+      }
 
-    setIsAuthenticated(hasValidToken);
+      // Token exists - verify it by making a test request
+      // We'll let the first API call verify it, and if it fails,
+      // the interceptor will clear the token and reload
+      console.log('🔍 Token found, assuming authenticated. Will verify on first API call.');
+      setIsAuthenticated(true);
+      setIsCheckingAuth(false);
+    };
+
+    checkAuth();
   }, []);
 
   const handleLogin = (token: string) => {
@@ -57,6 +69,17 @@ function App() {
         return <Dashboard />;
     }
   };
+
+  // Show loading state while checking auth
+  if (isCheckingAuth) {
+    return (
+      <div
+        style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}
+      >
+        <div>Loading...</div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <LoginPage onLogin={handleLogin} />;

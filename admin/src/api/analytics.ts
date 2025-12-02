@@ -41,6 +41,14 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Handle 403 Unauthorized - clear token and redirect to login
+    if (error.response?.status === 403 && error.response?.data?.error?.code === 'UNAUTHORIZED') {
+      console.warn('⚠️ Unauthorized access in analytics, clearing token and redirecting to login');
+      localStorage.removeItem('admin_token');
+      window.location.reload();
+      return Promise.reject(error);
+    }
+
     // Log error for debugging
     if (error.response) {
       console.error('Analytics API Error:', {

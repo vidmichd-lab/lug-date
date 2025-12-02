@@ -64,6 +64,15 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
+    // Handle 403 Unauthorized - clear token and redirect to login
+    if (error.response?.status === 403 && error.response?.data?.error?.code === 'UNAUTHORIZED') {
+      console.warn('⚠️ Unauthorized access, clearing token and redirecting to login');
+      localStorage.removeItem('admin_token');
+      // Trigger page reload to show login form
+      window.location.reload();
+      return Promise.reject(error);
+    }
+
     // Log error for debugging
     if (error.response) {
       // If response has data with success: false, extract the error message
