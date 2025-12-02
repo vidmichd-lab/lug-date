@@ -96,7 +96,7 @@ jobs:
             --runtime container \
             --memory 128m \
             --execution-timeout 30s \
-            --docker-image-url "${{ env.IMAGE_URL }}" \
+            --image-url "${{ env.IMAGE_URL }}" \
             --set-env-variable NODE_ENV=development \
             --set-env-variable PORT=8080 \
             --set-env-variable TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }} \
@@ -196,7 +196,7 @@ jobs:
             --runtime container \
             --memory 256m \
             --execution-timeout 30s \
-            --docker-image-url "${{ env.IMAGE_URL }}" \
+            --image-url "${{ env.IMAGE_URL }}" \
             --set-env-variable NODE_ENV=production \
             --set-env-variable PORT=8080 \
             --set-env-variable TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_PROD }} \

@@ -94,19 +94,19 @@ jobs:
           REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
-          
+
           echo "📦 Building image..."
           IMAGE_TAG="${REGISTRY}/${REGISTRY_ID}/dating-app-backend:${GITHUB_SHA:0:7}"
           docker build -f backend/Dockerfile -t $IMAGE_TAG .
-          
+
           echo ""
           echo "🔐 Configuring Docker..."
           yc container registry configure-docker
-          
+
           echo ""
           echo "📤 Pushing $IMAGE_TAG..."
           docker push $IMAGE_TAG
-          
+
           echo "IMAGE_URL=$IMAGE_TAG" >> $GITHUB_ENV
 
       - name: Deploy Backend
@@ -114,13 +114,13 @@ jobs:
           YC_FUNCTION_ID: ${{ secrets.YC_BACKEND_FUNCTION_ID_STAGING }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
-          
+
           yc serverless function version create \
             --function-id "${YC_FUNCTION_ID}" \
             --runtime container \
             --memory 128m \
             --execution-timeout 30s \
-            --docker-image-url "${{ env.IMAGE_URL }}" \
+            --image-url "${{ env.IMAGE_URL }}" \
             --set-env-variable NODE_ENV=development \
             --set-env-variable PORT=8080 \
             --set-env-variable TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }} \
@@ -139,7 +139,7 @@ jobs:
           YANDEX_STORAGE_BUCKET: ${{ secrets.YANDEX_STORAGE_BUCKET_DEV }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
-          
+
           yc storage s3 cp \
             frontend/dist/ \
             s3://${YANDEX_STORAGE_BUCKET}/ \
@@ -150,16 +150,16 @@ jobs:
           YC_BOT_FUNCTION_ID: ${{ secrets.YC_BOT_FUNCTION_ID_STAGING }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
-          
+
           # Check bot/dist size
           BOT_SIZE=$(du -sb bot/dist | cut -f1)
           MAX_SIZE=$((3500000))
-          
+
           if [ $BOT_SIZE -gt $MAX_SIZE ]; then
             echo "❌ Bot dist size ($BOT_SIZE bytes) exceeds 3.5 MB limit"
             exit 1
           fi
-          
+
           yc serverless function version create \
             --function-id "${YC_BOT_FUNCTION_ID}" \
             --runtime nodejs18 \
@@ -231,19 +231,19 @@ jobs:
           REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
-          
+
           echo "📦 Building image..."
           IMAGE_TAG="${REGISTRY}/${REGISTRY_ID}/dating-app-backend:${GITHUB_SHA:0:7}"
           docker build -f backend/Dockerfile -t $IMAGE_TAG .
-          
+
           echo ""
           echo "🔐 Configuring Docker..."
           yc container registry configure-docker
-          
+
           echo ""
           echo "📤 Pushing $IMAGE_TAG..."
           docker push $IMAGE_TAG
-          
+
           echo "IMAGE_URL=$IMAGE_TAG" >> $GITHUB_ENV
 
       - name: Deploy Backend
@@ -251,13 +251,13 @@ jobs:
           YC_FUNCTION_ID: ${{ secrets.YC_BACKEND_FUNCTION_ID_PROD }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
-          
+
           yc serverless function version create \
             --function-id "${YC_FUNCTION_ID}" \
             --runtime container \
             --memory 256m \
             --execution-timeout 30s \
-            --docker-image-url "${{ env.IMAGE_URL }}" \
+            --image-url "${{ env.IMAGE_URL }}" \
             --set-env-variable NODE_ENV=production \
             --set-env-variable PORT=8080 \
             --set-env-variable TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_PROD }} \
@@ -276,7 +276,7 @@ jobs:
           YANDEX_STORAGE_BUCKET: ${{ secrets.YANDEX_STORAGE_BUCKET_PROD }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
-          
+
           yc storage s3 cp \
             frontend/dist/ \
             s3://${YANDEX_STORAGE_BUCKET}/ \
@@ -287,16 +287,16 @@ jobs:
           YC_BOT_FUNCTION_ID: ${{ secrets.YC_BOT_FUNCTION_ID_PROD }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
-          
+
           # Check bot/dist size
           BOT_SIZE=$(du -sb bot/dist | cut -f1)
           MAX_SIZE=$((3500000))
-          
+
           if [ $BOT_SIZE -gt $MAX_SIZE ]; then
             echo "❌ Bot dist size ($BOT_SIZE bytes) exceeds 3.5 MB limit"
             exit 1
           fi
-          
+
           yc serverless function version create \
             --function-id "${YC_BOT_FUNCTION_ID}" \
             --runtime nodejs18 \
