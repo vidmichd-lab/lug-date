@@ -46,16 +46,28 @@ jobs:
           echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
 
       - name: Configure Yandex Cloud CLI
+        env:
+          YC_SERVICE_ACCOUNT_KEY: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
+          YC_CLOUD_ID: ${{ secrets.YC_CLOUD_ID }}
+          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
         run: |
-          echo "${{ secrets.YC_SERVICE_ACCOUNT_KEY }}" > /tmp/yc-sa-key.json
+          # Правильно записываем JSON ключ в файл через переменную окружения
+          echo "$YC_SERVICE_ACCOUNT_KEY" > /tmp/yc-sa-key.json
           yc config profile create sa-profile || true
           yc config set service-account-key /tmp/yc-sa-key.json
-          yc config set cloud-id ${{ secrets.YC_CLOUD_ID }} || true
-          yc config set folder-id ${{ secrets.YC_FOLDER_ID }} || true
+          # cloud-id и folder-id опциональны
+          if [ -n "$YC_CLOUD_ID" ]; then
+            yc config set cloud-id "$YC_CLOUD_ID" || true
+          fi
+          if [ -n "$YC_FOLDER_ID" ]; then
+            yc config set folder-id "$YC_FOLDER_ID" || true
+          fi
 
       - name: Login to Yandex Container Registry
+        env:
+          YC_SERVICE_ACCOUNT_KEY: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
         run: |
-          echo "${{ secrets.YC_SERVICE_ACCOUNT_KEY }}" | docker login \
+          echo "$YC_SERVICE_ACCOUNT_KEY" | docker login \
             --username json_key \
             --password-stdin \
             cr.yandex
@@ -156,16 +168,28 @@ jobs:
           echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
 
       - name: Configure Yandex Cloud CLI
+        env:
+          YC_SERVICE_ACCOUNT_KEY: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
+          YC_CLOUD_ID: ${{ secrets.YC_CLOUD_ID }}
+          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
         run: |
-          echo "${{ secrets.YC_SERVICE_ACCOUNT_KEY }}" > /tmp/yc-sa-key.json
+          # Правильно записываем JSON ключ в файл через переменную окружения
+          echo "$YC_SERVICE_ACCOUNT_KEY" > /tmp/yc-sa-key.json
           yc config profile create sa-profile || true
           yc config set service-account-key /tmp/yc-sa-key.json
-          yc config set cloud-id ${{ secrets.YC_CLOUD_ID }} || true
-          yc config set folder-id ${{ secrets.YC_FOLDER_ID }} || true
+          # cloud-id и folder-id опциональны
+          if [ -n "$YC_CLOUD_ID" ]; then
+            yc config set cloud-id "$YC_CLOUD_ID" || true
+          fi
+          if [ -n "$YC_FOLDER_ID" ]; then
+            yc config set folder-id "$YC_FOLDER_ID" || true
+          fi
 
       - name: Login to Yandex Container Registry
+        env:
+          YC_SERVICE_ACCOUNT_KEY: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
         run: |
-          echo "${{ secrets.YC_SERVICE_ACCOUNT_KEY }}" | docker login \
+          echo "$YC_SERVICE_ACCOUNT_KEY" | docker login \
             --username json_key \
             --password-stdin \
             cr.yandex
