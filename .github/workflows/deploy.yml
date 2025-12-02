@@ -741,7 +741,13 @@ jobs:
             s3://${YANDEX_STORAGE_BUCKET}/ \
             --recursive
 
+      - name: Install AWS CLI
+        if: steps.changed-files.outputs.admin == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
+        run: |
+          pip3 install awscli --quiet
+
       - name: Deploy Admin
+        if: steps.changed-files.outputs.admin == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
         env:
           ADMIN_STORAGE_BUCKET: ${{ secrets.ADMIN_STORAGE_BUCKET_PROD }}
           ADMIN_STORAGE_ACCESS_KEY: ${{ secrets.ADMIN_STORAGE_ACCESS_KEY_PROD }}
