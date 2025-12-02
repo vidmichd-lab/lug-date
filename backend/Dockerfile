@@ -12,9 +12,9 @@ COPY shared/package*.json ./shared/
 RUN npm ci
 
 # Копируем исходники
+# tsconfig.json уже включен в backend/ и shared/ директории
 COPY backend ./backend
 COPY shared ./shared
-COPY tsconfig.json ./
 
 # Собираем TypeScript
 RUN npm run build --workspace=shared
