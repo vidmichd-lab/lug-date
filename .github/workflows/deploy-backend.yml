@@ -105,23 +105,23 @@ jobs:
 
           yc serverless function version create \
             --function-id="${YC_FUNCTION_ID}" \
-            --runtime=custom-image \
-            --image=${{ env.IMAGE_ID }} \
+            --runtime=container \
+            --source-image=${{ env.IMAGE_ID }} \
             --memory=512m \
             --execution-timeout=30s \
             --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
-            --environment NODE_ENV=development \
-            --environment PORT=8080 \
-            --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }} \
-            --environment YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_DEV }} \
-            --environment YDB_DATABASE=${{ secrets.YDB_DATABASE_DEV }} \
-            --environment YC_SERVICE_ACCOUNT_KEY='${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' \
-            --environment YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_DEV }} \
-            --environment YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_DEV }} \
-            --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_DEV }} \
-            --environment TELEGRAM_ALERT_ENABLED=true \
-            --environment TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
-            --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+            --set-env-variable NODE_ENV=development \
+            --set-env-variable PORT=8080 \
+            --set-env-variable TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }} \
+            --set-env-variable YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_DEV }} \
+            --set-env-variable YDB_DATABASE=${{ secrets.YDB_DATABASE_DEV }} \
+            --set-env-variable YC_SERVICE_ACCOUNT_KEY='${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' \
+            --set-env-variable YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_DEV }} \
+            --set-env-variable YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_DEV }} \
+            --set-env-variable YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_DEV }} \
+            --set-env-variable TELEGRAM_ALERT_ENABLED=true \
+            --set-env-variable TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
+            --set-env-variable TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
 
       - name: Get Function URL
         run: |
