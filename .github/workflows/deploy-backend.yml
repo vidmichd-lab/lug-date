@@ -102,8 +102,8 @@ jobs:
           # Upload to Object Storage using AWS CLI (uses service account credentials)
           echo "📦 Uploading archive to s3://${YANDEX_STORAGE_BUCKET}/${ARCHIVE_NAME}..."
           aws --endpoint-url=$OBJECT_STORAGE_URL s3 cp backend/function.zip s3://${YANDEX_STORAGE_BUCKET}/${ARCHIVE_NAME}
-          # Use s3:// format for Yandex Cloud Functions (it supports this format)
-          FUNCTION_ARCHIVE_URL="s3://${YANDEX_STORAGE_BUCKET}/${ARCHIVE_NAME}"
+          # Use https:// format for Yandex Cloud Functions (it requires public HTTPS URL)
+          FUNCTION_ARCHIVE_URL="https://storage.yandexcloud.net/${YANDEX_STORAGE_BUCKET}/${ARCHIVE_NAME}"
           echo "FUNCTION_ARCHIVE_URL=${FUNCTION_ARCHIVE_URL}" >> $GITHUB_ENV
           echo "✅ Archive uploaded to Object Storage: ${FUNCTION_ARCHIVE_URL}"
 
