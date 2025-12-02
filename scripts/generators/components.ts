@@ -158,3 +158,5 @@ export type { I${componentName}Props } from './${componentName}.types';
   await fs.writeFile(path.join(componentDir, 'index.ts'), indexContent);
 }
 
+
+

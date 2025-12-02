@@ -7,3 +7,5 @@ export interface OnboardingProgressProps {
   totalSteps: number;
 }
 
+
+

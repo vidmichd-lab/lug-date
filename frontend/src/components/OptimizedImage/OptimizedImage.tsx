@@ -32,6 +32,7 @@ export function OptimizedImage({
   const [isInView, setIsInView] = useState(priority);
   const [hasError, setHasError] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
+  const blurPlaceholderRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
@@ -68,6 +69,13 @@ export function OptimizedImage({
     };
   }, [priority]);
 
+  // Set blur placeholder background image via ref to avoid inline styles
+  useEffect(() => {
+    if (blurPlaceholderRef.current && blurDataUrl) {
+      blurPlaceholderRef.current.style.setProperty('--blur-image', `url(${blurDataUrl})`);
+    }
+  }, [blurDataUrl]);
+
   const handleLoad = () => {
     setIsLoaded(true);
   };
@@ -98,13 +106,8 @@ export function OptimizedImage({
       {/* Blur placeholder */}
       {blurDataUrl && !isLoaded && (
         <div
+          ref={blurPlaceholderRef}
           className={styles.blurPlaceholder}
-          style={{
-            backgroundImage: `url(${blurDataUrl})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            filter: 'blur(20px)',
-          }}
           aria-hidden="true"
         />
       )}

@@ -95,3 +95,5 @@ URL: `https://lug-admin-deploy.website.yandexcloud.net/`
 
 Админка будет доступна по Website URL! 🎉
 
+
+

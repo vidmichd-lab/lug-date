@@ -35,3 +35,5 @@ COPY --from=build /app/../shared/node_modules ../shared/node_modules
 COPY bot/package*.json ./
 CMD ["node", "dist/index.js"]
 
+
+

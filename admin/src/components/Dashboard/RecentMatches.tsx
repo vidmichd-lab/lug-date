@@ -11,8 +11,14 @@ export const RecentMatches: React.FC = () => {
     return <div className={styles.loading}>Загрузка матчей...</div>;
   }
 
-  if (error || !data) {
-    return <div className={styles.error}>Ошибка загрузки данных</div>;
+  if (error) {
+    console.error('RecentMatches error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Ошибка загрузки данных';
+    return <div className={styles.error}>Ошибка загрузки данных: {errorMessage}</div>;
+  }
+  
+  if (!data) {
+    return <div className={styles.error}>Нет данных</div>;
   }
 
   return (

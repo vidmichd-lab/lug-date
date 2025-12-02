@@ -11,6 +11,7 @@ import {
 } from './pages';
 import { LoadingFallback } from './components/LoadingFallback';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { RegistrationGuard } from './components/RegistrationGuard';
 import { initPerformanceMonitoring } from './utils/performance';
 import { useOnboardingStore } from './stores';
 
@@ -20,16 +21,14 @@ function AppContent() {
   return (
     <Suspense fallback={<LoadingFallback />}>
       <Routes>
-        {!isCompleted && (
-          <Route
-            path="/onboarding"
-            element={
-              <ErrorBoundary>
-                <OnboardingPage />
-              </ErrorBoundary>
-            }
-          />
-        )}
+        <Route
+          path="/onboarding"
+          element={
+            <ErrorBoundary>
+              <OnboardingPage />
+            </ErrorBoundary>
+          }
+        />
         <Route
           path="/registration"
           element={
@@ -50,7 +49,7 @@ function AppContent() {
           path="/profile"
           element={
             <ErrorBoundary>
-              {!isCompleted ? <Navigate to="/onboarding" replace /> : <ProfilePage />}
+              <ProfilePage />
             </ErrorBoundary>
           }
         />
@@ -58,7 +57,7 @@ function AppContent() {
           path="/matches"
           element={
             <ErrorBoundary>
-              {!isCompleted ? <Navigate to="/onboarding" replace /> : <MatchesPage />}
+              <MatchesPage />
             </ErrorBoundary>
           }
         />
@@ -66,7 +65,7 @@ function AppContent() {
           path="/saved"
           element={
             <ErrorBoundary>
-              {!isCompleted ? <Navigate to="/onboarding" replace /> : <SavedEventsPage />}
+              <SavedEventsPage />
             </ErrorBoundary>
           }
         />
@@ -74,7 +73,7 @@ function AppContent() {
           path="/notifications"
           element={
             <ErrorBoundary>
-              {!isCompleted ? <Navigate to="/onboarding" replace /> : <NotificationsPage />}
+              <NotificationsPage />
             </ErrorBoundary>
           }
         />
@@ -98,9 +97,11 @@ function App() {
   return (
     <ErrorBoundary>
       <BrowserRouter>
-        <div className="app">
-          <AppContent />
-        </div>
+        <RegistrationGuard>
+          <div className="app">
+            <AppContent />
+          </div>
+        </RegistrationGuard>
       </BrowserRouter>
     </ErrorBoundary>
   );

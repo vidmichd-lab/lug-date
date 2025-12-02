@@ -70,7 +70,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <p className={styles.message}>
               Произошла ошибка при загрузке страницы. Пожалуйста, попробуйте обновить страницу.
             </p>
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <details className={styles.details}>
                 <summary>Детали ошибки (только в development)</summary>
                 <pre className={styles.errorStack}>

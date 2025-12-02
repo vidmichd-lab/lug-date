@@ -6,7 +6,6 @@
 import { ydbClient } from '../db/connection';
 import { logger } from '../logger';
 import { userRepository } from './userRepository';
-import { matchRepository } from './matchRepository';
 
 export interface UserStats {
   total: number;

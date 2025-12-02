@@ -10,3 +10,5 @@ export interface NameInputScreenProps {
 
 export type NameValidationError = 'empty' | 'invalidChars' | 'tooLong' | null;
 
+
+

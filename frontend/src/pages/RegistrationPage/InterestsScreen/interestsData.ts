@@ -87,3 +87,5 @@ export const INTERESTS_DATA: Interest[] = [
   { id: 'education', label: 'Преподавание и образование', iconComponent: Whatteach, color: '#9C27B0' },
 ];
 
+
+

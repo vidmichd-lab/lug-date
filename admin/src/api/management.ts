@@ -24,6 +24,47 @@ const api = axios.create({
   },
 });
 
+// Add response interceptor for better error handling
+api.interceptors.response.use(
+  (response) => {
+    // Even if status is 200, check if success is false
+    if (response.data && response.data.success === false) {
+      // Create an error object that will be caught by our methods
+      const error: any = new Error(response.data.error?.message || 'Request failed');
+      error.response = {
+        status: response.status,
+        data: response.data,
+      };
+      error.config = response.config;
+      return Promise.reject(error);
+    }
+    return response;
+  },
+  (error) => {
+    // Log error for debugging
+    if (error.response) {
+      // If response has data with success: false, extract the error message
+      if (error.response.data && error.response.data.success === false) {
+        // This is a valid API error response, keep it as is
+        const apiError: any = new Error(error.response.data.error?.message || 'Request failed');
+        apiError.response = error.response;
+        apiError.config = error.config;
+        return Promise.reject(apiError);
+      }
+      console.error('API Error:', {
+        status: error.response.status,
+        data: error.response.data,
+        url: error.config?.url,
+      });
+    } else if (error.request) {
+      console.error('API Request Error:', error.request);
+    } else {
+      console.error('API Error:', error.message);
+    }
+    return Promise.reject(error);
+  }
+);
+
 // ============================================
 // Users
 // ============================================
@@ -54,9 +95,24 @@ export interface UserUpdate {
 }
 
 export const usersApi = {
-  getAll: async (): Promise<User[]> => {
-    const response = await api.get('/users');
-    return response.data.data;
+  getAll: async (limit?: number, offset?: number): Promise<{ data: User[]; pagination?: { total: number; limit: number; offset: number } }> => {
+    try {
+      const params = new URLSearchParams();
+      if (limit !== undefined) params.append('limit', limit.toString());
+      if (offset !== undefined) params.append('offset', offset.toString());
+      const queryString = params.toString();
+      const url = `/users${queryString ? `?${queryString}` : ''}`;
+      const response = await api.get(url);
+      
+      // Backend returns { success: true, data: [...], pagination: {...} }
+      return {
+        data: response.data.data || [],
+        pagination: response.data.pagination,
+      };
+    } catch (error: any) {
+      // Error is already processed by interceptor
+      throw error;
+    }
   },
   getById: async (id: string): Promise<User> => {
     const response = await api.get(`/users/${id}`);
@@ -99,9 +155,24 @@ export interface EventCreate {
 export interface EventUpdate extends Partial<EventCreate> {}
 
 export const eventsApi = {
-  getAll: async (): Promise<Event[]> => {
-    const response = await api.get('/events');
-    return response.data.data;
+  getAll: async (limit?: number, offset?: number): Promise<{ data: Event[]; pagination?: { total: number; limit: number; offset: number } }> => {
+    try {
+      const params = new URLSearchParams();
+      if (limit !== undefined) params.append('limit', limit.toString());
+      if (offset !== undefined) params.append('offset', offset.toString());
+      const queryString = params.toString();
+      const url = `/events${queryString ? `?${queryString}` : ''}`;
+      const response = await api.get(url);
+      
+      // Backend returns { success: true, data: [...], pagination: {...} }
+      return {
+        data: response.data.data || [],
+        pagination: response.data.pagination,
+      };
+    } catch (error: any) {
+      // Error is already processed by interceptor
+      throw error;
+    }
   },
   create: async (event: EventCreate): Promise<Event> => {
     const response = await api.post('/events', event);
@@ -113,6 +184,35 @@ export const eventsApi = {
   },
   delete: async (id: string): Promise<void> => {
     await api.delete(`/events/${id}`);
+  },
+  uploadImage: async (file: File): Promise<{ imageUrl: string }> => {
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    try {
+      // Create a separate axios instance for file uploads without default JSON headers
+      // Axios will automatically set Content-Type with boundary for FormData
+      const uploadApi = axios.create({
+        baseURL: `${API_BASE_URL}/api/admin/management`,
+        timeout: 60000, // 60 seconds timeout for file uploads
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
+      });
+      
+      const response = await uploadApi.post('/events/upload-image', formData);
+      return response.data.data;
+    } catch (error: any) {
+      // Log detailed error information
+      console.error('Upload error details:', {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status,
+        url: error?.config?.url,
+        baseURL: error?.config?.baseURL,
+        code: error?.code,
+      });
+      throw error;
+    }
   },
 };
 

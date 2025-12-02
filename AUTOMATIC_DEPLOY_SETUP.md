@@ -154,3 +154,5 @@ yc serverless function logs --name dating-app-backend-prod --limit 50
 - `docs/BACKEND_DEPLOY.md` - документация по деплою
 - `.github/SECRETS_SETUP.md` - настройка секретов
 
+
+

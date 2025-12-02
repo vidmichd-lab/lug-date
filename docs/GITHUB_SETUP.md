@@ -208,3 +208,5 @@ Workflow файл находится в `.github/workflows/deploy.yml` и исп
 - [GitHub Secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets)
 - [Yandex Cloud CLI](https://cloud.yandex.ru/docs/cli/quickstart)
 
+
+

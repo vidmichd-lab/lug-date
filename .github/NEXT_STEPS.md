@@ -84,3 +84,5 @@ yc serverless function logs --name dating-app-backend-staging --limit 50
 - `.github/BACKEND_SETUP.md` - детальная настройка
 - `.github/BACKEND_URLS.md` - URL функций
 
+
+

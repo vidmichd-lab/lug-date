@@ -148,7 +148,7 @@ router.patch('/users/:id', async (req, res) => {
 // Delete user (soft delete - mark as banned)
 router.delete('/users/:id', async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id: _id } = req.params;
     // TODO: Implement soft delete - isBanned field needs to be added to DB schema
     // For now, we'll just return success as the field is not yet in the schema
     // await userRepository.updateUser(id, { isBanned: true } as Partial<User>);
@@ -538,7 +538,7 @@ function generatePhotoUrl(gender: 'male' | 'female'): string {
 router.post('/seed/users', async (req, res) => {
   try {
     const count = parseInt(req.body.count || '10', 10);
-    const eventCategories = ['art', 'music', 'theater', 'cinema', 'sport', 'food'];
+    const _eventCategories = ['art', 'music', 'theater', 'cinema', 'sport', 'food'];
     
     const createdUsers = [];
     

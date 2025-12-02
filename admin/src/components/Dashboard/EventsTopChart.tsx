@@ -10,8 +10,14 @@ export const EventsTopChart: React.FC = () => {
     return <div className={styles.loading}>Загрузка графика...</div>;
   }
 
-  if (error || !data) {
-    return <div className={styles.error}>Ошибка загрузки данных</div>;
+  if (error) {
+    console.error('EventsTopChart error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Ошибка загрузки данных';
+    return <div className={styles.error}>Ошибка загрузки данных: {errorMessage}</div>;
+  }
+  
+  if (!data) {
+    return <div className={styles.error}>Нет данных</div>;
   }
 
   const chartData = data.map((event) => ({

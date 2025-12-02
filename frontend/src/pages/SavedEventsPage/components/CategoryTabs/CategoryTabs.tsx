@@ -24,3 +24,5 @@ export const CategoryTabs: FC<CategoryTabsProps> = ({ categories, selected, onCh
   );
 };
 
+
+

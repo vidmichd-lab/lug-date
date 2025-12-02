@@ -1,124 +1,74 @@
-# Инструкции для деплоя
+# Инструкции по деплою бекенда
 
-## 🚀 Быстрый деплой
+## Проблема
 
-Проект готов к деплою! Выполните следующие команды:
+Архив функции слишком большой (33MB), лимит Yandex Cloud Functions - 3.5MB.
 
-### Вариант 1: Push через HTTPS (требует авторизации)
+## Решения
 
-```bash
-# Переключиться на develop для staging деплоя
-git checkout develop
+### Вариант 1: GitHub Actions (Рекомендуется)
 
-# Запушить код
-git push -u origin develop
-```
+GitHub Actions автоматически правильно упаковывает зависимости:
 
-При первом push GitHub попросит авторизоваться. Используйте Personal Access Token.
-
-### Вариант 2: Push через SSH (если настроен SSH ключ)
-
-```bash
-# Убедитесь, что remote использует SSH
-git remote set-url origin git@github.com:vidmichd-lab/lug-date.git
-
-# Переключиться на develop
-git checkout develop
-
-# Запушить код
-git push -u origin develop
-```
-
-### Вариант 3: Через GitHub Desktop или другой GUI
-
-1. Откройте проект в GitHub Desktop
-2. Выберите ветку `develop`
-3. Нажмите "Publish branch" или "Push origin"
-
-## 📋 Что произойдет после push
-
-После успешного push в ветку `develop`:
-
-1. **GitHub Actions автоматически запустится:**
-   - Job "Run Tests" - проверит код линтером и соберет проект
-   - Job "Deploy to Staging" - задеплоит в Yandex Cloud staging окружение
-
-2. **Проверить статус:**
+1. **Запустите workflow вручную:**
    - Откройте: https://github.com/vidmichd-lab/lug-date/actions
-   - Должен появиться новый workflow run "Deploy to Yandex Cloud"
+   - Найдите workflow "Deploy Backend to Yandex Cloud Functions"
+   - Нажмите "Run workflow"
+   - Выберите ветку (develop или main)
 
-3. **Если деплой успешен:**
-   - Backend будет доступен в Yandex Cloud Functions
-   - Frontend будет загружен в Yandex Object Storage
-   - Bot будет задеплоен в Yandex Cloud Functions
+2. **Или сделайте commit и push:**
+   ```bash
+   git add backend/
+   git commit -m "Update backend"
+   git push
+   ```
 
-## ⚠️ Важные проверки перед деплоем
+### Вариант 2: Использовать Docker образ
 
-Убедитесь, что в GitHub настроено:
+Создайте Dockerfile и используйте Container Registry:
 
-- [ ] Secret `YC_SERVICE_ACCOUNT_KEY` создан
-- [ ] Environment `staging` создан
-- [ ] Environment `production` создан
-
-Проверка: https://github.com/vidmichd-lab/lug-date/settings
-
-## 🔧 Настройка Personal Access Token (для HTTPS)
-
-Если используете HTTPS и нужен токен:
-
-1. Перейдите: https://github.com/settings/tokens
-2. Нажмите "Generate new token" → "Generate new token (classic)"
-3. Выберите scope: `repo` (полный доступ к репозиториям)
-4. Скопируйте токен
-5. При push используйте токен как пароль (username - ваш GitHub username)
-
-## 🧪 Тестирование деплоя
-
-### Тест staging (develop ветка):
-
-```bash
-git checkout develop
-git commit --allow-empty -m "test: проверка деплоя staging"
-git push
+```dockerfile
+FROM node:18-alpine
+WORKDIR /app
+COPY backend/dist ./dist
+COPY backend/package.json ./
+RUN npm install --production
+CMD ["node", "dist/handler.js"]
 ```
 
-### Тест production (main ветка):
-
+Затем:
 ```bash
-git checkout main
-git commit --allow-empty -m "test: проверка деплоя production"
-git push
+yc container image build --tag cr.yandex/<registry-id>/dating-app-backend:latest .
+yc serverless function version create \
+  --function-id d4enks8erf8eentnojj9 \
+  --runtime container \
+  --image cr.yandex/<registry-id>/dating-app-backend:latest
 ```
 
-## 📊 Мониторинг деплоя
+### Вариант 3: Уменьшить размер архива
 
-После push проверьте:
+Исключить ненужные файлы из node_modules:
 
-1. **GitHub Actions:** https://github.com/vidmichd-lab/lug-date/actions
-2. **Логи деплоя:** Откройте конкретный workflow run → посмотрите логи каждого job
-3. **Yandex Cloud Console:** Проверьте, что функции созданы
+```bash
+cd backend/deploy-package
+# Удалить документацию, тесты, исходники
+find node_modules -type f \( -name "*.md" -o -name "*.txt" -o -name "*.map" -o -name "*.ts" \) -delete
+find node_modules -type d \( -name "test" -o -name "tests" -o -name "docs" \) -exec rm -rf {} +
+# Пересоздать архив
+cd ..
+zip -r function.zip deploy-package/
+```
 
-## ❌ Решение проблем
+Но даже после очистки архив может быть больше 3.5MB.
 
-### Ошибка: "Permission denied"
+## Текущий статус
 
-**Решение:** Настройте SSH ключ или используйте Personal Access Token
+- ✅ Код собран
+- ✅ Зависимости установлены
+- ✅ Архив создан (33MB)
+- ❌ Архив слишком большой для прямого деплоя
+- ✅ Архив загружен в Object Storage: `s3://lug-admin-deploy/function.zip`
 
-### Ошибка: "Secret not found" в GitHub Actions
+## Рекомендация
 
-**Решение:** Убедитесь, что создан секрет `YC_SERVICE_ACCOUNT_KEY` в GitHub Settings
-
-### Ошибка: "Environment not found"
-
-**Решение:** Создайте environments `staging` и `production` в GitHub Settings
-
-### Ошибка: "Invalid JSON credentials"
-
-**Решение:** Проверьте формат JSON в секрете `YC_SERVICE_ACCOUNT_KEY`
-
-## 📖 Дополнительная информация
-
-- [Настройка GitHub](docs/GITHUB_SETUP.md)
-- [Проверка настройки](docs/GITHUB_VERIFICATION.md)
-- [Пошаговое руководство](docs/SETUP_GUIDE.md)
-
+**Используйте GitHub Actions** - это самый надежный способ деплоя, который правильно обрабатывает все зависимости и монорепозиторий.

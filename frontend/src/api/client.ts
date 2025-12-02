@@ -32,10 +32,17 @@ class ApiClient {
    */
   private getInitData(): string | null {
     if (typeof window === 'undefined' || !window.Telegram?.WebApp) {
+      console.warn('Telegram WebApp not available');
       return null;
     }
     
-    return window.Telegram.WebApp.initData || null;
+    const initData = window.Telegram.WebApp.initData;
+    if (!initData) {
+      console.warn('Telegram initData not available');
+      return null;
+    }
+    
+    return initData;
   }
 
   /**
@@ -52,6 +59,9 @@ class ApiClient {
       const initData = this.getInitData();
       if (initData) {
         headers['Authorization'] = `Bearer ${initData}`;
+      } else if (options.requireAuth === true) {
+        // If auth is explicitly required but not available, log warning
+        console.warn('Authentication required but Telegram initData not available');
       }
     }
 

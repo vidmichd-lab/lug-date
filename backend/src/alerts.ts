@@ -60,7 +60,7 @@ async function sendTelegramAlert(options: AlertOptions): Promise<void> {
 /**
  * Send alert to Email
  */
-async function sendEmailAlert(options: AlertOptions): Promise<void> {
+async function sendEmailAlert(_options: AlertOptions): Promise<void> {
   // For production, integrate with email service (SendGrid, AWS SES, etc.)
   // For now, just log
   logger.warn('Email alerts not implemented. Use external service like SendGrid or AWS SES.');

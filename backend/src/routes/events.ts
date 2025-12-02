@@ -5,7 +5,6 @@
 
 import { Router, Request, Response, NextFunction } from 'express';
 import { telegramAuthMiddleware } from '../middleware/telegramAuth';
-import { logger } from '../logger';
 import { eventRepository } from '../repositories/eventRepository';
 
 const router = Router();

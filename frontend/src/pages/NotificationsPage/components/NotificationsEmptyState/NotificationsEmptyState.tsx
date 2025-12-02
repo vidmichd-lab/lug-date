@@ -18,3 +18,5 @@ export const NotificationsEmptyState: FC = () => {
   );
 };
 
+
+

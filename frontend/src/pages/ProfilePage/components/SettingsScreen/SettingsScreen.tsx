@@ -5,9 +5,11 @@
 
 import { useState, useCallback, FC } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { Toggle } from '../Toggle';
 import { CitySelectorModal } from '../CitySelectorModal';
 import { DeleteAccountModal } from '../DeleteAccountModal';
+import { useOnboardingStore } from '../../../../stores';
 import styles from './SettingsScreen.module.css';
 import type { SettingsScreenProps } from './SettingsScreen.types';
 
@@ -23,11 +25,32 @@ export const SettingsScreen: FC<SettingsScreenProps> = ({
   onUpdateSettings,
 }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { resetOnboarding } = useOnboardingStore();
   const [settings, setSettings] = useState(profile.settings);
   const [city, setCity] = useState(profile.city);
   const [showCityModal, setShowCityModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showSupportPopup, setShowSupportPopup] = useState(false);
+  
+  // Get username from Telegram WebApp
+  // Check if current user is dvtel (developer account)
+  const getUsername = useCallback(() => {
+    if (typeof window !== 'undefined' && window.Telegram?.WebApp?.initDataUnsafe?.user?.username) {
+      return window.Telegram.WebApp.initDataUnsafe.user.username;
+    }
+    return null;
+  }, []);
+  
+  const username = getUsername();
+  const isDevAccount = username === 'dvtel';
+  
+  const handleResetOnboarding = useCallback(() => {
+    if (confirm('Сбросить онбординг? Вы вернетесь к началу процесса регистрации.')) {
+      resetOnboarding();
+      navigate('/onboarding');
+    }
+  }, [resetOnboarding, navigate]);
 
   const handleToggle = useCallback(
     (key: keyof typeof settings, value: boolean) => {
@@ -189,6 +212,36 @@ export const SettingsScreen: FC<SettingsScreenProps> = ({
             </svg>
           </button>
         </div>
+
+        {/* Developer Tools (only for dvtel) */}
+        {isDevAccount && (
+          <div className={styles.settingsSection}>
+            <h3 className={styles.sectionTitle}>🔧 Инструменты разработчика</h3>
+            <button
+              className={styles.developerButton}
+              onClick={handleResetOnboarding}
+              type="button"
+            >
+              <span className={styles.developerButtonText}>Сбросить онбординг</span>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className={styles.chevronIcon}
+              >
+                <path
+                  d="M9 18L15 12L9 6"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+        )}
 
         {/* Danger Zone */}
         <div className={styles.settingsSection}>

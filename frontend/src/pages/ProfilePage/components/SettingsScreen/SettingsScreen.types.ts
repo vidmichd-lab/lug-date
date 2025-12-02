@@ -11,3 +11,5 @@ export interface SettingsScreenProps {
   onUpdateSettings: (settings: Partial<UserProfile>) => void;
 }
 
+
+

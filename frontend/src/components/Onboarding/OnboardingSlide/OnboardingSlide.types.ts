@@ -12,3 +12,5 @@ export interface OnboardingSlideProps {
   totalSteps: number;
 }
 
+
+

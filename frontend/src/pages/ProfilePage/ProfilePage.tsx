@@ -27,6 +27,13 @@ export function ProfilePage() {
   const fetchProfile = useCallback(async () => {
     setIsLoading(true);
     try {
+      // Check if Telegram WebApp is available
+      if (typeof window === 'undefined' || !window.Telegram?.WebApp) {
+        console.warn('Telegram WebApp not available');
+        setIsLoading(false);
+        return;
+      }
+
       const response = await api.get<{ profile: UserProfile }>('/api/v1/user/profile', {
         requireAuth: true,
       });
@@ -35,6 +42,13 @@ export function ProfilePage() {
         setProfile(response.data.profile);
       } else {
         console.error('Failed to fetch profile:', response.error);
+        
+        // Handle 401 - redirect to registration or show message
+        if (response.error?.code === 'UNAUTHORIZED') {
+          console.log('User not authenticated, redirecting to registration');
+          // Optionally redirect to registration
+          // navigate('/registration');
+        }
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -117,9 +131,25 @@ export function ProfilePage() {
   }
 
   if (!profile) {
+    // Check if it's an auth error
+    const isAuthError = typeof window !== 'undefined' && 
+      (!window.Telegram?.WebApp || !window.Telegram.WebApp.initData);
+    
     return (
       <div className={styles.container}>
-        <div className={styles.error}>{t('errors.somethingWentWrong')}</div>
+        <div className={styles.error}>
+          {isAuthError 
+            ? t('errors.authenticationRequired') || 'Требуется авторизация. Пожалуйста, откройте приложение через Telegram.'
+            : t('errors.somethingWentWrong')}
+        </div>
+        {isAuthError && (
+          <button 
+            onClick={() => navigate('/registration')}
+            className={styles.retryButton}
+          >
+            {t('common.goToRegistration') || 'Перейти к регистрации'}
+          </button>
+        )}
       </div>
     );
   }

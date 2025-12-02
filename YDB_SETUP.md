@@ -58,3 +58,5 @@ YDB SDK автоматически ищет учетные данные в сл�
 
 Если у вас есть файл `yc-service-account-key.json`, просто добавьте `YC_SERVICE_ACCOUNT_KEY_FILE=./yc-service-account-key.json` в `.env`.
 
+
+

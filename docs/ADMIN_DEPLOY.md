@@ -178,3 +178,5 @@ npm run deploy:admin:clear
 - [Документация Yandex Object Storage](https://cloud.yandex.ru/docs/storage/)
 - [Настройка статического хостинга](https://cloud.yandex.ru/docs/storage/concepts/hosting)
 
+
+

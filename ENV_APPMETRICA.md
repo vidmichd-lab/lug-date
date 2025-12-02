@@ -30,3 +30,5 @@ VITE_YANDEX_METRICA_ID=4809916
 
 Подробная документация: [docs/APPMETRICA_SETUP.md](docs/APPMETRICA_SETUP.md)
 
+
+

@@ -11,7 +11,7 @@
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
-// @ts-ignore - multer types will be available after npm install
+// @ts-expect-error - multer types will be available after npm install
 import multer from 'multer';
 import { logPhotoError, logger } from '../logger';
 import { sendErrorAlert } from '../alerts';
@@ -35,7 +35,7 @@ interface MulterRequest extends Omit<Request, 'file'> {
 }
 
 // Configure multer for memory storage
-// @ts-ignore - multer types will be available after npm install
+// @ts-expect-error - multer types will be available after npm install
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {

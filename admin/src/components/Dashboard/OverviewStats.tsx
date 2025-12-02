@@ -10,7 +10,15 @@ export const OverviewStats: React.FC = () => {
   }
 
   if (error) {
-    return <div className={styles.error}>Ошибка загрузки данных</div>;
+    console.error('OverviewStats error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Ошибка загрузки данных';
+    return (
+      <div className={styles.error}>
+        Ошибка загрузки данных: {errorMessage}
+        <br />
+        <small>Проверьте консоль для деталей</small>
+      </div>
+    );
   }
 
   if (!data) return null;

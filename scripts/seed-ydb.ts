@@ -92,6 +92,16 @@ async function seed() {
   console.log('🌱 Starting YDB database seed...');
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}\n`);
 
+  // Ensure service account key file is set
+  if (!process.env.YC_SERVICE_ACCOUNT_KEY_FILE) {
+    const path = require('path');
+    const keyPath = path.resolve(process.cwd(), 'yc-service-account-key.json');
+    if (require('fs').existsSync(keyPath)) {
+      process.env.YC_SERVICE_ACCOUNT_KEY_FILE = keyPath;
+      console.log(`📁 Using service account key: ${keyPath}\n`);
+    }
+  }
+
   try {
     // Initialize YDB connection
     console.log('📡 Connecting to YDB...');

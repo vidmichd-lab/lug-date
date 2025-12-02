@@ -57,3 +57,5 @@ jobs:
           YANDEX_CLOUD_TOKEN: ${{ secrets.YANDEX_CLOUD_TOKEN }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
 
+
+

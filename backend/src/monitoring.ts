@@ -38,7 +38,8 @@ export async function reportError(
     user?: { id: string; email?: string };
   }
 ) {
-  const errorData = {
+  // Error data collected for potential future use
+  const _errorData = {
     message: error.message,
     stack: error.stack,
     name: error.name,

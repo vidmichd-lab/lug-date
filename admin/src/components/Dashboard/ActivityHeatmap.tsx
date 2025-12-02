@@ -9,8 +9,14 @@ export const ActivityHeatmap: React.FC = () => {
     return <div className={styles.loading}>Загрузка данных...</div>;
   }
 
-  if (error || !data) {
-    return <div className={styles.error}>Ошибка загрузки данных</div>;
+  if (error) {
+    console.error('ActivityHeatmap error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Ошибка загрузки данных';
+    return <div className={styles.error}>Ошибка загрузки данных: {errorMessage}</div>;
+  }
+  
+  if (!data) {
+    return <div className={styles.error}>Нет данных</div>;
   }
 
   // Группировка данных по дням и часам

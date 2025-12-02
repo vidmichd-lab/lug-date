@@ -13,11 +13,32 @@ const getApiUrl = (): string => {
 const API_BASE_URL = getApiUrl();
 
 const api = axios.create({
-  baseURL: `${API_BASE_URL}/api/admin/analytics`,
+  baseURL: `${API_BASE_URL}/api/admin`,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+// Add response interceptor for better error handling
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Log error for debugging
+    if (error.response) {
+      console.error('Analytics API Error:', {
+        status: error.response.status,
+        data: error.response.data,
+        url: error.config?.url,
+        baseURL: error.config?.baseURL,
+      });
+    } else if (error.request) {
+      console.error('Analytics API Request Error:', error.request);
+    } else {
+      console.error('Analytics API Error:', error.message);
+    }
+    return Promise.reject(error);
+  }
+);
 
 export interface AnalyticsOverview {
   users: {
@@ -90,37 +111,37 @@ export interface RecentMatch {
 export const analyticsApi = {
   // Общая статистика
   getOverview: async (): Promise<AnalyticsOverview> => {
-    const response = await api.get('/overview');
+    const response = await api.get('/analytics/overview');
     return response.data.data;
   },
 
   // График регистраций пользователей
   getUsersChart: async (period: string = '7d'): Promise<UserChartData[]> => {
-    const response = await api.get(`/users-chart?period=${period}`);
+    const response = await api.get(`/analytics/users-chart?period=${period}`);
     return response.data.data;
   },
 
   // Топ событий
   getEventsTop: async (limit: number = 10): Promise<EventTopData[]> => {
-    const response = await api.get(`/events-top?limit=${limit}`);
+    const response = await api.get(`/analytics/events-top?limit=${limit}`);
     return response.data.data;
   },
 
   // Воронка конверсии
   getFunnel: async (): Promise<FunnelData[]> => {
-    const response = await api.get('/funnel');
+    const response = await api.get('/analytics/funnel');
     return response.data.data;
   },
 
   // Активность по дням недели
   getActivityHeatmap: async (): Promise<ActivityHeatmapData[]> => {
-    const response = await api.get('/activity-heatmap');
+    const response = await api.get('/analytics/activity-heatmap');
     return response.data.data;
   },
 
   // Последние матчи
   getRecentMatches: async (limit: number = 10): Promise<RecentMatch[]> => {
-    const response = await api.get(`/recent-matches?limit=${limit}`);
+    const response = await api.get(`/analytics/recent-matches?limit=${limit}`);
     return response.data.data;
   },
 };

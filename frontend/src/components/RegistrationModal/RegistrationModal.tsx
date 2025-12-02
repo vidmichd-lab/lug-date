@@ -60,3 +60,5 @@ export const RegistrationModal: FC<RegistrationModalProps> = ({ isOpen, onClose 
   );
 };
 
+
+

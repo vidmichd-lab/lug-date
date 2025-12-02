@@ -19,10 +19,22 @@ export const UsersPage: React.FC = () => {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const data = await usersApi.getAll();
-      setUsers(data);
-    } catch (error) {
+      const result = await usersApi.getAll();
+      setUsers(result.data);
+    } catch (error: any) {
       console.error('Failed to load users:', error);
+      const errorMessage = error?.response?.data?.error?.message 
+        || error?.message 
+        || 'Ошибка при загрузке пользователей';
+      
+      // Show more specific error message
+      if (errorMessage.includes('Database not connected')) {
+        alert('База данных не подключена. Пожалуйста, настройте подключение к YDB в конфигурации бекенда.');
+      } else if (errorMessage.includes('Network Error') || errorMessage.includes('ECONNREFUSED')) {
+        alert('Не удалось подключиться к API. Убедитесь, что бекенд запущен на http://localhost:4000');
+      } else {
+        alert(`Ошибка при загрузке пользователей: ${errorMessage}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -184,4 +196,5 @@ export const UsersPage: React.FC = () => {
     </div>
   );
 };
+
 

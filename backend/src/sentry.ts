@@ -19,9 +19,9 @@ export function initSentry() {
   // Try to import Sentry (optional dependency)
   // Using require() is acceptable for optional dependencies
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const Sentry = require('@sentry/node');
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { ProfilingIntegration } = require('@sentry/profiling-node');
 
     Sentry.init({
@@ -37,7 +37,7 @@ export function initSentry() {
       // Release tracking
       release: process.env.APP_VERSION || undefined,
       // Filter out development errors
-      beforeSend(event: any, hint: any) {
+      beforeSend(event: any, _hint: any) {
         // Don't send errors in development unless explicitly enabled
         if (environment === 'development' && !process.env.SENTRY_ENABLE_DEV) {
           return null;

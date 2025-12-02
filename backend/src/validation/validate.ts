@@ -7,8 +7,6 @@ import { Request, Response, NextFunction } from 'express';
 import { z, ZodError } from 'zod';
 import { logger } from '../logger';
 
-type ValidationTarget = 'body' | 'query' | 'params';
-
 interface ValidationOptions {
   body?: z.ZodSchema;
   query?: z.ZodSchema;
