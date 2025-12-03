@@ -86,8 +86,38 @@ api.interceptors.response.use(
         requestHeaders: error.config?.headers,
       });
 
-      // Log full error for debugging
-      console.error('Full error object:', error);
+      // Расширенное логирование для диагностики
+      console.group('🔍 Детальная диагностика 403');
+      console.error('📤 Request:', {
+        url: error.config?.url,
+        method: error.config?.method,
+        baseURL: error.config?.baseURL,
+        fullURL: error.config?.baseURL + error.config?.url,
+      });
+      console.error('🔑 Token Info:', {
+        hasToken: !!localStorage.getItem('admin_token'),
+        tokenLength: localStorage.getItem('admin_token')?.length,
+        tokenPrefix: localStorage.getItem('admin_token')?.substring(0, 20),
+        fullToken: localStorage.getItem('admin_token'), // Временно для диагностики
+      });
+      console.error('📥 Response:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        dataType: typeof error.response?.data,
+        dataString: JSON.stringify(error.response?.data),
+        headers: error.response?.headers,
+      });
+      console.error('📤 Request Headers:', error.config?.headers);
+      console.error('🔍 Full Error Object:', error);
+      console.error('📋 Response Data Structure:', {
+        hasSuccess: error.response?.data && 'success' in error.response.data,
+        hasError: error.response?.data && 'error' in error.response.data,
+        hasData: error.response?.data && 'data' in error.response.data,
+        keys: error.response?.data ? Object.keys(error.response.data) : [],
+        fullResponse: error.response?.data,
+      });
+      console.groupEnd();
 
       // Не разлогинивать автоматически - дать возможность посмотреть логи
       // Пользователь может разлогиниться вручную через кнопку
