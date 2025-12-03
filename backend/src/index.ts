@@ -26,7 +26,7 @@ import { telegramAuthMiddleware } from './middleware/telegramAuth';
 import { adminAuthMiddleware } from './middleware/adminAuth';
 import { logger } from './logger';
 import { sendCriticalAlert } from './alerts';
-import { initYDB } from './db/connection';
+import { initYDB, ydbClient } from './db/connection';
 import { runMigrations } from './db/migrations';
 import { initObjectStorage } from './services/objectStorage';
 
@@ -34,25 +34,35 @@ import { initObjectStorage } from './services/objectStorage';
 initErrorMonitoring();
 
 // Initialize YDB connection and run migrations
+// Don't block server startup - allow app to start even if DB is not available
+// This ensures health check endpoint works and container doesn't crash
 initYDB()
   .then(async () => {
     // Run migrations after successful connection
     try {
       await runMigrations();
+      logger.info({
+        type: 'ydb_migrations_completed',
+        message: 'Migrations completed successfully',
+      });
     } catch (error) {
-      logger.error({ error, type: 'migrations_failed_on_startup' });
-      // In production, fail if migrations fail
-      if (config.nodeEnv === 'production') {
-        process.exit(1);
-      }
+      logger.error({
+        error,
+        type: 'migrations_failed_on_startup',
+        message: 'Migrations failed, but server will continue',
+      });
+      // Don't exit - allow server to start and handle requests
+      // Health check will show DB status
     }
   })
   .catch((error) => {
-    logger.error({ error, type: 'ydb_init_failed_on_startup' });
-    // In development, allow app to start without DB
-    if (config.nodeEnv === 'production') {
-      process.exit(1);
-    }
+    logger.error({
+      error,
+      type: 'ydb_init_failed_on_startup',
+      message: 'YDB connection failed, but server will continue. Health check will show DB status.',
+    });
+    // Don't exit - allow server to start and handle requests
+    // This ensures container doesn't crash and health check works
   });
 
 // Initialize Object Storage
@@ -179,7 +189,15 @@ app.use((req, res, next) => {
 });
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', service: 'backend' });
+  // Health check endpoint - should always respond even if DB is not connected
+  // This ensures container health checks pass
+  const ydbStatus = ydbClient?.getConnectionStatus() ? 'connected' : 'disconnected';
+  res.json({
+    status: 'ok',
+    service: 'backend',
+    database: ydbStatus,
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // API routes with specific rate limiters and authentication
