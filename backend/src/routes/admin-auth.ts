@@ -9,7 +9,10 @@ import { logger } from '../logger';
 const router = Router();
 
 // Handle OPTIONS requests for CORS preflight
+// This ensures OPTIONS requests return 200 with proper CORS headers
+// CORS middleware will add the headers, we just need to return 200
 router.options('*', (req: Request, res: Response) => {
+  // CORS middleware already handles headers, just return success
   res.status(200).end();
 });
 

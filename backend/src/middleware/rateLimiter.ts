@@ -49,6 +49,7 @@ export const uploadLimiter = rateLimit({
 /**
  * Admin API rate limiter
  * 200 requests per minute (more permissive for admin operations)
+ * Skips OPTIONS requests (preflight) to allow CORS
  */
 export const adminLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
@@ -62,7 +63,8 @@ export const adminLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => config.nodeEnv === 'test',
+  // Skip rate limiting for OPTIONS requests (CORS preflight) and in test environment
+  skip: (req) => req.method === 'OPTIONS' || config.nodeEnv === 'test',
 });
 
 /**
