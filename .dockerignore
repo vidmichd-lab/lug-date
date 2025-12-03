@@ -135,7 +135,7 @@ temp/
 *.bak
 
 # Package manager
-package-lock.json
+# package-lock.json - НЕ исключаем, нужен для npm ci
 yarn.lock
 pnpm-lock.yaml
 
