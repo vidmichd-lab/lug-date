@@ -12,41 +12,47 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 108px 0 100px; /* Header height + bottom button space */
-  max-width: 351px;
+  padding: 108px var(--l-r-mobile, 12px) 24px; /* Header height + bottom button space */
   width: 100%;
-  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .title {
-  font-size: 24px;
-  font-weight: 600;
-  line-height: 32px;
-  color: var(--color-text, #000000);
-  margin: 0 0 var(--spacing-xl) 0;
+  font-family: var(--font-family);
+  font-size: var(--font-h2-size, 24px);
+  font-weight: var(--font-h2-weight, 500);
+  line-height: var(--font-h2-line-height, 28px);
+  letter-spacing: var(--font-h2-letter-spacing, -0.25px);
+  color: var(--color-typography-main-100, #1e1e1e);
+  margin: 0 0 var(--between-title-input, 24px) 0;
+  width: 100%;
 }
 
 .citiesContainer {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-xl);
+  gap: var(--between-input-input, 8px);
+  margin-bottom: var(--between-title-input, 24px);
+  width: 100%;
 }
 
 .cityButton {
   width: 100%;
   height: 54px;
-  padding: var(--spacing-base) var(--spacing-lg);
-  background-color: #f5f5f5;
+  padding: 12px 24px;
+  background-color: var(--color-shape-100, #f4f4f4);
   border: none;
   border-radius: var(--rounding-button-round, 999px);
   font-size: var(--font-body-size, 16px);
-  font-weight: 500;
-  color: var(--color-text, #000000);
+  font-weight: var(--font-body-weight, 400);
+  line-height: var(--font-body-line-height, 20px);
+  letter-spacing: var(--font-body-letter-spacing, -0.2px);
+  color: var(--color-typography-main-100, #1e1e1e);
   text-align: center;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
   font-family: var(--font-family);
+  box-sizing: border-box;
 }
 
 .cityButton:hover {
@@ -58,18 +64,31 @@
 }
 
 .cityButtonSelected {
-  background-color: var(--color-text, #000000);
-  color: var(--color-background, #ffffff);
+  background-color: var(--color-typography-main-100, #1e1e1e);
+  color: var(--color-inverted, #ffffff);
+}
+
+.helpLinkContainer {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--between-title-input, 24px);
 }
 
 .helpLink {
-  color: var(--color-text-secondary, #666666);
-  font-size: var(--font-body-small-size, 14px);
+  color: var(--color-typography-main-80, rgba(30, 30, 30, 0.8));
+  font-size: var(--font-body-size, 16px);
+  font-weight: var(--font-body-weight, 400);
+  line-height: var(--font-body-line-height, 20px);
+  letter-spacing: var(--font-body-letter-spacing, -0.2px);
   text-decoration: none;
   cursor: pointer;
   text-align: center;
-  margin-top: var(--spacing-base);
   transition: opacity 0.2s ease-in-out;
+  font-family: var(--font-family);
+  background: none;
+  border: none;
+  padding: 0;
 }
 
 .helpLink:hover {

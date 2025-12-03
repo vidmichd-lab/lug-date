@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ProfileHeader } from '../../../components/ProfileHeader';
-import { Namewrong } from '../../../design-system/components/namewrong';
+import { Icon } from '../../../components/Icon';
 import styles from './NameInputScreen.module.css';
 import type { NameInputScreenProps, NameValidationError } from './NameInputScreen.types';
 
@@ -53,7 +53,7 @@ export const NameInputScreen: React.FC<NameInputScreenProps> = ({
     inputRef.current?.focus();
   }, []);
 
-  // Validate on change
+  // Validate on change - only show error if user has interacted and there's an actual error
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
 
@@ -74,8 +74,20 @@ export const NameInputScreen: React.FC<NameInputScreenProps> = ({
     }
 
     setName(value);
-    const validationError = validateName(value);
-    setError(validationError);
+    // Only validate if user has typed something (not empty) and there's a real error
+    // Don't show error for empty field - just show placeholder
+    if (value.trim().length > 0) {
+      const validationError = validateName(value);
+      // Only show error if it's not 'empty' (which means field has content but is invalid)
+      if (validationError && validationError !== 'empty') {
+        setError(validationError);
+      } else {
+        setError(null);
+      }
+    } else {
+      // Clear error when field is empty
+      setError(null);
+    }
   }, []);
 
   const handleNext = useCallback(() => {
@@ -122,14 +134,40 @@ export const NameInputScreen: React.FC<NameInputScreenProps> = ({
               value={name}
               onChange={handleChange}
               onKeyPress={handleKeyPress}
+              onBlur={() => {
+                // Validate on blur if field is not empty
+                if (name.trim().length > 0) {
+                  const validationError = validateName(name);
+                  // Only show error if it's not 'empty' (which means field has content but is invalid)
+                  if (validationError && validationError !== 'empty') {
+                    setError(validationError);
+                  } else {
+                    setError(null);
+                  }
+                }
+              }}
               maxLength={MAX_LENGTH}
               autoComplete="given-name"
               autoCapitalize="words"
             />
             {error && (
               <div className={styles.errorIcon}>
-                <Namewrong />
+                <Icon name="wrong" size={24} color="var(--color-states-wrong-100, #ff3b48)" />
               </div>
+            )}
+            {!error && name.trim().length > 0 && (
+              <button
+                className={styles.clearButton}
+                onClick={() => {
+                  setName('');
+                  setError(null);
+                  inputRef.current?.focus();
+                }}
+                type="button"
+                aria-label="Очистить"
+              >
+                <Icon name="wrong" size={24} color="var(--color-typography-main-100, #1e1e1e)" />
+              </button>
             )}
           </div>
           {error && (

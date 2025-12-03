@@ -15,8 +15,10 @@ export const CityNotFoundModal: FC<CityNotFoundModalProps> = ({ isOpen, onClose 
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose}>
       <div className={styles.modalContent}>
-        <h2 className={styles.title}>{t('registration.citySelection.modal.title')}</h2>
-        <p className={styles.description}>{t('registration.citySelection.modal.description')}</p>
+        <div className={styles.titleContainer}>
+          <h2 className={styles.title}>{t('registration.citySelection.modal.title')}</h2>
+          <p className={styles.description}>{t('registration.citySelection.modal.description')}</p>
+        </div>
         <div className={styles.buttonContainer}>
           <button className={styles.button} onClick={onClose} type="button">
             {t('registration.citySelection.modal.okay')}

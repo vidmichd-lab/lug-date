@@ -23,7 +23,10 @@ export const InterestTag: FC<InterestTagProps> = ({
       type="button"
       aria-pressed={selected}
     >
-      <span className={styles.interestIcon}>
+      <span
+        className={styles.interestIcon}
+        style={selected ? undefined : { color: interest.color }}
+      >
         <IconComponent />
       </span>
       <span>{interest.label}</span>

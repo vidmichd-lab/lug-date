@@ -59,9 +59,10 @@
   display: block;
 }
 
-/* When selected, make icon white */
+/* When selected, make icon black (no filter needed - icon should be black) */
 .interestTagSelected .interestIcon {
-  filter: brightness(0) invert(1);
+  /* Icon should remain black when selected */
+  filter: none;
 }
 
 /* Ensure icon components from design-system are properly sized */

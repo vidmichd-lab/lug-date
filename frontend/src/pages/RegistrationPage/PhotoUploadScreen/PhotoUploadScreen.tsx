@@ -144,14 +144,16 @@ export const PhotoUploadScreen: React.FC<PhotoUploadScreenProps> = ({
         />
 
         {!photoUrl ? (
-          <button
-            className={styles.uploadButton}
-            onClick={handleUploadClick}
-            disabled={isUploading}
-            type="button"
-          >
-            {t('registration.photoUpload.uploadButton')}
-          </button>
+          <div className={styles.uploadButtonContainer}>
+            <button
+              className={styles.uploadButton}
+              onClick={handleUploadClick}
+              disabled={isUploading}
+              type="button"
+            >
+              {t('registration.photoUpload.uploadButton')}
+            </button>
+          </div>
         ) : (
           <div className={styles.buttonGroup}>
             <button

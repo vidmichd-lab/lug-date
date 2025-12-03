@@ -206,8 +206,8 @@ export const DateOfBirthScreen: React.FC<DateOfBirthScreenProps> = ({
         </div>
       </div>
 
-      {isButtonEnabled && (
-        <div className={styles.switchContainer}>
+      <div className={styles.switchContainer}>
+        {isButtonEnabled && (
           <div className={styles.switchWrapper}>
             <span className={styles.switchLabel}>{t('registration.dateOfBirth.showAge')}</span>
             <Viewswitch
@@ -216,25 +216,19 @@ export const DateOfBirthScreen: React.FC<DateOfBirthScreenProps> = ({
               onClick={() => setShowAge(!showAge)}
             />
           </div>
-          <div className={styles.buttonContainer}>
-            <button
-              className={`${styles.button} ${styles.buttonActive}`}
-              onClick={handleNext}
-              type="button"
-            >
-              {t('common.next')}
-            </button>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {!isButtonEnabled && (
-        <div className={styles.buttonContainer}>
-          <button className={styles.button} onClick={handleNext} disabled type="button">
-            {t('common.next')}
-          </button>
-        </div>
-      )}
+      <div className={styles.buttonContainer}>
+        <button
+          className={`${styles.button} ${isButtonEnabled ? styles.buttonActive : ''}`}
+          onClick={handleNext}
+          disabled={!isButtonEnabled}
+          type="button"
+        >
+          {t('common.next')}
+        </button>
+      </div>
     </div>
   );
 };

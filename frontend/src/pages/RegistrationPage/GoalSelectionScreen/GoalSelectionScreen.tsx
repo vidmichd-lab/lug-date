@@ -74,17 +74,17 @@ export const GoalSelectionScreen: React.FC<GoalSelectionScreenProps> = ({
             </button>
           ))}
         </div>
+      </div>
 
-        <div className={styles.buttonContainer}>
-          <button
-            className={styles.button}
-            onClick={handleNext}
-            disabled={!isButtonEnabled}
-            type="button"
-          >
-            {t('common.next')}
-          </button>
-        </div>
+      <div className={styles.buttonContainer}>
+        <button
+          className={`${styles.button} ${isButtonEnabled ? styles.buttonActive : ''}`}
+          onClick={handleNext}
+          disabled={!isButtonEnabled}
+          type="button"
+        >
+          {t('common.next')}
+        </button>
       </div>
     </div>
   );
