@@ -5,7 +5,7 @@
 
 import { FC } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Nameback } from '../../design-system/components/nameback';
+import { Icon } from '../Icon';
 import styles from './ProfileHeader.module.css';
 import type { ProfileHeaderProps } from './ProfileHeader.types';
 
@@ -26,6 +26,8 @@ export const ProfileHeader: FC<ProfileHeaderProps> = ({
     }
   };
 
+  const progress = totalSteps > 0 ? (currentStep / totalSteps) * 100 : 0;
+
   return (
     <header className={styles.header}>
       <div className={styles.headerContent}>
@@ -35,14 +37,22 @@ export const ProfileHeader: FC<ProfileHeaderProps> = ({
           type="button"
           aria-label="Назад"
         >
-          <Nameback className={styles.backIcon} />
+          <Icon name="back" size={24} className={styles.backIcon} />
         </button>
 
         <h1 className={styles.title}>{title}</h1>
 
-        <span className={styles.stepIndicator}>
-          {currentStep}/{totalSteps}
-        </span>
+        <div className={styles.progressBarContainer}>
+          <div
+            className={styles.progressBar}
+            style={{ width: `${progress}%` }}
+            aria-label={`Step ${currentStep} of ${totalSteps}`}
+            role="progressbar"
+            aria-valuenow={currentStep}
+            aria-valuemin={1}
+            aria-valuemax={totalSteps}
+          />
+        </div>
       </div>
     </header>
   );

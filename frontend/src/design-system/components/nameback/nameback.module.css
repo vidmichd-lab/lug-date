@@ -8,7 +8,7 @@
   position: relative;
 }
 
-/* Back arrow icon using CSS */
+/* Use SVG from Figma if available, otherwise fallback to CSS */
 .nameback::before {
   content: '';
   position: absolute;
@@ -19,4 +19,16 @@
   transform: rotate(45deg);
   left: 8px;
   top: 8px;
+}
+
+/* If SVG is used, hide CSS fallback */
+.nameback img,
+.nameback svg {
+  position: relative;
+  z-index: 1;
+}
+
+.nameback img ~ ::before,
+.nameback svg ~ ::before {
+  display: none;
 }

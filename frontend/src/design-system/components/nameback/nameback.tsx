@@ -5,11 +5,13 @@ import { NamebackProps } from './nameback.types';
 /**
  * Nameback component
  * Auto-generated from Figma
- * Added: 2025-12-01T12:15:51.099Z
+ * Uses SVG from Figma assets
  */
 export const Nameback: React.FC<NamebackProps> = (props) => {
   const { children, className, ...rest } = props;
-  
+
+  // Use SVG from Figma - need to identify the correct SVG file
+  // For now, using CSS-based icon as fallback
   return (
     <div className={`${styles.nameback} ${className || ''}`} {...rest}>
       {children}

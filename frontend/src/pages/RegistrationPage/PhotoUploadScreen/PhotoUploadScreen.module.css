@@ -4,7 +4,7 @@
   min-height: 100vh;
   width: 100%;
   background-color: var(--color-background, #ffffff);
-  padding: 0 var(--spacing-base);
+  padding: 0 var(--l-r-mobile, 12px);
   box-sizing: border-box;
 }
 
@@ -12,7 +12,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: var(--spacing-xl) 0;
+  padding: 108px 0 100px; /* Header height + bottom button space */
   max-width: 351px;
   width: 100%;
   margin: 0 auto;
@@ -137,28 +137,40 @@
 }
 
 .buttonGroup {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: flex;
   gap: var(--between-input-input, 8px);
   align-items: center;
   justify-content: center;
-  margin-top: var(--spacing-xl);
+  padding: 24px var(--l-r-mobile, 12px);
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.5) 50%,
+    rgba(255, 255, 255, 1) 100%
+  );
   width: 100%;
-  max-width: 351px;
-  margin-left: auto;
-  margin-right: auto;
+  max-width: 375px;
+  margin: 0 auto;
+  z-index: 10;
+  box-sizing: border-box;
 }
 
 .refreshButton {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  flex: 1;
-  min-width: 128px;
+  width: auto;
+  min-width: auto;
   height: 54px;
   background: var(--color-shape-100, #f4f4f4);
   color: var(--color-typography-main-100, #1e1e1e);
   border-radius: var(--rounding-button-round, 999px);
-  padding: 12px 24px;
+  padding: 12px 20px;
   font-size: var(--font-body-size, 16px);
   font-weight: var(--font-body-weight, 400);
   line-height: var(--font-body-line-height, 20px);
@@ -168,6 +180,7 @@
   transition: background-color 0.2s ease-in-out;
   font-family: var(--font-family);
   box-sizing: border-box;
+  white-space: nowrap;
 }
 
 .refreshButton:hover:not(:disabled) {
@@ -186,10 +199,10 @@
 /* Refresh icon is now handled by Icon component */
 
 .nextButton {
-  flex: 1;
-  min-width: 128px;
+  width: auto;
+  min-width: auto;
   height: 54px;
-  padding: 12px 24px;
+  padding: 12px 20px;
   background-color: var(--color-typography-main-100, #1e1e1e);
   color: var(--color-inverted, #ffffff);
   border: none;
