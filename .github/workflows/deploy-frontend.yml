@@ -19,12 +19,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
@@ -41,7 +41,7 @@ jobs:
           ACCESS_KEY: ${{ github.ref == 'refs/heads/main' && secrets.FRONTEND_STORAGE_ACCESS_KEY_PROD || secrets.FRONTEND_STORAGE_ACCESS_KEY_DEV }}
           SECRET_KEY: ${{ github.ref == 'refs/heads/main' && secrets.FRONTEND_STORAGE_SECRET_KEY_PROD || secrets.FRONTEND_STORAGE_SECRET_KEY_DEV }}
         run: |
-          pip install awscli
+          pip3 install awscli --quiet
           mkdir -p ~/.aws
           echo "[default]" > ~/.aws/credentials
           echo "aws_access_key_id = $ACCESS_KEY" >> ~/.aws/credentials

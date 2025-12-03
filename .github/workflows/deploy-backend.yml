@@ -39,7 +39,6 @@ jobs:
 
       - name: Run linter
         run: npm run lint --workspace=backend
-        continue-on-error: true # Временно пропускаем warnings
 
       - name: Build shared package
         run: npm run build --workspace=shared
@@ -108,16 +107,17 @@ jobs:
           export PATH=$PATH:$HOME/yandex-cloud/bin
 
           # Создаем контейнер, если его еще нет
+          CONTAINER_CREATED=0
           if [ -n "${YC_FOLDER_ID}" ]; then
             yc serverless container create \
               --name=lug-date-backend-staging \
-              --folder-id="${YC_FOLDER_ID}" || echo "Container already exists"
+              --folder-id="${YC_FOLDER_ID}" && CONTAINER_CREATED=1 || echo "Container already exists"
           else
-            yc serverless container create --name=lug-date-backend-staging || echo "Container already exists"
+            yc serverless container create --name=lug-date-backend-staging && CONTAINER_CREATED=1 || echo "Container already exists"
           fi
 
           # Устанавливаем service account, если контейнер был только что создан
-          if [ $? -eq 0 ] && [ -n "${YC_SERVICE_ACCOUNT_ID}" ]; then
+          if [ "${CONTAINER_CREATED}" -eq 1 ] && [ -n "${YC_SERVICE_ACCOUNT_ID}" ]; then
             if [ -n "${YC_FOLDER_ID}" ]; then
               yc serverless container set-access-bindings \
                 --name=lug-date-backend-staging \
@@ -137,14 +137,22 @@ jobs:
           YC_SERVICE_ACCOUNT_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
           YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
           YC_CONTAINER_ID_STAGING: ${{ secrets.YC_CONTAINER_ID_STAGING }}
+          ADMIN_USERNAME_DEV: ${{ secrets.ADMIN_USERNAME_DEV }}
+          ADMIN_PASSWORD_DEV: ${{ secrets.ADMIN_PASSWORD_DEV }}
+          ADMIN_TOKEN_DEV: ${{ secrets.ADMIN_TOKEN_DEV }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
+
+          # Set default values for admin credentials using bash parameter expansion
+          ADMIN_USERNAME="${ADMIN_USERNAME_DEV:-admin}"
+          ADMIN_PASSWORD="${ADMIN_PASSWORD_DEV:-admin123}"
+          ADMIN_TOKEN="${ADMIN_TOKEN_DEV:-admin-secret-token-change-in-production}"
 
           # Используем container-id если указан, иначе container-name с folder-id
           if [ -n "${YC_CONTAINER_ID_STAGING}" ]; then
             yc serverless container revision deploy \
               --container-id="${YC_CONTAINER_ID_STAGING}" \
-              --image=${{ env.IMAGE_ID }} \
+              --image="${{ env.IMAGE_ID }}" \
               --memory=512m \
               --cores=1 \
               --execution-timeout=30s \
@@ -159,12 +167,17 @@ jobs:
               --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_DEV }} \
               --environment TELEGRAM_ALERT_ENABLED=true \
               --environment TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
-              --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+              --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }} \
+              --environment ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS_DEV }} \
+              --environment ADMIN_ORIGINS=${{ secrets.ADMIN_ORIGINS_DEV }} \
+              --environment ADMIN_USERNAME="${ADMIN_USERNAME}" \
+              --environment ADMIN_PASSWORD="${ADMIN_PASSWORD}" \
+              --environment ADMIN_TOKEN="${ADMIN_TOKEN}"
           elif [ -n "${YC_FOLDER_ID}" ]; then
             yc serverless container revision deploy \
               --container-name=lug-date-backend-staging \
               --folder-id="${YC_FOLDER_ID}" \
-              --image=${{ env.IMAGE_ID }} \
+              --image="${{ env.IMAGE_ID }}" \
               --memory=512m \
               --cores=1 \
               --execution-timeout=30s \
@@ -179,7 +192,12 @@ jobs:
               --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_DEV }} \
               --environment TELEGRAM_ALERT_ENABLED=true \
               --environment TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
-              --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+              --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }} \
+              --environment ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS_DEV }} \
+              --environment ADMIN_ORIGINS=${{ secrets.ADMIN_ORIGINS_DEV }} \
+              --environment ADMIN_USERNAME="${ADMIN_USERNAME}" \
+              --environment ADMIN_PASSWORD="${ADMIN_PASSWORD}" \
+              --environment ADMIN_TOKEN="${ADMIN_TOKEN}"
           else
             echo "Error: Either YC_CONTAINER_ID_STAGING or YC_FOLDER_ID must be set"
             exit 1
@@ -249,7 +267,6 @@ jobs:
 
       - name: Run linter
         run: npm run lint --workspace=backend
-        continue-on-error: true # Временно пропускаем warnings
 
       - name: Build shared package
         run: npm run build --workspace=shared
@@ -318,16 +335,17 @@ jobs:
           export PATH=$PATH:$HOME/yandex-cloud/bin
 
           # Создаем контейнер, если его еще нет
+          CONTAINER_CREATED=0
           if [ -n "${YC_FOLDER_ID}" ]; then
             yc serverless container create \
               --name=lug-date-backend-prod \
-              --folder-id="${YC_FOLDER_ID}" || echo "Container already exists"
+              --folder-id="${YC_FOLDER_ID}" && CONTAINER_CREATED=1 || echo "Container already exists"
           else
-            yc serverless container create --name=lug-date-backend-prod || echo "Container already exists"
+            yc serverless container create --name=lug-date-backend-prod && CONTAINER_CREATED=1 || echo "Container already exists"
           fi
 
           # Устанавливаем service account, если контейнер был только что создан
-          if [ $? -eq 0 ] && [ -n "${YC_SERVICE_ACCOUNT_ID}" ]; then
+          if [ "${CONTAINER_CREATED}" -eq 1 ] && [ -n "${YC_SERVICE_ACCOUNT_ID}" ]; then
             if [ -n "${YC_FOLDER_ID}" ]; then
               yc serverless container set-access-bindings \
                 --name=lug-date-backend-prod \
@@ -347,14 +365,22 @@ jobs:
           YC_SERVICE_ACCOUNT_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
           YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
           YC_CONTAINER_ID_PROD: ${{ secrets.YC_CONTAINER_ID_PROD }}
+          ADMIN_USERNAME_PROD: ${{ secrets.ADMIN_USERNAME_PROD }}
+          ADMIN_PASSWORD_PROD: ${{ secrets.ADMIN_PASSWORD_PROD }}
+          ADMIN_TOKEN_PROD: ${{ secrets.ADMIN_TOKEN_PROD }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
+
+          # Set default values for admin credentials using bash parameter expansion
+          ADMIN_USERNAME="${ADMIN_USERNAME_PROD:-admin}"
+          ADMIN_PASSWORD="${ADMIN_PASSWORD_PROD:-admin123}"
+          ADMIN_TOKEN="${ADMIN_TOKEN_PROD:-admin-secret-token-change-in-production}"
 
           # Используем container-id если указан, иначе container-name с folder-id
           if [ -n "${YC_CONTAINER_ID_PROD}" ]; then
             yc serverless container revision deploy \
               --container-id="${YC_CONTAINER_ID_PROD}" \
-              --image=${{ env.IMAGE_ID }} \
+              --image="${{ env.IMAGE_ID }}" \
               --memory=512m \
               --cores=1 \
               --execution-timeout=30s \
@@ -369,12 +395,17 @@ jobs:
               --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_PROD }} \
               --environment TELEGRAM_ALERT_ENABLED=true \
               --environment TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
-              --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+              --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }} \
+              --environment ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS_PROD }} \
+              --environment ADMIN_ORIGINS=${{ secrets.ADMIN_ORIGINS_PROD }} \
+              --environment ADMIN_USERNAME="${ADMIN_USERNAME}" \
+              --environment ADMIN_PASSWORD="${ADMIN_PASSWORD}" \
+              --environment ADMIN_TOKEN="${ADMIN_TOKEN}"
           elif [ -n "${YC_FOLDER_ID}" ]; then
             yc serverless container revision deploy \
               --container-name=lug-date-backend-prod \
               --folder-id="${YC_FOLDER_ID}" \
-              --image=${{ env.IMAGE_ID }} \
+              --image="${{ env.IMAGE_ID }}" \
               --memory=512m \
               --cores=1 \
               --execution-timeout=30s \
@@ -389,7 +420,12 @@ jobs:
               --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_PROD }} \
               --environment TELEGRAM_ALERT_ENABLED=true \
               --environment TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
-              --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+              --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }} \
+              --environment ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS_PROD }} \
+              --environment ADMIN_ORIGINS=${{ secrets.ADMIN_ORIGINS_PROD }} \
+              --environment ADMIN_USERNAME="${ADMIN_USERNAME}" \
+              --environment ADMIN_PASSWORD="${ADMIN_PASSWORD}" \
+              --environment ADMIN_TOKEN="${ADMIN_TOKEN}"
           else
             echo "Error: Either YC_CONTAINER_ID_PROD or YC_FOLDER_ID must be set"
             exit 1
