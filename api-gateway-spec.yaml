@@ -2,16 +2,16 @@ openapi: 3.0.0
 info:
   title: Dating App API Gateway
   version: 1.0.0
-  description: API Gateway для Dating App Backend
+  description: API Gateway для Dating App Backend (Serverless Container)
 paths:
   /{proxy+}:
     x-yc-apigateway-any-method:
       x-yc-apigateway-integration:
-        type: cloud_functions
-        function_id: d4enks8erf8eentnojj9
+        type: serverless_containers
+        container_id: bba15uj3u5fomt2fd9kp
         service_account_id: aje0defcl8b2577p01hg
-      summary: Проксирование всех запросов к Cloud Function
-      description: Все запросы проксируются к функции бекенда
+      summary: Проксирование всех запросов к Serverless Container
+      description: Все запросы проксируются к контейнеру бекенда
       parameters:
         - name: proxy
           in: path
@@ -24,17 +24,18 @@ paths:
           description: Успешный ответ
         '400':
           description: Ошибка запроса
+        '403':
+          description: Доступ запрещен
         '500':
           description: Внутренняя ошибка сервера
   /:
     get:
       x-yc-apigateway-integration:
-        type: cloud_functions
-        function_id: d4enks8erf8eentnojj9
+        type: serverless_containers
+        container_id: bba15uj3u5fomt2fd9kp
         service_account_id: aje0defcl8b2577p01hg
       summary: Корневой путь
-      description: Проксирование корневого пути к функции
+      description: Проксирование корневого пути к контейнеру
       responses:
         '200':
           description: Успешный ответ
-
