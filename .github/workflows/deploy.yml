@@ -608,23 +608,35 @@ jobs:
           # Check backend health if it was deployed
           if [ -n "${BACKEND_URL}" ] && [ "${BACKEND_URL}" != "null" ]; then
             echo "⏳ Checking backend health at ${BACKEND_URL}/health..."
-            sleep 5
+            echo "🔍 Backend URL: ${BACKEND_URL}"
+            
+            # Wait longer for container to start (Yandex Cloud containers can take 30-60 seconds)
+            echo "⏳ Waiting 30 seconds for container to start..."
+            sleep 30
             
             HEALTH_CHECK_PASSED=0
-            for i in {1..10}; do
-              if curl -f -s "${BACKEND_URL}/health" > /dev/null 2>&1; then
-                echo "✅ Backend health check passed!"
+            for i in {1..20}; do
+              echo "⏳ Attempt $i/20: Checking ${BACKEND_URL}/health..."
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "${BACKEND_URL}/health" || echo "000")
+              
+              if [ "${HTTP_CODE}" = "200" ]; then
+                echo "✅ Backend health check passed! (HTTP ${HTTP_CODE})"
                 HEALTH_CHECK_PASSED=1
                 break
               else
-                echo "⏳ Attempt $i/10: Backend not responding, waiting..."
-                sleep 3
+                echo "⏳ Attempt $i/20: Backend returned HTTP ${HTTP_CODE}, waiting..."
+                sleep 5
               fi
             done
             
             if [ "${HEALTH_CHECK_PASSED}" -eq 0 ]; then
-              echo "❌ ERROR: Backend health check failed after 10 attempts"
+              echo "❌ ERROR: Backend health check failed after 20 attempts"
               echo "Backend may not be responding correctly at ${BACKEND_URL}/health"
+              echo "Please check:"
+              echo "  1. Container logs in Yandex Cloud Console"
+              echo "  2. Container is running and healthy"
+              echo "  3. Environment variables are set correctly"
+              echo "  4. Database connection is working"
               exit 1
             fi
           else
@@ -1211,23 +1223,35 @@ jobs:
           # Check backend health if it was deployed
           if [ -n "${BACKEND_URL}" ] && [ "${BACKEND_URL}" != "null" ]; then
             echo "⏳ Checking backend health at ${BACKEND_URL}/health..."
-            sleep 10
+            echo "🔍 Backend URL: ${BACKEND_URL}"
+            
+            # Wait longer for container to start (Yandex Cloud containers can take 30-60 seconds)
+            echo "⏳ Waiting 30 seconds for container to start..."
+            sleep 30
             
             HEALTH_CHECK_PASSED=0
-            for i in {1..15}; do
-              if curl -f -s "${BACKEND_URL}/health" > /dev/null 2>&1; then
-                echo "✅ Backend health check passed!"
+            for i in {1..20}; do
+              echo "⏳ Attempt $i/20: Checking ${BACKEND_URL}/health..."
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "${BACKEND_URL}/health" || echo "000")
+              
+              if [ "${HTTP_CODE}" = "200" ]; then
+                echo "✅ Backend health check passed! (HTTP ${HTTP_CODE})"
                 HEALTH_CHECK_PASSED=1
                 break
               else
-                echo "⏳ Attempt $i/15: Backend not responding, waiting..."
-                sleep 4
+                echo "⏳ Attempt $i/20: Backend returned HTTP ${HTTP_CODE}, waiting..."
+                sleep 5
               fi
             done
             
             if [ "${HEALTH_CHECK_PASSED}" -eq 0 ]; then
-              echo "❌ ERROR: Backend health check failed after 15 attempts"
+              echo "❌ ERROR: Backend health check failed after 20 attempts"
               echo "Backend may not be responding correctly at ${BACKEND_URL}/health"
+              echo "Please check:"
+              echo "  1. Container logs in Yandex Cloud Console"
+              echo "  2. Container is running and healthy"
+              echo "  3. Environment variables are set correctly"
+              echo "  4. Database connection is working"
               exit 1
             fi
           else
