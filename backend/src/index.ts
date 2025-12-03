@@ -62,6 +62,7 @@ const app = express();
 const PORT = config.port;
 
 // Security headers - MUST be first
+// Configure Helmet to work with CORS
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -70,7 +71,7 @@ app.use(
         styleSrc: ["'self'", "'unsafe-inline'"],
         scriptSrc: ["'self'"],
         imgSrc: ["'self'", 'data:', 'https:'],
-        connectSrc: ["'self'"],
+        connectSrc: ["'self'", 'https:', 'http:'], // Allow connections to any HTTPS/HTTP endpoint
         fontSrc: ["'self'"],
         objectSrc: ["'none'"],
         mediaSrc: ["'self'"],
@@ -78,6 +79,7 @@ app.use(
       },
     },
     crossOriginEmbedderPolicy: false, // Disable for Telegram WebApp compatibility
+    crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow cross-origin resources
   })
 );
 
@@ -152,7 +154,14 @@ app.use(
 );
 
 // Apply general rate limiting to all routes (after CORS)
+// Note: OPTIONS requests are skipped by rate limiter
 app.use(generalLimiter);
+
+// Handle OPTIONS requests explicitly before body parsers
+// This ensures preflight requests are handled correctly
+app.options('*', (req, res) => {
+  res.status(200).end();
+});
 
 // JSON body parser - only for requests with Content-Type: application/json
 app.use(
@@ -163,9 +172,9 @@ app.use(
 );
 
 // Sanitize user input to prevent XSS attacks
-// Skip sanitization for GET requests (only sanitize body, not query)
+// Skip sanitization for GET and OPTIONS requests (only sanitize body, not query)
 app.use((req, res, next) => {
-  if (req.method === 'GET') {
+  if (req.method === 'GET' || req.method === 'OPTIONS') {
     next();
   } else {
     sanitizeMiddleware(req, res, next);
