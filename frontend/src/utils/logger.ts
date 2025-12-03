@@ -6,7 +6,7 @@
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 interface LogContext {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 class Logger {
@@ -44,19 +44,15 @@ class Logger {
     if (this.isDevelopment) {
       switch (level) {
         case 'debug':
-          // eslint-disable-next-line no-console
           console.debug(formattedMessage, context || '', error || '');
           break;
         case 'info':
-          // eslint-disable-next-line no-console
           console.info(formattedMessage, context || '', error || '');
           break;
         case 'warn':
-          // eslint-disable-next-line no-console
           console.warn(formattedMessage, context || '', error || '');
           break;
         case 'error':
-          // eslint-disable-next-line no-console
           console.error(formattedMessage, context || '', error || '');
           break;
       }
