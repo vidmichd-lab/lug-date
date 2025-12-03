@@ -4,26 +4,22 @@
  */
 
 import { FC } from 'react';
-import { CaseMinimalistic, Buildings, Pen } from '@solar-icons/react';
+import { Icon } from '../Icon';
 import styles from './InputWithIcon.module.css';
 import type { InputWithIconProps } from './InputWithIcon.types';
 
 const IconSvg: FC<{ type: InputWithIconProps['icon'] }> = ({ type }) => {
-  const iconProps = {
-    size: 24,
-    color: 'currentColor' as const,
+  // Map icon types to Icon component names
+  const iconMap: Record<InputWithIconProps['icon'], Parameters<typeof Icon>[0]['name']> = {
+    briefcase: 'job',
+    building: 'company',
+    edit: 'edit',
   };
 
-  switch (type) {
-    case 'briefcase':
-      return <CaseMinimalistic {...iconProps} />;
-    case 'building':
-      return <Buildings {...iconProps} />;
-    case 'edit':
-      return <Pen {...iconProps} />;
-    default:
-      return null;
-  }
+  const iconName = iconMap[type];
+  if (!iconName) return null;
+
+  return <Icon name={iconName} size={24} />;
 };
 
 export const InputWithIcon: FC<InputWithIconProps> = ({

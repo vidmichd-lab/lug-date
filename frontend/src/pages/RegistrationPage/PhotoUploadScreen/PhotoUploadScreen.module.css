@@ -64,6 +64,9 @@
   width: 64px;
   height: 64px;
   color: var(--color-typography-main-100, #1e1e1e);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .loadingOverlay {
@@ -180,11 +183,7 @@
   cursor: not-allowed;
 }
 
-.refreshIcon {
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
-}
+/* Refresh icon is now handled by Icon component */
 
 .nextButton {
   flex: 1;

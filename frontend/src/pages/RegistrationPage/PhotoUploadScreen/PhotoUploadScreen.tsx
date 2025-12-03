@@ -6,6 +6,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ProfileHeader } from '../../../components/ProfileHeader';
+import { Icon } from '../../../components/Icon';
 import { api } from '../../../api/client';
 import styles from './PhotoUploadScreen.module.css';
 import type { PhotoUploadScreenProps, PhotoUrls } from './PhotoUploadScreen.types';
@@ -69,7 +70,8 @@ export const PhotoUploadScreen: React.FC<PhotoUploadScreenProps> = ({
 
       if (response.success && response.data?.photoUrls) {
         // Use medium size for display
-        const displayUrl = response.data.photoUrls.medium.webp || response.data.photoUrls.medium.jpeg;
+        const displayUrl =
+          response.data.photoUrls.medium.webp || response.data.photoUrls.medium.jpeg;
         setPhotoUrl(displayUrl);
         setPreviewUrl(null);
       } else {
@@ -122,19 +124,7 @@ export const PhotoUploadScreen: React.FC<PhotoUploadScreenProps> = ({
           {displayUrl ? (
             <img src={displayUrl} alt="Profile" className={styles.photoImage} />
           ) : (
-            <svg
-              className={styles.photoPlaceholderIcon}
-              width="80"
-              height="80"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z"
-                fill="#BDBDBD"
-              />
-            </svg>
+            <Icon name="profile" size={64} color="var(--color-typography-main-100, #1e1e1e)" />
           )}
 
           {isUploading && (
@@ -170,19 +160,7 @@ export const PhotoUploadScreen: React.FC<PhotoUploadScreenProps> = ({
               disabled={isUploading}
               type="button"
             >
-              <svg
-                className={styles.refreshIcon}
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M17.65 6.35C16.2 4.9 14.21 4 12 4C7.58 4 4 7.58 4 12C4 16.42 7.58 20 12 20C15.73 20 18.84 17.45 19.73 14H17.65C16.83 16.33 14.61 18 12 18C8.69 18 6 15.31 6 12C6 8.69 8.69 6 12 6C13.66 6 15.14 6.69 16.22 7.78L13 11H20V4L17.65 6.35Z"
-                  fill="currentColor"
-                />
-              </svg>
+              <Icon name="update" size={24} />
               {t('registration.photoUpload.updateButton')}
             </button>
             <button
@@ -199,4 +177,3 @@ export const PhotoUploadScreen: React.FC<PhotoUploadScreenProps> = ({
     </div>
   );
 };
-

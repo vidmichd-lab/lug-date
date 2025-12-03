@@ -1,4 +1,28 @@
 .namewrong {
-  /* Auto-generated styles from Figma */
-  /* TODO: Implement styles based on Figma design */
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+/* Wrong/Error icon using CSS - X mark */
+.namewrong::before,
+.namewrong::after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 16px;
+  background: currentColor;
+  border-radius: 1px;
+}
+
+.namewrong::before {
+  transform: rotate(45deg);
+}
+
+.namewrong::after {
+  transform: rotate(-45deg);
 }

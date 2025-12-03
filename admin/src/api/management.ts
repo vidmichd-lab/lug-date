@@ -31,17 +31,23 @@ api.interceptors.request.use(
     const token = localStorage.getItem('admin_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log(
-        '🔑 Adding auth token to request:',
-        config.url,
-        'Token prefix:',
-        token.substring(0, 20) + '...',
-        'Token length:',
-        token.length
-      );
+      console.log('🔑 Adding auth token to request:', {
+        url: config.url,
+        method: config.method,
+        baseURL: config.baseURL,
+        fullURL: `${config.baseURL}${config.url}`,
+        tokenLength: token.length,
+        tokenPrefix: token.substring(0, 20) + '...',
+        hasAuthHeader: !!config.headers.Authorization,
+        authHeaderPrefix: config.headers.Authorization?.substring(0, 30) + '...',
+      });
     } else {
-      console.warn('⚠️ No auth token found in localStorage for request:', config.url);
-      console.warn('⚠️ Available localStorage keys:', Object.keys(localStorage));
+      console.warn('⚠️ No auth token found in localStorage for request:', {
+        url: config.url,
+        method: config.method,
+        baseURL: config.baseURL,
+        availableKeys: Object.keys(localStorage),
+      });
     }
     return config;
   },
@@ -94,11 +100,13 @@ api.interceptors.response.use(
         baseURL: error.config?.baseURL,
         fullURL: error.config?.baseURL + error.config?.url,
       });
+      const storedToken = localStorage.getItem('admin_token');
       console.error('🔑 Token Info:', {
-        hasToken: !!localStorage.getItem('admin_token'),
-        tokenLength: localStorage.getItem('admin_token')?.length,
-        tokenPrefix: localStorage.getItem('admin_token')?.substring(0, 20),
-        fullToken: localStorage.getItem('admin_token'), // Временно для диагностики
+        hasToken: !!storedToken,
+        tokenLength: storedToken?.length,
+        tokenPrefix: storedToken?.substring(0, 20) + '...',
+        tokenSuffix: storedToken ? '...' + storedToken.substring(storedToken.length - 10) : null,
+        // НЕ логируем полный токен для безопасности
       });
       console.error('📥 Response:', {
         status: error.response?.status,

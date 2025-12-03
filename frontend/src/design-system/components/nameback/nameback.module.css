@@ -1,4 +1,22 @@
 .nameback {
-  /* Auto-generated styles from Figma */
-  /* TODO: Implement styles based on Figma design */
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+/* Back arrow icon using CSS */
+.nameback::before {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-left: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  left: 8px;
+  top: 8px;
 }

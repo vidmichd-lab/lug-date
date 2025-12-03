@@ -23,6 +23,7 @@ i18n
         translation: en,
       },
     },
+    lng: 'ru', // Set Russian as default language
     fallbackLng: 'ru',
     defaultNS: 'translation',
     interpolation: {
@@ -31,8 +32,8 @@ i18n
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],
+      lookupLocalStorage: 'i18nextLng',
     },
   });
 
 export default i18n;
-

@@ -1,4 +1,20 @@
 .nametg {
-  /* Auto-generated styles from Figma */
-  /* TODO: Implement styles based on Figma design */
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+/* Telegram icon using CSS - simplified version */
+.nametg::before {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: currentColor;
+  border-radius: 50%;
+  clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
 }

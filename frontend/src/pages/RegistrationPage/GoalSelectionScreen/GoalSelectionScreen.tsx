@@ -48,8 +48,10 @@ export const GoalSelectionScreen: React.FC<GoalSelectionScreenProps> = ({
       />
 
       <div className={styles.content}>
-        <h2 className={styles.title}>{t('registration.goalSelection.title')}</h2>
-        <p className={styles.subtitle}>{t('registration.goalSelection.subtitle')}</p>
+        <div className={styles.titleContainer}>
+          <h2 className={styles.title}>{t('registration.goalSelection.title')}</h2>
+          <p className={styles.subtitle}>{t('registration.goalSelection.subtitle')}</p>
+        </div>
 
         <div
           className={styles.goalsContainer}

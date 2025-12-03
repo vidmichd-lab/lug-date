@@ -28,6 +28,14 @@ function App() {
         return;
       }
 
+      // Token exists - log details for debugging
+      console.log('🔍 Token found in localStorage:', {
+        hasToken: !!token,
+        tokenLength: token.length,
+        tokenPrefix: token.substring(0, 20) + '...',
+        tokenSuffix: '...' + token.substring(token.length - 10),
+      });
+
       // Token exists - verify it by making a test request
       // We'll let the first API call verify it, and if it fails,
       // the interceptor will clear the token and reload

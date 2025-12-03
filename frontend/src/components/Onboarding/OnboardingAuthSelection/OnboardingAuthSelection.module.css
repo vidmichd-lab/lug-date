@@ -95,13 +95,6 @@
   opacity: 0.8;
 }
 
-.telegramIcon {
-  width: 24px;
-  height: 24px;
-  fill: currentColor;
-  flex-shrink: 0;
-}
-
 .secondaryButton {
   width: 100%;
   height: 54px;

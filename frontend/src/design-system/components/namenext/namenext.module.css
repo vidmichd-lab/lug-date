@@ -1,4 +1,22 @@
 .namenext {
-  /* Auto-generated styles from Figma */
-  /* TODO: Implement styles based on Figma design */
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+/* Next arrow icon using CSS */
+.namenext::before {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-top: 2px solid currentColor;
+  transform: rotate(45deg);
+  right: 8px;
+  top: 8px;
 }

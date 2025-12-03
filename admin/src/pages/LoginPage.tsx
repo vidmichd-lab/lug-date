@@ -23,21 +23,54 @@ export const LoginPage = ({ onLogin }: { onLogin: (token: string) => void }) => 
 
     try {
       const API_BASE_URL = getApiUrl().replace(/\/$/, ''); // Remove trailing slash
+      console.log('🔐 Attempting login to:', `${API_BASE_URL}/api/admin/auth/login`);
+
       const response = await axios.post(`${API_BASE_URL}/api/admin/auth/login`, {
         username,
         password,
       });
 
+      console.log('📥 Login response received:', {
+        status: response.status,
+        hasData: !!response.data,
+        hasSuccess: response.data?.success,
+        hasDataField: !!response.data?.data,
+        hasToken: !!response.data?.data?.token,
+        responseKeys: response.data ? Object.keys(response.data) : [],
+        dataKeys: response.data?.data ? Object.keys(response.data.data) : [],
+      });
+
       if (response.data.success && response.data.data?.token) {
         const token = response.data.data.token;
-        console.log('✅ Login successful, token received:', token.substring(0, 20) + '...');
+        console.log('✅ Login successful, token received:', {
+          tokenLength: token.length,
+          tokenPrefix: token.substring(0, 20) + '...',
+          tokenSuffix: '...' + token.substring(token.length - 10),
+        });
         localStorage.setItem('admin_token', token);
+
+        // Verify token was saved
+        const savedToken = localStorage.getItem('admin_token');
+        console.log('💾 Token saved to localStorage:', {
+          saved: savedToken === token,
+          savedLength: savedToken?.length,
+          savedPrefix: savedToken?.substring(0, 20) + '...',
+        });
+
         onLogin(token);
       } else {
-        console.error('❌ Login failed:', response.data);
+        console.error('❌ Login failed - invalid response structure:', response.data);
         setError(response.data.error?.message || 'Login failed');
       }
     } catch (err: any) {
+      console.error('❌ Login error:', {
+        message: err.message,
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        data: err.response?.data,
+        hasError: !!err.response?.data?.error,
+        errorMessage: err.response?.data?.error?.message,
+      });
       setError(
         err.response?.data?.error?.message || 'Login failed. Please check your credentials.'
       );

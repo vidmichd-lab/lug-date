@@ -7,6 +7,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { ProfileHeader } from '../../../components/ProfileHeader';
+import { Icon } from '../../../components/Icon';
 import { useRegistrationStore, useOnboardingStore } from '../../../stores';
 import { calculateAge } from '../DateOfBirthScreen/utils';
 import { INTERESTS_DATA } from '../InterestsScreen/interestsData';
@@ -192,16 +193,7 @@ export const ProfilePreviewScreen: React.FC<ProfilePreviewScreenProps> = ({
 
         <button className={styles.createProfileButton} onClick={handleCreateProfile} type="button">
           <span>{t('registration.profilePreview.createButton')}</span>
-          <svg
-            className={styles.createProfileIcon}
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path d="M12 4L20 12L12 20L4 12L12 4Z" fill="currentColor" />
-          </svg>
+          <Icon name="next" size={24} color="var(--color-inverted, #ffffff)" />
         </button>
       </div>
     </div>

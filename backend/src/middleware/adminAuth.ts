@@ -27,6 +27,9 @@ export const adminAuthMiddleware = (req: Request, res: Response, next: NextFunct
   }
 
   // Log all admin requests for debugging (including analytics)
+  const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+  const userAgent = req.headers['user-agent'] || 'not set';
+
   logger.info({
     type: 'admin_auth_middleware_check',
     path: path,
@@ -34,6 +37,11 @@ export const adminAuthMiddleware = (req: Request, res: Response, next: NextFunct
     method: req.method,
     url: req.url,
     originalUrl: req.originalUrl,
+    origin: req.headers.origin || 'not set',
+    referer: req.headers.referer || 'not set',
+    clientIp,
+    userAgent,
+    timestamp: new Date().toISOString(),
   });
 
   // Get token from Authorization header
@@ -43,23 +51,35 @@ export const adminAuthMiddleware = (req: Request, res: Response, next: NextFunct
   logger.info({
     type: 'admin_auth_check',
     path: req.path || req.url,
+    fullPath: req.originalUrl || req.url,
     method: req.method,
     hasAuthHeader: !!authHeader,
     authHeaderPrefix: authHeader ? authHeader.substring(0, 20) : null,
     origin: req.headers.origin || 'not set',
     referer: req.headers.referer || 'not set',
+    clientIp: req.ip || req.socket.remoteAddress || 'unknown',
+    userAgent: req.headers['user-agent'] || 'not set',
+    timestamp: new Date().toISOString(),
   });
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'not set';
+
     logger.warn({
       type: 'admin_auth_failed',
       reason: 'no_token',
+      httpStatus: 403,
       path: req.path || req.url,
+      fullPath: req.originalUrl || req.url,
       method: req.method,
       origin: req.headers.origin || 'not set',
       referer: req.headers.referer || 'not set',
+      clientIp,
+      userAgent,
       hasAuthHeader: !!authHeader,
-      authHeaderValue: authHeader || 'not set',
+      authHeaderValue: authHeader ? authHeader.substring(0, 50) : 'not set',
+      timestamp: new Date().toISOString(),
     });
     return res.status(403).json({
       success: false,
@@ -76,6 +96,7 @@ export const adminAuthMiddleware = (req: Request, res: Response, next: NextFunct
   logger.info({
     type: 'admin_auth_token_check',
     path: req.path || req.url,
+    fullPath: req.originalUrl || req.url,
     method: req.method,
     tokenLength: token.length,
     expectedTokenLength: ADMIN_TOKEN.length,
@@ -83,19 +104,34 @@ export const adminAuthMiddleware = (req: Request, res: Response, next: NextFunct
     expectedTokenPrefix: ADMIN_TOKEN.substring(0, 10),
     tokensMatch: token === ADMIN_TOKEN,
     hasTokenEnv: !!process.env.ADMIN_TOKEN,
+    origin: req.headers.origin || 'not set',
+    clientIp: req.ip || req.socket.remoteAddress || 'unknown',
+    userAgent: req.headers['user-agent'] || 'not set',
+    timestamp: new Date().toISOString(),
   });
 
   if (token !== ADMIN_TOKEN) {
+    const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'not set';
+
     logger.warn({
       type: 'admin_auth_failed',
       reason: 'invalid_token',
+      httpStatus: 403,
       path: req.path || req.url,
+      fullPath: req.originalUrl || req.url,
       method: req.method,
       tokenLength: token.length,
       expectedTokenLength: ADMIN_TOKEN.length,
       tokenPrefix: token.substring(0, 10),
       expectedTokenPrefix: ADMIN_TOKEN.substring(0, 10),
+      tokensMatch: false,
       origin: req.headers.origin || 'not set',
+      referer: req.headers.referer || 'not set',
+      clientIp,
+      userAgent,
+      hasTokenEnv: !!process.env.ADMIN_TOKEN,
+      timestamp: new Date().toISOString(),
     });
     return res.status(403).json({
       success: false,
@@ -107,6 +143,14 @@ export const adminAuthMiddleware = (req: Request, res: Response, next: NextFunct
   }
 
   // Token is valid, continue
-  logger.info({ type: 'admin_auth_success', path: req.path || req.url });
+  logger.info({
+    type: 'admin_auth_success',
+    path: req.path || req.url,
+    fullPath: req.originalUrl || req.url,
+    method: req.method,
+    clientIp: req.ip || req.socket.remoteAddress || 'unknown',
+    userAgent: req.headers['user-agent'] || 'not set',
+    timestamp: new Date().toISOString(),
+  });
   next();
 };
