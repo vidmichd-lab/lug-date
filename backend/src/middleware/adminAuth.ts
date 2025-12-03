@@ -30,8 +30,11 @@ export const adminAuthMiddleware = (req: Request, res: Response, next: NextFunct
   logger.info({
     type: 'admin_auth_check',
     path: req.path || req.url,
+    method: req.method,
     hasAuthHeader: !!authHeader,
-    authHeaderPrefix: authHeader ? authHeader.substring(0, 10) : null,
+    authHeaderPrefix: authHeader ? authHeader.substring(0, 20) : null,
+    origin: req.headers.origin || 'not set',
+    referer: req.headers.referer || 'not set',
   });
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -39,7 +42,11 @@ export const adminAuthMiddleware = (req: Request, res: Response, next: NextFunct
       type: 'admin_auth_failed',
       reason: 'no_token',
       path: req.path || req.url,
-      headers: { authorization: req.headers.authorization },
+      method: req.method,
+      origin: req.headers.origin || 'not set',
+      referer: req.headers.referer || 'not set',
+      hasAuthHeader: !!authHeader,
+      authHeaderValue: authHeader || 'not set',
     });
     return res.status(403).json({
       success: false,
@@ -66,8 +73,12 @@ export const adminAuthMiddleware = (req: Request, res: Response, next: NextFunct
       type: 'admin_auth_failed',
       reason: 'invalid_token',
       path: req.path || req.url,
+      method: req.method,
       tokenLength: token.length,
       expectedTokenLength: ADMIN_TOKEN.length,
+      tokenPrefix: token.substring(0, 10),
+      expectedTokenPrefix: ADMIN_TOKEN.substring(0, 10),
+      origin: req.headers.origin || 'not set',
     });
     return res.status(403).json({
       success: false,

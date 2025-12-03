@@ -280,10 +280,12 @@ jobs:
               --execution-timeout=30s \
               --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
               --environment NODE_ENV=production \
+              --environment CONTAINER_MODE=true \
+              --environment PORT=8080 \
               --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }} \
               --environment YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT }} \
               --environment YDB_DATABASE=${{ secrets.YDB_DATABASE }} \
-              --environment YC_SERVICE_ACCOUNT_KEY='${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' \
+              --environment YC_SERVICE_ACCOUNT_KEY="${{ secrets.YC_SERVICE_ACCOUNT_KEY }}" \
               --environment YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET }} \
               --environment YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY }} \
               --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY }} \
@@ -305,10 +307,12 @@ jobs:
               --execution-timeout=30s \
               --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
               --environment NODE_ENV=production \
+              --environment CONTAINER_MODE=true \
+              --environment PORT=8080 \
               --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }} \
               --environment YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT }} \
               --environment YDB_DATABASE=${{ secrets.YDB_DATABASE }} \
-              --environment YC_SERVICE_ACCOUNT_KEY='${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' \
+              --environment YC_SERVICE_ACCOUNT_KEY="${{ secrets.YC_SERVICE_ACCOUNT_KEY }}" \
               --environment YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET }} \
               --environment YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY }} \
               --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY }} \

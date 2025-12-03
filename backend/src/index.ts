@@ -33,6 +33,22 @@ import { initObjectStorage } from './services/objectStorage';
 // Initialize error monitoring (Yandex Cloud Logging + Catcher)
 initErrorMonitoring();
 
+// Log startup information (without secrets)
+logger.info({
+  type: 'app_startup',
+  nodeEnv: config.nodeEnv,
+  port: config.port,
+  databaseEndpoint: config.database.endpoint ? 'configured' : 'not configured',
+  databaseName: config.database.database || 'not configured',
+  hasTelegramToken: !!config.telegram.botToken,
+  hasStorageBucket: !!process.env.YANDEX_STORAGE_BUCKET,
+  hasStorageAccessKey: !!process.env.YANDEX_STORAGE_ACCESS_KEY,
+  containerMode: process.env.CONTAINER_MODE === 'true',
+  isServerless: process.env.SERVERLESS === 'true',
+  isMainModule: require.main === module,
+  message: 'Application starting...',
+});
+
 // Initialize YDB connection and run migrations
 // Don't block server startup - allow app to start even if DB is not available
 // This ensures health check endpoint works and container doesn't crash
@@ -124,16 +140,22 @@ app.use(
       // In development, allow all origins for easier testing
       const isDevelopment = config.nodeEnv === 'development';
 
-      // Log CORS decisions for debugging (only in development to avoid log spam)
-      if (origin && isDevelopment) {
-        const isAllowed = !origin || uniqueAllowed.includes(origin) || isDevelopment;
-        logger.info({
-          type: 'cors_check',
-          origin,
-          allowed: isAllowed,
-          allowedOrigins: uniqueAllowed,
-          isDevelopment,
-        });
+      // Log CORS decisions for debugging
+      // In production, log only blocked requests to avoid spam
+      const isAllowed = !origin || uniqueAllowed.includes(origin) || isDevelopment;
+
+      if (origin) {
+        if (isDevelopment || !isAllowed) {
+          logger.info({
+            type: 'cors_check',
+            origin,
+            allowed: isAllowed,
+            allowedOrigins: uniqueAllowed,
+            isDevelopment,
+            hasAllowedOrigins: !!process.env.ALLOWED_ORIGINS,
+            hasAdminOrigins: !!process.env.ADMIN_ORIGINS,
+          });
+        }
       }
 
       // Allow request if no origin (same-origin) or origin is in allowed list
@@ -145,6 +167,10 @@ app.use(
           type: 'cors_blocked',
           origin,
           allowedOrigins: uniqueAllowed,
+          hasAllowedOrigins: !!process.env.ALLOWED_ORIGINS,
+          hasAdminOrigins: !!process.env.ADMIN_ORIGINS,
+          allowedOriginsValue: process.env.ALLOWED_ORIGINS || 'not set',
+          adminOriginsValue: process.env.ADMIN_ORIGINS || 'not set',
         });
         callback(new Error('Not allowed by CORS'));
       }
@@ -299,11 +325,17 @@ process.on('unhandledRejection', async (reason, promise) => {
 export default app;
 
 // Start server for container runtime or local development
-// For Yandex Cloud Functions container runtime, we run: node dist/index.js
-// In this case, require.main === module is true, so server will start
-// For serverless handler (via handler.ts), this file is imported as module,
-// so require.main !== module and server won't start (handler.ts manages it)
-if (require.main === module) {
+// For Yandex Cloud Container, we always start the server (not serverless mode)
+// For serverless handler (via handler.ts), SERVERLESS env is set and server won't start
+// Strategy:
+// 1. If SERVERLESS=true, don't start server (handler.ts manages it)
+// 2. If require.main === module, start server (normal execution)
+// 3. If require.main !== module but SERVERLESS is not set, start server anyway (container fallback)
+const isServerless = process.env.SERVERLESS === 'true';
+const isMainModule = require.main === module;
+const shouldStartServer = !isServerless && (isMainModule || process.env.CONTAINER_MODE === 'true');
+
+if (shouldStartServer) {
   // Ensure server starts even if there are async initialization errors
   const server = app.listen(PORT, '0.0.0.0', () => {
     logger.info({
@@ -311,6 +343,9 @@ if (require.main === module) {
       port: PORT,
       environment: config.nodeEnv,
       database: config.database.database || 'not configured',
+      isMainModule,
+      isServerless,
+      containerMode: process.env.CONTAINER_MODE === 'true',
       message: `Backend server running on port ${PORT} in ${config.nodeEnv} mode`,
     });
   });
@@ -341,6 +376,14 @@ if (require.main === module) {
       logger.info({ type: 'server_closed', message: 'Server closed' });
       process.exit(0);
     });
+  });
+} else {
+  logger.info({
+    type: 'server_not_started',
+    isServerless,
+    isMainModule,
+    reason: isServerless ? 'serverless_mode' : 'not_main_module',
+    message: 'Server not started (serverless mode or not main module)',
   });
 }
 // Deployment trigger

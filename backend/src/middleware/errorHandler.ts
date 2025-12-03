@@ -12,14 +12,30 @@ export interface AppError extends Error {
   isOperational?: boolean;
 }
 
-export function errorHandler(
-  err: AppError,
-  req: Request,
-  res: Response,
-  _next: NextFunction
-) {
+export function errorHandler(err: AppError, req: Request, res: Response, _next: NextFunction) {
   const statusCode = err.statusCode || 500;
   const isOperational = err.isOperational !== false;
+
+  // Handle CORS errors specifically
+  if (err.message === 'Not allowed by CORS') {
+    logError(err, {
+      method: req.method,
+      url: req.url,
+      statusCode: 403,
+      isOperational: true,
+      type: 'cors_error',
+      origin: req.headers.origin || 'not set',
+    });
+
+    return res.status(403).json({
+      success: false,
+      error: {
+        message: 'Origin not allowed by CORS policy',
+        code: 'CORS_ERROR',
+        origin: req.headers.origin || 'not set',
+      },
+    });
+  }
 
   // Log error
   logError(err, {
@@ -52,8 +68,9 @@ export function errorHandler(
     success: false,
     error: {
       message: err.message || 'Internal server error',
+      code:
+        statusCode === 403 ? 'FORBIDDEN' : statusCode === 401 ? 'UNAUTHORIZED' : 'INTERNAL_ERROR',
       ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
     },
   });
 }
-

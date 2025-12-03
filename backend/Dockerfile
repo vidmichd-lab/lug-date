@@ -59,6 +59,7 @@ RUN mkdir -p /function/keys
 # Переменные окружения
 ENV NODE_ENV=production
 ENV PORT=8080
+ENV CONTAINER_MODE=true
 
 WORKDIR /function/backend
 

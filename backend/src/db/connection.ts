@@ -414,11 +414,28 @@ export async function initYDB(): Promise<void> {
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    // Don't throw - allow app to start without DB in development
-    if (config.nodeEnv === 'production') {
-      throw error;
+    // Don't throw - allow app to start without DB even in production
+    // Health check endpoint will show DB status
+    // This prevents container from crashing and allows debugging
+    logger.warn({
+      type: 'ydb_init_skipped',
+      reason: 'connection_failed_but_continuing',
+      environment: config.nodeEnv,
+      message: 'YDB connection failed, but server will continue. Health check will show DB status.',
+    });
+
+    // Try to send alert about DB connection failure
+    try {
+      const { sendCriticalAlert } = await import('../alerts');
+      sendCriticalAlert(
+        'YDB Connection Failed',
+        error instanceof Error ? error : new Error(String(error))
+      ).catch(() => {
+        // Ignore alert errors
+      });
+    } catch {
+      // Ignore import errors
     }
-    logger.warn({ type: 'ydb_init_skipped', reason: 'development_mode_allows_start_without_db' });
   }
 }
 
