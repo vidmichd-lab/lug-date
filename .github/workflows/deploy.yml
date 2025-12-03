@@ -3,8 +3,7 @@ name: Deploy to Yandex Cloud
 on:
   push:
     branches:
-      - main # Production
-      - develop # Staging
+      - main
   pull_request:
     branches:
       - main
@@ -42,614 +41,10 @@ jobs:
       - name: Build all packages
         run: npm run build --workspace=frontend --workspace=backend --workspace=bot --workspace=admin
 
-  deploy-staging:
-    name: Deploy to Staging
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/develop'
-    permissions:
-      contents: read
-      actions: read
-      id-token: write
-    environment:
-      name: staging
-      url: https://staging-api.yourdomain.com
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Get changed files
-        id: changed-files
-        uses: tj-actions/changed-files@v40
-        with:
-          files: |
-            admin/**
-            frontend/**
-            backend/**
-            bot/**
-            shared/**
-
-      - name: Check if force deploy all
-        id: force-deploy
-        run: |
-          # Проверяем сообщение коммита на наличие флагов принудительного деплоя
-          COMMIT_MSG=$(git log -1 --pretty=%B)
-          # Деплоим все при ручном запуске workflow
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "force_all=true" >> $GITHUB_OUTPUT
-            echo "🚀 Manual trigger detected, deploying all components"
-          # Если обнаружен флаг принудительного деплоя в сообщении коммита
-          elif echo "$COMMIT_MSG" | grep -qiE "(force|deploy all|redeploy|full deploy)"; then
-            echo "force_all=true" >> $GITHUB_OUTPUT
-            echo "🚀 Force deploy all components detected"
-          else
-            echo "force_all=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build shared package first
-        run: npm run build --workspace=shared
-
-      - name: Install Yandex Cloud CLI
-        run: |
-          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
-          export PATH=$PATH:$HOME/yandex-cloud/bin
-          echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
-
-      - name: Configure Yandex Cloud CLI
-        env:
-          YC_SERVICE_ACCOUNT_KEY: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
-          YC_CLOUD_ID: ${{ secrets.YC_CLOUD_ID }}
-          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
-        run: |
-          echo "$YC_SERVICE_ACCOUNT_KEY" > /tmp/yc-sa-key.json
-          yc config profile create sa-profile || true
-          yc config set service-account-key /tmp/yc-sa-key.json
-          if [ -n "$YC_CLOUD_ID" ]; then
-            yc config set cloud-id "$YC_CLOUD_ID" || true
-          fi
-          if [ -n "$YC_FOLDER_ID" ]; then
-            yc config set folder-id "$YC_FOLDER_ID" || true
-          fi
-
-      - name: Get Backend URL
-        if: steps.changed-files.outputs.frontend == 'true' || steps.changed-files.outputs.backend == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
-        env:
-          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
-          YC_CONTAINER_ID_STAGING: ${{ secrets.YC_CONTAINER_ID_STAGING }}
-          ADMIN_CHANGED: ${{ steps.changed-files.outputs.admin == 'true' }}
-          BACKEND_CHANGED: ${{ steps.changed-files.outputs.backend == 'true' }}
-          SHARED_CHANGED: ${{ steps.changed-files.outputs.shared == 'true' }}
-          FORCE_ALL: ${{ steps.force-deploy.outputs.force_all == 'true' }}
-        run: |
-          export PATH=$PATH:$HOME/yandex-cloud/bin
-
-          echo "🔍 Getting backend URL..."
-          echo "YC_CONTAINER_ID_STAGING: ${YC_CONTAINER_ID_STAGING:0:20}..."
-          echo "YC_FOLDER_ID: ${YC_FOLDER_ID}"
-
-          if [ -n "${YC_CONTAINER_ID_STAGING}" ]; then
-            BACKEND_URL=$(yc serverless container get --id="${YC_CONTAINER_ID_STAGING}" --format json | jq -r '.url')
-            echo "✅ Got backend URL from container ID: ${BACKEND_URL}"
-          elif [ -n "${YC_FOLDER_ID}" ]; then
-            BACKEND_URL=$(yc serverless container get --name=lug-date-backend-staging --folder-id="${YC_FOLDER_ID}" --format json | jq -r '.url')
-            echo "✅ Got backend URL from folder ID: ${BACKEND_URL}"
-          else
-            echo "⚠️  WARNING: Cannot get backend URL - neither YC_CONTAINER_ID_STAGING nor YC_FOLDER_ID is set"
-            echo "This step will continue, but downstream steps that require BACKEND_URL may fail."
-            echo "Please check:"
-            echo "  1. YC_CONTAINER_ID_STAGING or YC_FOLDER_ID is set in GitHub Secrets"
-            echo "  2. Backend container exists in Yandex Cloud"
-            echo "  3. Service account has permissions to read container info"
-            # Don't exit - let downstream steps handle the missing BACKEND_URL
-          fi
-
-          if [ -n "${BACKEND_URL}" ] && [ "${BACKEND_URL}" != "null" ]; then
-            # Remove trailing slash from BACKEND_URL
-            BACKEND_URL="${BACKEND_URL%/}"
-            echo "✅ Backend URL: ${BACKEND_URL}"
-            echo "BACKEND_URL=${BACKEND_URL}" >> $GITHUB_ENV
-            
-            # Обновляем config.js только если нужен для admin (admin/backend/shared изменились)
-            if [ "${ADMIN_CHANGED}" == "true" ] || [ "${BACKEND_CHANGED}" == "true" ] || [ "${SHARED_CHANGED}" == "true" ] || [ "${FORCE_ALL}" == "true" ]; then
-              printf '%s\n' \
-                '// Runtime configuration for admin panel' \
-                '// This file is loaded before the app starts' \
-                '// You can override API URL by setting window.ADMIN_CONFIG before this script loads' \
-                'window.ADMIN_CONFIG = window.ADMIN_CONFIG || {' \
-                '  // Backend URL - контейнер Yandex Serverless Containers' \
-                "  API_URL: '${BACKEND_URL}'" \
-                '};' > admin/public/config.js
-              
-              echo "✅ Updated admin config.js with backend URL: ${BACKEND_URL}"
-              
-              # Проверяем, что файл создан правильно
-              echo "📄 Config.js content:"
-              cat admin/public/config.js
-            fi
-          else
-            echo "⚠️  WARNING: Backend URL not available! Frontend and admin panel may not work."
-            echo "This step will continue, but downstream steps that require BACKEND_URL may fail."
-            echo "Please check:"
-            echo "  1. YC_CONTAINER_ID_STAGING or YC_FOLDER_ID is set in GitHub Secrets"
-            echo "  2. Backend container exists in Yandex Cloud"
-            echo "  3. Service account has permissions to read container info"
-            # Don't exit - let downstream steps handle the missing BACKEND_URL
-          fi
-
-      - name: Build frontend
-        if: steps.changed-files.outputs.frontend == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
-        env:
-          VITE_API_URL: ${{ env.BACKEND_URL }}
-        run: NODE_ENV=development npm run build --workspace=frontend
-
-      - name: Build backend
-        if: steps.changed-files.outputs.backend == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
-        run: NODE_ENV=development npm run build --workspace=backend
-
-      - name: Build bot
-        if: steps.changed-files.outputs.bot == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
-        run: NODE_ENV=development npm run build --workspace=bot
-
-      - name: Build admin
-        if: steps.changed-files.outputs.admin == 'true' || steps.changed-files.outputs.shared == 'true' || steps.changed-files.outputs.backend == 'true' || steps.force-deploy.outputs.force_all == 'true'
-        run: NODE_ENV=development npm run build --workspace=admin
-
-      - name: Run database migrations
-        run: |
-          export PATH=$PATH:$HOME/yandex-cloud/bin
-          export YC_SERVICE_ACCOUNT_KEY_FILE=/tmp/yc-sa-key.json
-          NODE_ENV=development YDB_ENDPOINT_DEV=${{ secrets.YDB_ENDPOINT_DEV }} YDB_DATABASE_DEV=${{ secrets.YDB_DATABASE_DEV }} npm run migrate || echo "⚠️ Migrations skipped"
-        continue-on-error: true
-
-      - name: Login to Yandex Container Registry
-        env:
-          YC_SERVICE_ACCOUNT_KEY: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
-        run: |
-          echo "$YC_SERVICE_ACCOUNT_KEY" | docker login \
-            --username json_key \
-            --password-stdin \
-            cr.yandex
-
-      - name: Build and push Docker image
-        if: steps.changed-files.outputs.backend == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
-        run: |
-          export PATH=$PATH:$HOME/yandex-cloud/bin
-
-          IMAGE_TAG="${GITHUB_SHA:0:7}"
-          IMAGE_NAME="cr.yandex/${{ secrets.YC_REGISTRY_ID }}/lug-date-backend"
-
-          # Собираем образ
-          docker build \
-            -t ${IMAGE_NAME}:${IMAGE_TAG} \
-            -t ${IMAGE_NAME}:latest \
-            -f backend/Dockerfile \
-            .
-
-          # Пушим образ
-          docker push ${IMAGE_NAME}:${IMAGE_TAG}
-          docker push ${IMAGE_NAME}:latest
-
-          # Сохраняем для деплоя
-          echo "IMAGE_ID=${IMAGE_NAME}:${IMAGE_TAG}" >> $GITHUB_ENV
-
-      - name: Create container if not exists
-        if: steps.changed-files.outputs.backend == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
-        env:
-          YC_SERVICE_ACCOUNT_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
-          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
-        run: |
-          export PATH=$PATH:$HOME/yandex-cloud/bin
-
-          # Создаем контейнер, если его еще нет
-          CONTAINER_CREATED=0
-          if [ -n "${YC_FOLDER_ID}" ]; then
-            yc serverless container create \
-              --name=lug-date-backend-staging \
-              --folder-id="${YC_FOLDER_ID}" && CONTAINER_CREATED=1 || echo "Container already exists"
-          else
-            yc serverless container create --name=lug-date-backend-staging && CONTAINER_CREATED=1 || echo "Container already exists"
-          fi
-
-          # Устанавливаем service account, если контейнер был только что создан
-          if [ "${CONTAINER_CREATED}" -eq 1 ] && [ -n "${YC_SERVICE_ACCOUNT_ID}" ]; then
-            if [ -n "${YC_FOLDER_ID}" ]; then
-              yc serverless container set-access-bindings \
-                --name=lug-date-backend-staging \
-                --folder-id="${YC_FOLDER_ID}" \
-                --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
-                --role=serverless.containers.invoker || true
-            else
-              yc serverless container set-access-bindings \
-                --name=lug-date-backend-staging \
-                --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
-                --role=serverless.containers.invoker || true
-            fi
-          fi
-
-      - name: Deploy Backend
-        if: steps.changed-files.outputs.backend == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
-        env:
-          YC_SERVICE_ACCOUNT_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
-          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
-          YC_CONTAINER_ID_STAGING: ${{ secrets.YC_CONTAINER_ID_STAGING }}
-          ADMIN_USERNAME_DEV: ${{ secrets.ADMIN_USERNAME_DEV }}
-          ADMIN_PASSWORD_DEV: ${{ secrets.ADMIN_PASSWORD_DEV }}
-          ADMIN_TOKEN_DEV: ${{ secrets.ADMIN_TOKEN_DEV }}
-        run: |
-          export PATH=$PATH:$HOME/yandex-cloud/bin
-
-          # Set admin credentials with fallback values
-          ADMIN_USERNAME="${ADMIN_USERNAME_DEV:-admin}"
-          ADMIN_PASSWORD="${ADMIN_PASSWORD_DEV:-admin123}"
-          ADMIN_TOKEN="${ADMIN_TOKEN_DEV:-admin-secret-token-change-in-production}"
-
-          # Используем container-id если указан, иначе container-name с folder-id
-          if [ -n "${YC_CONTAINER_ID_STAGING}" ]; then
-            yc serverless container revision deploy \
-              --container-id="${YC_CONTAINER_ID_STAGING}" \
-              --image="${{ env.IMAGE_ID }}" \
-              --memory=512m \
-              --cores=1 \
-              --execution-timeout=30s \
-              --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
-              --environment NODE_ENV=development \
-              --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }} \
-              --environment YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_DEV }} \
-              --environment YDB_DATABASE=${{ secrets.YDB_DATABASE_DEV }} \
-              --environment YC_SERVICE_ACCOUNT_KEY='${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' \
-              --environment YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_DEV }} \
-              --environment YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_DEV }} \
-              --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_DEV }} \
-              --environment TELEGRAM_ALERT_ENABLED=true \
-              --environment TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
-              --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }} \
-              --environment ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS_DEV }} \
-              --environment ADMIN_ORIGINS=${{ secrets.ADMIN_ORIGINS_DEV }} \
-              --environment ADMIN_USERNAME="${ADMIN_USERNAME}" \
-              --environment ADMIN_PASSWORD="${ADMIN_PASSWORD}" \
-              --environment ADMIN_TOKEN="${ADMIN_TOKEN}"
-          elif [ -n "${YC_FOLDER_ID}" ]; then
-            yc serverless container revision deploy \
-              --container-name=lug-date-backend-staging \
-              --folder-id="${YC_FOLDER_ID}" \
-              --image="${{ env.IMAGE_ID }}" \
-              --memory=512m \
-              --cores=1 \
-              --execution-timeout=30s \
-              --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
-              --environment NODE_ENV=development \
-              --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }} \
-              --environment YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_DEV }} \
-              --environment YDB_DATABASE=${{ secrets.YDB_DATABASE_DEV }} \
-              --environment YC_SERVICE_ACCOUNT_KEY='${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' \
-              --environment YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_DEV }} \
-              --environment YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_DEV }} \
-              --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_DEV }} \
-              --environment TELEGRAM_ALERT_ENABLED=true \
-              --environment TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
-              --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }} \
-              --environment ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS_DEV }} \
-              --environment ADMIN_ORIGINS=${{ secrets.ADMIN_ORIGINS_DEV }} \
-              --environment ADMIN_USERNAME="${ADMIN_USERNAME}" \
-              --environment ADMIN_PASSWORD="${ADMIN_PASSWORD}" \
-              --environment ADMIN_TOKEN="${ADMIN_TOKEN}"
-          else
-            echo "Error: Either YC_CONTAINER_ID_STAGING or YC_FOLDER_ID must be set"
-            exit 1
-          fi
-
-      - name: Get Backend URL
-        if: steps.changed-files.outputs.backend == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
-        env:
-          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
-          YC_CONTAINER_ID_STAGING: ${{ secrets.YC_CONTAINER_ID_STAGING }}
-        run: |
-          export PATH=$PATH:$HOME/yandex-cloud/bin
-
-          if [ -n "${YC_CONTAINER_ID_STAGING}" ]; then
-            BACKEND_URL=$(yc serverless container get --id="${YC_CONTAINER_ID_STAGING}" --format json | jq -r '.url')
-          elif [ -n "${YC_FOLDER_ID}" ]; then
-            BACKEND_URL=$(yc serverless container get --name=lug-date-backend-staging --folder-id="${YC_FOLDER_ID}" --format json | jq -r '.url')
-          else
-            echo "❌ ERROR: Cannot get backend URL - neither YC_CONTAINER_ID_STAGING nor YC_FOLDER_ID is set"
-            echo "Please check:"
-            echo "  1. YC_CONTAINER_ID_STAGING or YC_FOLDER_ID is set in GitHub Secrets"
-            echo "  2. Backend container exists in Yandex Cloud"
-            echo "  3. Service account has permissions to read container info"
-            exit 1
-          fi
-
-          if [ -n "${BACKEND_URL}" ] && [ "${BACKEND_URL}" != "null" ]; then
-            # Remove trailing slash from BACKEND_URL
-            BACKEND_URL="${BACKEND_URL%/}"
-            echo "✅ Backend deployed: ${BACKEND_URL}"
-            echo "BACKEND_URL=${BACKEND_URL}" >> $GITHUB_ENV
-            echo "🔍 Health check: ${BACKEND_URL}/health"
-          else
-            echo "❌ ERROR: Backend URL is empty or null"
-            echo "Please check:"
-            echo "  1. Backend container exists in Yandex Cloud"
-            echo "  2. Container has been deployed successfully"
-            echo "  3. Service account has permissions to read container info"
-            exit 1
-          fi
-
-      - name: Deploy Frontend
-        if: steps.changed-files.outputs.frontend == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
-        env:
-          YANDEX_STORAGE_BUCKET: ${{ secrets.YANDEX_STORAGE_BUCKET_DEV }}
-        run: |
-          export PATH=$PATH:$HOME/yandex-cloud/bin
-
-          if [ -z "${YANDEX_STORAGE_BUCKET}" ]; then
-            echo "❌ Error: YANDEX_STORAGE_BUCKET_DEV secret is not set"
-            echo "Please set YANDEX_STORAGE_BUCKET_DEV in GitHub Secrets for staging environment"
-            exit 1
-          fi
-
-          echo "📦 Deploying frontend to bucket: ${YANDEX_STORAGE_BUCKET}"
-          yc storage s3 cp \
-            frontend/dist/ \
-            s3://${YANDEX_STORAGE_BUCKET}/ \
-            --recursive
-
-      - name: Install AWS CLI
-        if: steps.changed-files.outputs.admin == 'true' || steps.changed-files.outputs.shared == 'true' || steps.changed-files.outputs.backend == 'true' || steps.force-deploy.outputs.force_all == 'true'
-        run: |
-          pip3 install awscli --quiet
-
-      - name: Deploy Admin
-        if: steps.changed-files.outputs.admin == 'true' || steps.changed-files.outputs.shared == 'true' || steps.changed-files.outputs.backend == 'true' || steps.force-deploy.outputs.force_all == 'true'
-        env:
-          ADMIN_STORAGE_BUCKET: ${{ secrets.ADMIN_STORAGE_BUCKET_DEV }}
-          ADMIN_STORAGE_ACCESS_KEY: ${{ secrets.ADMIN_STORAGE_ACCESS_KEY_DEV }}
-          ADMIN_STORAGE_SECRET_KEY: ${{ secrets.ADMIN_STORAGE_SECRET_KEY_DEV }}
-          BACKEND_URL: ${{ env.BACKEND_URL }}
-          BACKEND_CHANGED: ${{ steps.changed-files.outputs.backend == 'true' }}
-          ADMIN_CHANGED: ${{ steps.changed-files.outputs.admin == 'true' }}
-        run: |
-          export PATH=$PATH:$HOME/yandex-cloud/bin
-
-          # Проверяем, что BACKEND_URL доступен, если admin развертывается
-          # "Get Backend URL" step должен был выполниться перед этим шагом
-          if [ "${ADMIN_CHANGED}" == "true" ] && [ -z "${BACKEND_URL}" ]; then
-            echo "❌ ERROR: Admin is being deployed but BACKEND_URL is not available!"
-            echo "The 'Get Backend URL' step should have run and set BACKEND_URL."
-            echo "This indicates a workflow configuration issue or the step failed silently."
-            echo "Please check:"
-            echo "  1. 'Get Backend URL' step executed successfully"
-            echo "  2. Backend container exists and is accessible"
-            echo "  3. YC_CONTAINER_ID_STAGING or YC_FOLDER_ID is set in GitHub Secrets"
-            exit 1
-          fi
-
-          # Проверка обязательных переменных
-          if [ -z "${ADMIN_STORAGE_BUCKET}" ]; then
-            echo "❌ Error: ADMIN_STORAGE_BUCKET_DEV secret is not set"
-            echo "Please set ADMIN_STORAGE_BUCKET_DEV in GitHub Secrets for staging environment"
-            exit 1
-          fi
-
-          if [ -z "${ADMIN_STORAGE_ACCESS_KEY}" ]; then
-            echo "❌ Error: ADMIN_STORAGE_ACCESS_KEY_DEV secret is not set"
-            echo "Please set ADMIN_STORAGE_ACCESS_KEY_DEV in GitHub Secrets for staging environment"
-            exit 1
-          fi
-
-          if [ -z "${ADMIN_STORAGE_SECRET_KEY}" ]; then
-            echo "❌ Error: ADMIN_STORAGE_SECRET_KEY_DEV secret is not set"
-            echo "Please set ADMIN_STORAGE_SECRET_KEY_DEV in GitHub Secrets for staging environment"
-            exit 1
-          fi
-
-          # Настройка AWS CLI для Yandex Object Storage
-          export AWS_ACCESS_KEY_ID="${ADMIN_STORAGE_ACCESS_KEY}"
-          export AWS_SECRET_ACCESS_KEY="${ADMIN_STORAGE_SECRET_KEY}"
-          export AWS_DEFAULT_REGION=ru-central1
-
-          echo "📦 Deploying admin to bucket: ${ADMIN_STORAGE_BUCKET}"
-          echo "🔑 Using Access Key: ${ADMIN_STORAGE_ACCESS_KEY:0:10}..."
-
-          # Проверка доступа к bucket перед деплоем
-          echo "🔍 Checking bucket access..."
-          if ! aws --endpoint-url=https://storage.yandexcloud.net s3 ls s3://${ADMIN_STORAGE_BUCKET}/ 2>&1; then
-            echo "❌ Error: Cannot access bucket ${ADMIN_STORAGE_BUCKET}"
-            echo "Please check:"
-            echo "  1. Bucket name is correct: ${ADMIN_STORAGE_BUCKET}"
-            echo "  2. Access Key and Secret Key are correct"
-            echo "  3. Service account has permissions to access this bucket"
-            exit 1
-          fi
-
-          # Проверяем и обновляем config.js с актуальным BACKEND_URL
-          if [ -n "${BACKEND_URL}" ] && [ "${BACKEND_URL}" != "null" ]; then
-            # Убеждаемся, что config.js содержит актуальный BACKEND_URL
-            echo "🔍 Checking config.js for current backend URL: ${BACKEND_URL}"
-            
-            # Обновляем admin/public/config.js с актуальным URL
-            printf '%s\n' \
-              '// Runtime configuration for admin panel' \
-              '// This file is loaded before the app starts' \
-              '// You can override API URL by setting window.ADMIN_CONFIG before this script loads' \
-              'window.ADMIN_CONFIG = window.ADMIN_CONFIG || {' \
-              '  // Backend URL - контейнер Yandex Serverless Containers' \
-              "  API_URL: '${BACKEND_URL}'" \
-              '};' > admin/public/config.js
-            
-            echo "✅ Updated admin/public/config.js with backend URL: ${BACKEND_URL}"
-            
-            # Копируем в dist если его там нет или обновляем существующий
-            cp admin/public/config.js admin/dist/config.js
-            echo "✅ Updated admin/dist/config.js with backend URL: ${BACKEND_URL}"
-            
-            echo "📄 Config.js content:"
-            cat admin/dist/config.js
-          else
-            # Если BACKEND_URL не установлен, проверяем существующий config.js
-            # Если backend был развернут в этом запуске, BACKEND_URL должен быть доступен
-            if [ "${BACKEND_CHANGED}" == "true" ]; then
-              echo "❌ ERROR: Backend was deployed but BACKEND_URL is not available!"
-              echo "This indicates a deployment failure. Please check:"
-              echo "  1. Backend deployment completed successfully"
-              echo "  2. 'Get Backend URL' step ran and set BACKEND_URL"
-              echo "  3. Backend container exists and is accessible"
-              exit 1
-            fi
-            
-            # Если backend не развертывался, можно использовать существующий config.js
-            if [ ! -f "admin/dist/config.js" ]; then
-              echo "⚠️  Warning: config.js not found in admin/dist, checking if it exists in admin/public..."
-              if [ -f "admin/public/config.js" ]; then
-                echo "📋 Config.js exists in public, copying to dist..."
-                cp admin/public/config.js admin/dist/config.js
-                echo "⚠️  Warning: Using existing config.js without current BACKEND_URL. This may contain stale backend URL."
-              else
-                echo "❌ ERROR: config.js not found in admin/public either!"
-                echo "config.js is required for admin panel to work."
-                echo "Please ensure:"
-                echo "  1. Backend is deployed and BACKEND_URL is available, OR"
-                echo "  2. admin/public/config.js exists with a valid backend URL"
-                exit 1
-              fi
-            else
-              echo "✅ Config.js found in admin/dist"
-              echo "⚠️  Warning: BACKEND_URL not set, using existing config.js which may contain stale backend URL."
-            fi
-            echo "📄 Config.js content:"
-            cat admin/dist/config.js
-          fi
-
-          # Финальная проверка: убеждаемся, что config.js существует перед деплоем
-          if [ ! -f "admin/dist/config.js" ]; then
-            echo "❌ ERROR: config.js validation failed - file does not exist in admin/dist/"
-            echo "Deployment aborted to prevent incomplete admin panel deployment."
-            exit 1
-          fi
-
-          # Проверяем, что config.js не пустой
-          if [ ! -s "admin/dist/config.js" ]; then
-            echo "❌ ERROR: config.js is empty!"
-            echo "Deployment aborted to prevent incomplete admin panel deployment."
-            exit 1
-          fi
-
-          # Деплой admin панели
-          aws --endpoint-url=https://storage.yandexcloud.net s3 sync \
-            admin/dist/ \
-            s3://${ADMIN_STORAGE_BUCKET}/ \
-            --delete
-
-          echo "✅ Admin deployed to: https://${ADMIN_STORAGE_BUCKET}.website.yandexcloud.net"
-
-          # Проверяем, что config.js задеплоился
-          echo "🔍 Verifying config.js deployment..."
-          CONFIG_URL="https://${ADMIN_STORAGE_BUCKET}.website.yandexcloud.net/config.js"
-          if curl -f -s "${CONFIG_URL}" > /dev/null 2>&1; then
-            echo "✅ Config.js is accessible at: ${CONFIG_URL}"
-            echo "📄 Deployed config.js content:"
-            curl -s "${CONFIG_URL}"
-          else
-            echo "⚠️  Warning: Could not verify config.js deployment"
-          fi
-
-      - name: Deploy Bot
-        if: steps.changed-files.outputs.bot == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
-        env:
-          YC_BOT_FUNCTION_ID: ${{ secrets.YC_BOT_FUNCTION_ID_STAGING }}
-        run: |
-          export PATH=$PATH:$HOME/yandex-cloud/bin
-
-          # Check if function ID is set
-          if [ -z "${YC_BOT_FUNCTION_ID}" ]; then
-            echo "⚠️  Warning: YC_BOT_FUNCTION_ID_STAGING is not set in GitHub Secrets"
-            echo "Skipping bot deployment. To deploy bot, add YC_BOT_FUNCTION_ID_STAGING to GitHub Secrets."
-            exit 0
-          fi
-
-          # Check bot/dist size
-          BOT_SIZE=$(du -sb bot/dist | cut -f1)
-          MAX_SIZE=$((3500000))
-
-          if [ $BOT_SIZE -gt $MAX_SIZE ]; then
-            echo "❌ Bot dist size ($BOT_SIZE bytes) exceeds 3.5 MB limit"
-            exit 1
-          fi
-
-          echo "🤖 Deploying bot to function: ${YC_BOT_FUNCTION_ID}"
-          yc serverless function version create \
-            --function-id "${YC_BOT_FUNCTION_ID}" \
-            --runtime nodejs18 \
-            --entrypoint index.handler \
-            --memory 128m \
-            --execution-timeout 10s \
-            --source-path bot/dist \
-            --environment NODE_ENV=development \
-            --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }}
-
-          echo "✅ Bot deployed successfully"
-
-      - name: Health check
-        if: steps.changed-files.outputs.backend == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
-        env:
-          BACKEND_URL: ${{ env.BACKEND_URL }}
-        run: |
-          echo "🔍 Performing health checks..."
-
-          # Check backend health if it was deployed
-          if [ -n "${BACKEND_URL}" ] && [ "${BACKEND_URL}" != "null" ]; then
-            echo "⏳ Checking backend health at ${BACKEND_URL}/health..."
-            echo "🔍 Backend URL: ${BACKEND_URL}"
-            
-            # Wait longer for container to start (Yandex Cloud containers can take 30-60 seconds)
-            echo "⏳ Waiting 30 seconds for container to start..."
-            sleep 30
-            
-            HEALTH_CHECK_PASSED=0
-            for i in {1..20}; do
-              echo "⏳ Attempt $i/20: Checking ${BACKEND_URL}/health..."
-              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "${BACKEND_URL}/health" || echo "000")
-              
-              if [ "${HTTP_CODE}" = "200" ]; then
-                echo "✅ Backend health check passed! (HTTP ${HTTP_CODE})"
-                HEALTH_CHECK_PASSED=1
-                break
-              else
-                echo "⏳ Attempt $i/20: Backend returned HTTP ${HTTP_CODE}, waiting..."
-                sleep 5
-              fi
-            done
-            
-            if [ "${HEALTH_CHECK_PASSED}" -eq 0 ]; then
-              echo "❌ ERROR: Backend health check failed after 20 attempts"
-              echo "Backend may not be responding correctly at ${BACKEND_URL}/health"
-              echo "Please check:"
-              echo "  1. Container logs in Yandex Cloud Console"
-              echo "  2. Container is running and healthy"
-              echo "  3. Environment variables are set correctly"
-              echo "  4. Database connection is working"
-              exit 1
-            fi
-          else
-            echo "⚠️  Backend URL not available, skipping backend health check"
-          fi
-
-          echo "✅ Staging deployment completed successfully"
-
-  deploy-production:
+  deploy:
     name: Deploy to Production
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     permissions:
       contents: read
       actions: read
@@ -725,75 +120,117 @@ jobs:
           fi
 
       - name: Get Backend URL
-        if: steps.changed-files.outputs.frontend == 'true' || steps.changed-files.outputs.backend == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
+        if: steps.changed-files.outputs.frontend == 'true' || steps.changed-files.outputs.backend == 'true' || steps.changed-files.outputs.shared == 'true' || steps.changed-files.outputs.admin == 'true' || steps.force-deploy.outputs.force_all == 'true'
         env:
           YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
-          YC_CONTAINER_ID_PROD: ${{ secrets.YC_CONTAINER_ID_PROD }}
+          YC_CONTAINER_ID: ${{ secrets.YC_CONTAINER_ID }}
           ADMIN_CHANGED: ${{ steps.changed-files.outputs.admin == 'true' }}
           BACKEND_CHANGED: ${{ steps.changed-files.outputs.backend == 'true' }}
+          FRONTEND_CHANGED: ${{ steps.changed-files.outputs.frontend == 'true' }}
           SHARED_CHANGED: ${{ steps.changed-files.outputs.shared == 'true' }}
           FORCE_ALL: ${{ steps.force-deploy.outputs.force_all == 'true' }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
 
           echo "🔍 Getting backend URL..."
-          echo "YC_CONTAINER_ID_PROD: ${YC_CONTAINER_ID_PROD:0:20}..."
+          echo "YC_CONTAINER_ID: ${YC_CONTAINER_ID:0:20}..."
           echo "YC_FOLDER_ID: ${YC_FOLDER_ID}"
 
-          if [ -n "${YC_CONTAINER_ID_PROD}" ]; then
-            BACKEND_URL=$(yc serverless container get --id="${YC_CONTAINER_ID_PROD}" --format json | jq -r '.url')
-            echo "✅ Got backend URL from container ID: ${BACKEND_URL}"
-          elif [ -n "${YC_FOLDER_ID}" ]; then
-            BACKEND_URL=$(yc serverless container get --name=lug-date-backend-prod --folder-id="${YC_FOLDER_ID}" --format json | jq -r '.url')
-            echo "✅ Got backend URL from folder ID: ${BACKEND_URL}"
-          else
-            echo "⚠️  WARNING: Cannot get backend URL - neither YC_CONTAINER_ID_PROD nor YC_FOLDER_ID is set"
-            echo "This step will continue, but downstream steps that require BACKEND_URL may fail."
-            echo "Please check:"
-            echo "  1. YC_CONTAINER_ID_PROD or YC_FOLDER_ID is set in GitHub Secrets"
-            echo "  2. Backend container exists in Yandex Cloud"
-            echo "  3. Service account has permissions to read container info"
-            # Don't exit - let downstream steps handle the missing BACKEND_URL
+          # Determine if BACKEND_URL is required for this deployment
+          BACKEND_URL_REQUIRED=false
+          if [ "${FRONTEND_CHANGED}" == "true" ] || [ "${ADMIN_CHANGED}" == "true" ] || [ "${FORCE_ALL}" == "true" ]; then
+            BACKEND_URL_REQUIRED=true
           fi
 
-          if [ -n "${BACKEND_URL}" ] && [ "${BACKEND_URL}" != "null" ]; then
-            # Remove trailing slash from BACKEND_URL
-            BACKEND_URL="${BACKEND_URL%/}"
-            echo "✅ Backend URL: ${BACKEND_URL}"
-            echo "BACKEND_URL=${BACKEND_URL}" >> $GITHUB_ENV
-            
-            # Обновляем config.js только если нужен для admin (admin/backend/shared изменились)
-            if [ "${ADMIN_CHANGED}" == "true" ] || [ "${BACKEND_CHANGED}" == "true" ] || [ "${SHARED_CHANGED}" == "true" ] || [ "${FORCE_ALL}" == "true" ]; then
-              printf '%s\n' \
-                '// Runtime configuration for admin panel' \
-                '// This file is loaded before the app starts' \
-                '// You can override API URL by setting window.ADMIN_CONFIG before this script loads' \
-                'window.ADMIN_CONFIG = window.ADMIN_CONFIG || {' \
-                '  // Backend URL - контейнер Yandex Serverless Containers' \
-                "  API_URL: '${BACKEND_URL}'" \
-                '};' > admin/public/config.js
-              
-              echo "✅ Updated admin config.js with backend URL: ${BACKEND_URL}"
-              
-              # Проверяем, что файл создан правильно
-              echo "📄 Config.js content:"
-              cat admin/public/config.js
+          # Try to get BACKEND_URL
+          BACKEND_URL=""
+          if [ -n "${YC_CONTAINER_ID}" ]; then
+            if ! BACKEND_URL=$(yc serverless container get --id="${YC_CONTAINER_ID}" --format json 2>/dev/null | jq -r '.url' 2>/dev/null); then
+              echo "❌ ERROR: Failed to get backend URL using container ID"
+              echo "yc command failed or returned invalid JSON"
+              if [ "${BACKEND_URL_REQUIRED}" == "true" ]; then
+                exit 1
+              fi
+            else
+              echo "✅ Got backend URL from container ID: ${BACKEND_URL}"
+            fi
+          elif [ -n "${YC_FOLDER_ID}" ]; then
+            if ! BACKEND_URL=$(yc serverless container get --name=lug-date-backend --folder-id="${YC_FOLDER_ID}" --format json 2>/dev/null | jq -r '.url' 2>/dev/null); then
+              echo "❌ ERROR: Failed to get backend URL using folder ID"
+              echo "yc command failed or returned invalid JSON"
+              if [ "${BACKEND_URL_REQUIRED}" == "true" ]; then
+                exit 1
+              fi
+            else
+              echo "✅ Got backend URL from folder ID: ${BACKEND_URL}"
             fi
           else
-            echo "⚠️  WARNING: Backend URL not available! Frontend and admin panel may not work."
-            echo "This step will continue, but downstream steps that require BACKEND_URL may fail."
+            echo "❌ ERROR: Cannot get backend URL - neither YC_CONTAINER_ID nor YC_FOLDER_ID is set"
             echo "Please check:"
-            echo "  1. YC_CONTAINER_ID_PROD or YC_FOLDER_ID is set in GitHub Secrets"
+            echo "  1. YC_CONTAINER_ID or YC_FOLDER_ID is set in GitHub Secrets"
             echo "  2. Backend container exists in Yandex Cloud"
             echo "  3. Service account has permissions to read container info"
-            # Don't exit - let downstream steps handle the missing BACKEND_URL
+            if [ "${BACKEND_URL_REQUIRED}" == "true" ]; then
+              exit 1
+            fi
+          fi
+
+          # Validate BACKEND_URL
+          if [ -z "${BACKEND_URL}" ] || [ "${BACKEND_URL}" == "null" ] || [ "${BACKEND_URL}" == "" ]; then
+            echo "❌ ERROR: Backend URL is empty or null"
+            echo "Please check:"
+            echo "  1. Backend container exists in Yandex Cloud"
+            echo "  2. Container has been deployed successfully"
+            echo "  3. Service account has permissions to read container info"
+            if [ "${BACKEND_URL_REQUIRED}" == "true" ]; then
+              exit 1
+            else
+              echo "⚠️  WARNING: Backend URL not available, but not required for this deployment"
+              # Export empty BACKEND_URL so downstream steps can check if it's set
+              echo "BACKEND_URL=" >> $GITHUB_ENV
+              exit 0
+            fi
+          fi
+
+          # Remove trailing slash from BACKEND_URL
+          BACKEND_URL="${BACKEND_URL%/}"
+          echo "✅ Backend URL: ${BACKEND_URL}"
+          echo "BACKEND_URL=${BACKEND_URL}" >> $GITHUB_ENV
+
+          # Обновляем config.js только если нужен для admin (admin/backend/shared изменились)
+          if [ "${ADMIN_CHANGED}" == "true" ] || [ "${BACKEND_CHANGED}" == "true" ] || [ "${SHARED_CHANGED}" == "true" ] || [ "${FORCE_ALL}" == "true" ]; then
+            printf '%s\n' \
+              '// Runtime configuration for admin panel' \
+              '// This file is loaded before the app starts' \
+              '// You can override API URL by setting window.ADMIN_CONFIG before this script loads' \
+              'window.ADMIN_CONFIG = window.ADMIN_CONFIG || {' \
+              '  // Backend URL - контейнер Yandex Serverless Containers' \
+              "  API_URL: '${BACKEND_URL}'" \
+              '};' > admin/public/config.js
+            
+            echo "✅ Updated admin config.js with backend URL: ${BACKEND_URL}"
+            
+            # Проверяем, что файл создан правильно
+            echo "📄 Config.js content:"
+            cat admin/public/config.js
           fi
 
       - name: Build frontend
         if: steps.changed-files.outputs.frontend == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
         env:
           VITE_API_URL: ${{ env.BACKEND_URL }}
-        run: NODE_ENV=production npm run build --workspace=frontend
+        run: |
+          if [ -z "${VITE_API_URL}" ] || [ "${VITE_API_URL}" == "null" ]; then
+            echo "❌ ERROR: BACKEND_URL is not set. Frontend build requires a valid backend URL."
+            echo "The 'Get Backend URL' step should have run and set BACKEND_URL."
+            echo "Please check:"
+            echo "  1. 'Get Backend URL' step executed successfully"
+            echo "  2. Backend container exists and is accessible"
+            echo "  3. YC_CONTAINER_ID or YC_FOLDER_ID is set in GitHub Secrets"
+            exit 1
+          fi
+          echo "✅ Building frontend with API URL: ${VITE_API_URL}"
+          NODE_ENV=production npm run build --workspace=frontend
 
       - name: Build backend
         if: steps.changed-files.outputs.backend == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
@@ -811,7 +248,7 @@ jobs:
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
           export YC_SERVICE_ACCOUNT_KEY_FILE=/tmp/yc-sa-key.json
-          NODE_ENV=production YDB_ENDPOINT_PROD=${{ secrets.YDB_ENDPOINT_PROD }} YDB_DATABASE_PROD=${{ secrets.YDB_DATABASE_PROD }} npm run migrate
+          NODE_ENV=production YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT }} YDB_DATABASE=${{ secrets.YDB_DATABASE }} npm run migrate
         continue-on-error: true
 
       - name: Login to Yandex Container Registry
@@ -857,23 +294,23 @@ jobs:
           CONTAINER_CREATED=0
           if [ -n "${YC_FOLDER_ID}" ]; then
             yc serverless container create \
-              --name=lug-date-backend-prod \
+              --name=lug-date-backend \
               --folder-id="${YC_FOLDER_ID}" && CONTAINER_CREATED=1 || echo "Container already exists"
           else
-            yc serverless container create --name=lug-date-backend-prod && CONTAINER_CREATED=1 || echo "Container already exists"
+            yc serverless container create --name=lug-date-backend && CONTAINER_CREATED=1 || echo "Container already exists"
           fi
 
           # Устанавливаем service account, если контейнер был только что создан
           if [ "${CONTAINER_CREATED}" -eq 1 ] && [ -n "${YC_SERVICE_ACCOUNT_ID}" ]; then
             if [ -n "${YC_FOLDER_ID}" ]; then
               yc serverless container set-access-bindings \
-                --name=lug-date-backend-prod \
+                --name=lug-date-backend \
                 --folder-id="${YC_FOLDER_ID}" \
                 --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
                 --role=serverless.containers.invoker || true
             else
               yc serverless container set-access-bindings \
-                --name=lug-date-backend-prod \
+                --name=lug-date-backend \
                 --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
                 --role=serverless.containers.invoker || true
             fi
@@ -884,46 +321,46 @@ jobs:
         env:
           YC_SERVICE_ACCOUNT_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
           YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
-          YC_CONTAINER_ID_PROD: ${{ secrets.YC_CONTAINER_ID_PROD }}
-          ADMIN_USERNAME_PROD: ${{ secrets.ADMIN_USERNAME_PROD }}
-          ADMIN_PASSWORD_PROD: ${{ secrets.ADMIN_PASSWORD_PROD }}
-          ADMIN_TOKEN_PROD: ${{ secrets.ADMIN_TOKEN_PROD }}
+          YC_CONTAINER_ID: ${{ secrets.YC_CONTAINER_ID }}
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
 
           # Set admin credentials with fallback values
-          ADMIN_USERNAME="${ADMIN_USERNAME_PROD:-admin}"
-          ADMIN_PASSWORD="${ADMIN_PASSWORD_PROD:-admin123}"
-          ADMIN_TOKEN="${ADMIN_TOKEN_PROD:-admin-secret-token-change-in-production}"
+          ADMIN_USERNAME="${ADMIN_USERNAME:-admin}"
+          ADMIN_PASSWORD="${ADMIN_PASSWORD:-admin123}"
+          ADMIN_TOKEN="${ADMIN_TOKEN:-admin-secret-token-change-in-production}"
 
           # Используем container-id если указан, иначе container-name с folder-id
-          if [ -n "${YC_CONTAINER_ID_PROD}" ]; then
+          if [ -n "${YC_CONTAINER_ID}" ]; then
             yc serverless container revision deploy \
-              --container-id="${YC_CONTAINER_ID_PROD}" \
+              --container-id="${YC_CONTAINER_ID}" \
               --image="${{ env.IMAGE_ID }}" \
               --memory=512m \
               --cores=1 \
               --execution-timeout=30s \
               --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
               --environment NODE_ENV=production \
-              --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_PROD }} \
-              --environment YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_PROD }} \
-              --environment YDB_DATABASE=${{ secrets.YDB_DATABASE_PROD }} \
+              --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }} \
+              --environment YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT }} \
+              --environment YDB_DATABASE=${{ secrets.YDB_DATABASE }} \
               --environment YC_SERVICE_ACCOUNT_KEY='${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' \
-              --environment YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_PROD }} \
-              --environment YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_PROD }} \
-              --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_PROD }} \
+              --environment YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET }} \
+              --environment YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY }} \
+              --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY }} \
               --environment TELEGRAM_ALERT_ENABLED=true \
               --environment TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
               --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }} \
-              --environment ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS_PROD }} \
-              --environment ADMIN_ORIGINS=${{ secrets.ADMIN_ORIGINS_PROD }} \
+              --environment ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }} \
+              --environment ADMIN_ORIGINS=${{ secrets.ADMIN_ORIGINS }} \
               --environment ADMIN_USERNAME="${ADMIN_USERNAME}" \
               --environment ADMIN_PASSWORD="${ADMIN_PASSWORD}" \
               --environment ADMIN_TOKEN="${ADMIN_TOKEN}"
           elif [ -n "${YC_FOLDER_ID}" ]; then
             yc serverless container revision deploy \
-              --container-name=lug-date-backend-prod \
+              --container-name=lug-date-backend \
               --folder-id="${YC_FOLDER_ID}" \
               --image="${{ env.IMAGE_ID }}" \
               --memory=512m \
@@ -931,23 +368,23 @@ jobs:
               --execution-timeout=30s \
               --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
               --environment NODE_ENV=production \
-              --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_PROD }} \
-              --environment YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT_PROD }} \
-              --environment YDB_DATABASE=${{ secrets.YDB_DATABASE_PROD }} \
+              --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }} \
+              --environment YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT }} \
+              --environment YDB_DATABASE=${{ secrets.YDB_DATABASE }} \
               --environment YC_SERVICE_ACCOUNT_KEY='${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' \
-              --environment YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET_PROD }} \
-              --environment YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY_PROD }} \
-              --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY_PROD }} \
+              --environment YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET }} \
+              --environment YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY }} \
+              --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY }} \
               --environment TELEGRAM_ALERT_ENABLED=true \
               --environment TELEGRAM_ALERT_BOT_TOKEN=${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }} \
               --environment TELEGRAM_ALERT_CHAT_ID=${{ secrets.TELEGRAM_ALERT_CHAT_ID }} \
-              --environment ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS_PROD }} \
-              --environment ADMIN_ORIGINS=${{ secrets.ADMIN_ORIGINS_PROD }} \
+              --environment ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }} \
+              --environment ADMIN_ORIGINS=${{ secrets.ADMIN_ORIGINS }} \
               --environment ADMIN_USERNAME="${ADMIN_USERNAME}" \
               --environment ADMIN_PASSWORD="${ADMIN_PASSWORD}" \
               --environment ADMIN_TOKEN="${ADMIN_TOKEN}"
           else
-            echo "Error: Either YC_CONTAINER_ID_PROD or YC_FOLDER_ID must be set"
+            echo "Error: Either YC_CONTAINER_ID or YC_FOLDER_ID must be set"
             exit 1
           fi
 
@@ -955,41 +392,42 @@ jobs:
         if: steps.changed-files.outputs.backend == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
         env:
           YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
-          YC_CONTAINER_ID_PROD: ${{ secrets.YC_CONTAINER_ID_PROD }}
+          YC_CONTAINER_ID: ${{ secrets.YC_CONTAINER_ID }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
 
-          if [ -n "${YC_CONTAINER_ID_PROD}" ]; then
-            BACKEND_URL=$(yc serverless container get --id="${YC_CONTAINER_ID_PROD}" --format json | jq -r '.url')
+          BACKEND_URL=""
+          if [ -n "${YC_CONTAINER_ID}" ]; then
+            if ! BACKEND_URL=$(yc serverless container get --id="${YC_CONTAINER_ID}" --format json 2>/dev/null | jq -r '.url' 2>/dev/null); then
+              echo "❌ ERROR: Failed to get backend URL using container ID"
+              echo "yc command failed or returned invalid JSON"
+              echo "Please check:"
+              echo "  1. Container ID is correct: ${YC_CONTAINER_ID}"
+              echo "  2. Container exists and is accessible"
+              echo "  3. Service account has permissions to read container info"
+              exit 1
+            fi
           elif [ -n "${YC_FOLDER_ID}" ]; then
-            BACKEND_URL=$(yc serverless container get --name=lug-date-backend-prod --folder-id="${YC_FOLDER_ID}" --format json | jq -r '.url')
+            if ! BACKEND_URL=$(yc serverless container get --name=lug-date-backend --folder-id="${YC_FOLDER_ID}" --format json 2>/dev/null | jq -r '.url' 2>/dev/null); then
+              echo "❌ ERROR: Failed to get backend URL using folder ID"
+              echo "yc command failed or returned invalid JSON"
+              echo "Please check:"
+              echo "  1. Container name is correct: lug-date-backend"
+              echo "  2. Folder ID is correct: ${YC_FOLDER_ID}"
+              echo "  3. Container exists and is accessible"
+              echo "  4. Service account has permissions to read container info"
+              exit 1
+            fi
           else
-            echo "❌ ERROR: Cannot get backend URL - neither YC_CONTAINER_ID_PROD nor YC_FOLDER_ID is set"
+            echo "❌ ERROR: Cannot get backend URL - neither YC_CONTAINER_ID nor YC_FOLDER_ID is set"
             echo "Please check:"
-            echo "  1. YC_CONTAINER_ID_PROD or YC_FOLDER_ID is set in GitHub Secrets"
+            echo "  1. YC_CONTAINER_ID or YC_FOLDER_ID is set in GitHub Secrets"
             echo "  2. Backend container exists in Yandex Cloud"
             echo "  3. Service account has permissions to read container info"
             exit 1
           fi
 
-          if [ -n "${BACKEND_URL}" ] && [ "${BACKEND_URL}" != "null" ]; then
-            echo "✅ Backend deployed: ${BACKEND_URL}"
-            echo "🔍 Health check URL: ${BACKEND_URL}/health"
-            
-            # Проверяем health бекенда
-            echo "⏳ Waiting for backend to be ready..."
-            sleep 5
-            
-            for i in {1..10}; do
-              if curl -f -s "${BACKEND_URL}/health" > /dev/null 2>&1; then
-                echo "✅ Backend is healthy!"
-                break
-              else
-                echo "⏳ Attempt $i/10: Backend not ready yet, waiting..."
-                sleep 3
-              fi
-            done
-          else
+          if [ -z "${BACKEND_URL}" ] || [ "${BACKEND_URL}" == "null" ] || [ "${BACKEND_URL}" == "" ]; then
             echo "❌ ERROR: Backend URL is empty or null"
             echo "Please check:"
             echo "  1. Backend container exists in Yandex Cloud"
@@ -998,16 +436,36 @@ jobs:
             exit 1
           fi
 
+          # Remove trailing slash from BACKEND_URL
+          BACKEND_URL="${BACKEND_URL%/}"
+          echo "✅ Backend deployed: ${BACKEND_URL}"
+          echo "BACKEND_URL=${BACKEND_URL}" >> $GITHUB_ENV
+          echo "🔍 Health check URL: ${BACKEND_URL}/health"
+
+          # Проверяем health бекенда
+          echo "⏳ Waiting for backend to be ready..."
+          sleep 5
+
+          for i in {1..10}; do
+            if curl -f -s "${BACKEND_URL}/health" > /dev/null 2>&1; then
+              echo "✅ Backend is healthy!"
+              break
+            else
+              echo "⏳ Attempt $i/10: Backend not ready yet, waiting..."
+              sleep 3
+            fi
+          done
+
       - name: Deploy Frontend
         if: steps.changed-files.outputs.frontend == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
         env:
-          YANDEX_STORAGE_BUCKET: ${{ secrets.YANDEX_STORAGE_BUCKET_PROD }}
+          YANDEX_STORAGE_BUCKET: ${{ secrets.YANDEX_STORAGE_BUCKET }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
 
           if [ -z "${YANDEX_STORAGE_BUCKET}" ]; then
-            echo "❌ Error: YANDEX_STORAGE_BUCKET_PROD secret is not set"
-            echo "Please set YANDEX_STORAGE_BUCKET_PROD in GitHub Secrets for production environment"
+            echo "❌ Error: YANDEX_STORAGE_BUCKET secret is not set"
+            echo "Please set YANDEX_STORAGE_BUCKET in GitHub Secrets"
             exit 1
           fi
 
@@ -1025,9 +483,9 @@ jobs:
       - name: Deploy Admin
         if: steps.changed-files.outputs.admin == 'true' || steps.changed-files.outputs.shared == 'true' || steps.changed-files.outputs.backend == 'true' || steps.force-deploy.outputs.force_all == 'true'
         env:
-          ADMIN_STORAGE_BUCKET: ${{ secrets.ADMIN_STORAGE_BUCKET_PROD }}
-          ADMIN_STORAGE_ACCESS_KEY: ${{ secrets.ADMIN_STORAGE_ACCESS_KEY_PROD }}
-          ADMIN_STORAGE_SECRET_KEY: ${{ secrets.ADMIN_STORAGE_SECRET_KEY_PROD }}
+          ADMIN_STORAGE_BUCKET: ${{ secrets.ADMIN_STORAGE_BUCKET }}
+          ADMIN_STORAGE_ACCESS_KEY: ${{ secrets.ADMIN_STORAGE_ACCESS_KEY }}
+          ADMIN_STORAGE_SECRET_KEY: ${{ secrets.ADMIN_STORAGE_SECRET_KEY }}
           BACKEND_URL: ${{ env.BACKEND_URL }}
           BACKEND_CHANGED: ${{ steps.changed-files.outputs.backend == 'true' }}
           ADMIN_CHANGED: ${{ steps.changed-files.outputs.admin == 'true' }}
@@ -1043,26 +501,26 @@ jobs:
             echo "Please check:"
             echo "  1. 'Get Backend URL' step executed successfully"
             echo "  2. Backend container exists and is accessible"
-            echo "  3. YC_CONTAINER_ID_PROD or YC_FOLDER_ID is set in GitHub Secrets"
+            echo "  3. YC_CONTAINER_ID or YC_FOLDER_ID is set in GitHub Secrets"
             exit 1
           fi
 
           # Проверка обязательных переменных
           if [ -z "${ADMIN_STORAGE_BUCKET}" ]; then
-            echo "❌ Error: ADMIN_STORAGE_BUCKET_PROD secret is not set"
-            echo "Please set ADMIN_STORAGE_BUCKET_PROD in GitHub Secrets for production environment"
+            echo "❌ Error: ADMIN_STORAGE_BUCKET secret is not set"
+            echo "Please set ADMIN_STORAGE_BUCKET in GitHub Secrets"
             exit 1
           fi
 
           if [ -z "${ADMIN_STORAGE_ACCESS_KEY}" ]; then
-            echo "❌ Error: ADMIN_STORAGE_ACCESS_KEY_PROD secret is not set"
-            echo "Please set ADMIN_STORAGE_ACCESS_KEY_PROD in GitHub Secrets for production environment"
+            echo "❌ Error: ADMIN_STORAGE_ACCESS_KEY secret is not set"
+            echo "Please set ADMIN_STORAGE_ACCESS_KEY in GitHub Secrets"
             exit 1
           fi
 
           if [ -z "${ADMIN_STORAGE_SECRET_KEY}" ]; then
-            echo "❌ Error: ADMIN_STORAGE_SECRET_KEY_PROD secret is not set"
-            echo "Please set ADMIN_STORAGE_SECRET_KEY_PROD in GitHub Secrets for production environment"
+            echo "❌ Error: ADMIN_STORAGE_SECRET_KEY secret is not set"
+            echo "Please set ADMIN_STORAGE_SECRET_KEY in GitHub Secrets"
             exit 1
           fi
 
@@ -1180,14 +638,14 @@ jobs:
       - name: Deploy Bot
         if: steps.changed-files.outputs.bot == 'true' || steps.changed-files.outputs.shared == 'true' || steps.force-deploy.outputs.force_all == 'true'
         env:
-          YC_BOT_FUNCTION_ID: ${{ secrets.YC_BOT_FUNCTION_ID_PROD }}
+          YC_BOT_FUNCTION_ID: ${{ secrets.YC_BOT_FUNCTION_ID }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
 
           # Check if function ID is set
           if [ -z "${YC_BOT_FUNCTION_ID}" ]; then
-            echo "⚠️  Warning: YC_BOT_FUNCTION_ID_PROD is not set in GitHub Secrets"
-            echo "Skipping bot deployment. To deploy bot, add YC_BOT_FUNCTION_ID_PROD to GitHub Secrets."
+            echo "⚠️  Warning: YC_BOT_FUNCTION_ID is not set in GitHub Secrets"
+            echo "Skipping bot deployment. To deploy bot, add YC_BOT_FUNCTION_ID to GitHub Secrets."
             exit 0
           fi
 
@@ -1209,7 +667,7 @@ jobs:
             --execution-timeout 10s \
             --source-path bot/dist \
             --environment NODE_ENV=production \
-            --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_PROD }}
+            --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
 
           echo "✅ Bot deployed successfully"
 
@@ -1258,4 +716,4 @@ jobs:
             echo "⚠️  Backend URL not available, skipping backend health check"
           fi
 
-          echo "✅ Production deployment completed successfully"
+          echo "✅ Deployment completed successfully"
