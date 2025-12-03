@@ -73,17 +73,39 @@ jobs:
         env:
           YC_SERVICE_ACCOUNT_KEY: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
         run: |
+          if [ -z "$YC_SERVICE_ACCOUNT_KEY" ]; then
+            echo "❌ ERROR: YC_SERVICE_ACCOUNT_KEY is not set"
+            exit 1
+          fi
+
+          echo "🔐 Authenticating with Yandex Container Registry..."
           echo "$YC_SERVICE_ACCOUNT_KEY" | docker login \
             --username json_key \
             --password-stdin \
             cr.yandex
 
+          if [ $? -ne 0 ]; then
+            echo "❌ ERROR: Docker login failed"
+            exit 1
+          fi
+
+          echo "✅ Successfully authenticated with Container Registry"
+
       - name: Build and push Docker image
+        env:
+          YC_REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
 
+          if [ -z "$YC_REGISTRY_ID" ]; then
+            echo "❌ ERROR: YC_REGISTRY_ID is not set"
+            exit 1
+          fi
+
           IMAGE_TAG="${GITHUB_SHA:0:7}"
-          IMAGE_NAME="cr.yandex/${{ secrets.YC_REGISTRY_ID }}/lug-date-backend"
+          IMAGE_NAME="cr.yandex/${YC_REGISTRY_ID}/lug-date-backend"
+
+          echo "📦 Building Docker image: ${IMAGE_NAME}:${IMAGE_TAG}"
 
           # Собираем образ
           docker build \
@@ -92,14 +114,37 @@ jobs:
             -f backend/Dockerfile \
             .
 
+          if [ $? -ne 0 ]; then
+            echo "❌ ERROR: Docker build failed"
+            exit 1
+          fi
+
+          echo "✅ Docker image built successfully"
+          echo "📤 Pushing image to registry..."
+
           # Пушим образ
           docker push ${IMAGE_NAME}:${IMAGE_TAG}
+          PUSH_EXIT_CODE=$?
+
+          if [ $PUSH_EXIT_CODE -ne 0 ]; then
+            echo "❌ ERROR: Failed to push ${IMAGE_NAME}:${IMAGE_TAG}"
+            echo "Please check:"
+            echo "  1. Service account has 'container-registry.images.pusher' role"
+            echo "  2. YC_REGISTRY_ID is correct: ${YC_REGISTRY_ID}"
+            echo "  3. Registry exists and is accessible"
+            exit 1
+          fi
+
           docker push ${IMAGE_NAME}:latest
+          if [ $? -ne 0 ]; then
+            echo "⚠️  WARNING: Failed to push ${IMAGE_NAME}:latest, but ${IMAGE_TAG} was pushed successfully"
+          fi
 
           # Сохраняем для деплоя
           echo "IMAGE_ID=${IMAGE_NAME}:${IMAGE_TAG}" >> $GITHUB_ENV
 
           # Показываем размер
+          echo "✅ Image pushed successfully"
           docker images ${IMAGE_NAME}:${IMAGE_TAG}
 
       - name: Create container if not exists
