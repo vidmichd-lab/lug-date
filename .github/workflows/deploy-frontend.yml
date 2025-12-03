@@ -15,7 +15,7 @@ jobs:
       contents: read
       actions: read
       id-token: write
-    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    environment: production
 
     steps:
       - name: Checkout code
@@ -38,8 +38,8 @@ jobs:
 
       - name: Configure AWS CLI for Yandex Object Storage
         env:
-          ACCESS_KEY: ${{ github.ref == 'refs/heads/main' && secrets.FRONTEND_STORAGE_ACCESS_KEY_PROD || secrets.FRONTEND_STORAGE_ACCESS_KEY_DEV }}
-          SECRET_KEY: ${{ github.ref == 'refs/heads/main' && secrets.FRONTEND_STORAGE_SECRET_KEY_PROD || secrets.FRONTEND_STORAGE_SECRET_KEY_DEV }}
+          ACCESS_KEY: ${{ secrets.FRONTEND_STORAGE_ACCESS_KEY }}
+          SECRET_KEY: ${{ secrets.FRONTEND_STORAGE_SECRET_KEY }}
         run: |
           pip3 install awscli --quiet
           mkdir -p ~/.aws
@@ -49,16 +49,16 @@ jobs:
 
       - name: Deploy to Yandex Object Storage
         env:
-          YANDEX_STORAGE_BUCKET: ${{ github.ref == 'refs/heads/main' && secrets.FRONTEND_STORAGE_BUCKET_PROD || secrets.FRONTEND_STORAGE_BUCKET_DEV }}
-          YANDEX_STORAGE_ACCESS_KEY: ${{ github.ref == 'refs/heads/main' && secrets.FRONTEND_STORAGE_ACCESS_KEY_PROD || secrets.FRONTEND_STORAGE_ACCESS_KEY_DEV }}
-          YANDEX_STORAGE_SECRET_KEY: ${{ github.ref == 'refs/heads/main' && secrets.FRONTEND_STORAGE_SECRET_KEY_PROD || secrets.FRONTEND_STORAGE_SECRET_KEY_DEV }}
+          YANDEX_STORAGE_BUCKET: ${{ secrets.FRONTEND_STORAGE_BUCKET }}
+          YANDEX_STORAGE_ACCESS_KEY: ${{ secrets.FRONTEND_STORAGE_ACCESS_KEY }}
+          YANDEX_STORAGE_SECRET_KEY: ${{ secrets.FRONTEND_STORAGE_SECRET_KEY }}
           OBJECT_STORAGE_URL: https://storage.yandexcloud.net
         run: |
           npm run deploy:frontend
 
       - name: Deployment summary
         env:
-          BUCKET: ${{ github.ref == 'refs/heads/main' && secrets.FRONTEND_STORAGE_BUCKET_PROD || secrets.FRONTEND_STORAGE_BUCKET_DEV }}
+          BUCKET: ${{ secrets.FRONTEND_STORAGE_BUCKET }}
         run: |
           echo "✅ Frontend deployed successfully!"
           echo "🌐 Website URL: https://${BUCKET}.website.yandexcloud.net/"

@@ -101,3 +101,5 @@ yc serverless container list --folder-id=$(yc config get folder-id)
 - Если Container ID не указан, workflow будет использовать `--container-name` с `--folder-id`
 - ID каталога обычно начинается с `b1g`
 - ID контейнера обычно начинается с `bb`
+
+
