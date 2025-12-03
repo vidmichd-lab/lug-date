@@ -106,15 +106,54 @@
 }
 
 .buttonPrimary {
+  width: 100%;
+  height: 54px;
+  padding: 12px 24px;
   background-color: var(--color-typography-main-100, #1e1e1e);
   color: var(--color-inverted, #ffffff);
+  border: none;
+  border-radius: var(--rounding-button-round, 999px);
+  font-family: var(--font-family);
+  font-size: var(--font-body-size, 16px);
+  font-weight: var(--font-body-weight, 400);
+  line-height: var(--font-body-line-height, 20px);
+  letter-spacing: var(--font-body-letter-spacing, -0.2px);
+  cursor: pointer;
+  transition: opacity 0.2s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm, 8px);
+  white-space: nowrap;
 }
 
-.button:hover {
+.secondaryButton {
+  width: 100%;
+  height: 54px;
+  padding: 12px 24px;
+  background-color: var(--color-shape-100, #f4f4f4);
+  color: var(--color-typography-main-100, #1e1e1e);
+  border: none;
+  border-radius: var(--rounding-button-round, 999px);
+  font-family: var(--font-family);
+  font-size: var(--font-body-size, 16px);
+  font-weight: var(--font-body-weight, 400);
+  line-height: var(--font-body-line-height, 20px);
+  letter-spacing: var(--font-body-letter-spacing, -0.2px);
+  cursor: pointer;
+  transition: opacity 0.2s ease-in-out;
+  white-space: nowrap;
+}
+
+.button:hover,
+.buttonPrimary:hover,
+.secondaryButton:hover {
   opacity: 0.9;
 }
 
-.button:active {
+.button:active,
+.buttonPrimary:active,
+.secondaryButton:active {
   opacity: 0.8;
 }
 

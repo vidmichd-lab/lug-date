@@ -7,7 +7,6 @@ import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { OnboardingSlide } from '../../components/Onboarding/OnboardingSlide';
-import { OnboardingAuthSelection } from '../../components/Onboarding/OnboardingAuthSelection';
 import { useOnboardingStore } from '../../stores';
 import { useUserStore } from '../../stores';
 
@@ -25,11 +24,6 @@ export const OnboardingPage = () => {
       const nextStep = currentStep + 1;
       setStep(nextStep);
       setCurrentStep(nextStep);
-    } else {
-      // Move to auth selection screen (step 4)
-      const nextStep = currentStep + 1;
-      setStep(nextStep);
-      setCurrentStep(nextStep);
     }
   }, [currentStep, setCurrentStep]);
 
@@ -38,7 +32,7 @@ export const OnboardingPage = () => {
       // Initialize Telegram Web App authentication
       if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
         const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
-        
+
         // Save basic user data from Telegram
         const user = {
           id: tgUser.id.toString(),
@@ -72,16 +66,6 @@ export const OnboardingPage = () => {
     navigate('/');
   }, [completeOnboarding, navigate]);
 
-  // Show auth selection screen on step 4
-  if (currentStep > TOTAL_SLIDES) {
-    return (
-      <OnboardingAuthSelection
-        onTelegramAuth={handleTelegramAuth}
-        onContinueGuest={handleContinueGuest}
-      />
-    );
-  }
-
   // Render slides based on current step
   const slideData = [
     {
@@ -102,6 +86,7 @@ export const OnboardingPage = () => {
   ];
 
   const currentSlide = slideData[currentStep - 1];
+  const isLastSlide = currentStep === TOTAL_SLIDES;
 
   return (
     <OnboardingSlide
@@ -109,10 +94,12 @@ export const OnboardingPage = () => {
       title={currentSlide.title}
       subtitle={currentSlide.subtitle}
       illustration={null}
-      buttonText={t('common.next')}
-      onNext={handleNext}
+      buttonText={isLastSlide ? undefined : t('common.next')}
+      onNext={isLastSlide ? undefined : handleNext}
       totalSteps={TOTAL_SLIDES}
+      showAuthButtons={isLastSlide}
+      onTelegramAuth={handleTelegramAuth}
+      onContinueGuest={handleContinueGuest}
     />
   );
 };
-
