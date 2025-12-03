@@ -70,6 +70,7 @@ jobs:
           fi
 
       - name: Login to Yandex Container Registry
+        timeout-minutes: 5
         env:
           YC_SERVICE_ACCOUNT_KEY: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
         run: |
@@ -91,12 +92,33 @@ jobs:
 
           echo "✅ Successfully authenticated with Container Registry"
 
-      - name: Build and push Docker image
+      - name: Test registry connectivity
+        timeout-minutes: 5
+        env:
+          YC_SERVICE_ACCOUNT_KEY: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
+          YC_REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
+        run: |
+          if [ -z "$YC_REGISTRY_ID" ]; then
+            echo "⚠️  WARNING: YC_REGISTRY_ID is not set, skipping connectivity test"
+            exit 0
+          fi
+
+          echo "🔍 Testing registry connectivity..."
+          echo "$YC_SERVICE_ACCOUNT_KEY" | docker login \
+            --username json_key \
+            --password-stdin \
+            cr.yandex
+
+          # Пытаемся получить существующий образ (если есть)
+          docker pull "cr.yandex/${YC_REGISTRY_ID}/lug-date-backend:latest" || echo "ℹ️  No previous image found (this is OK for first deployment)"
+
+          echo "✅ Registry connectivity test passed"
+
+      - name: Set image metadata
+        id: image-metadata
         env:
           YC_REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
         run: |
-          export PATH=$PATH:$HOME/yandex-cloud/bin
-
           if [ -z "$YC_REGISTRY_ID" ]; then
             echo "❌ ERROR: YC_REGISTRY_ID is not set"
             exit 1
@@ -105,49 +127,69 @@ jobs:
           IMAGE_TAG="${GITHUB_SHA:0:7}"
           IMAGE_NAME="cr.yandex/${YC_REGISTRY_ID}/lug-date-backend"
 
-          echo "📦 Building Docker image: ${IMAGE_NAME}:${IMAGE_TAG}"
-
-          # Собираем образ
-          docker build \
-            -t ${IMAGE_NAME}:${IMAGE_TAG} \
-            -t ${IMAGE_NAME}:latest \
-            -f backend/Dockerfile \
-            .
-
-          if [ $? -ne 0 ]; then
-            echo "❌ ERROR: Docker build failed"
-            exit 1
-          fi
-
-          echo "✅ Docker image built successfully"
-          echo "📤 Pushing image to registry..."
-
-          # Пушим образ
-          docker push ${IMAGE_NAME}:${IMAGE_TAG}
-          PUSH_EXIT_CODE=$?
-
-          if [ $PUSH_EXIT_CODE -ne 0 ]; then
-            echo "❌ ERROR: Failed to push ${IMAGE_NAME}:${IMAGE_TAG}"
-            echo "Please check:"
-            echo "  1. Service account has 'container-registry.images.pusher' role"
-            echo "  2. YC_REGISTRY_ID is correct: ${YC_REGISTRY_ID}"
-            echo "  3. Registry exists and is accessible"
-            exit 1
-          fi
-
-          docker push ${IMAGE_NAME}:latest
-          if [ $? -ne 0 ]; then
-            echo "⚠️  WARNING: Failed to push ${IMAGE_NAME}:latest, but ${IMAGE_TAG} was pushed successfully"
-          fi
-
-          # Сохраняем для деплоя
+          echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_ENV
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
           echo "IMAGE_ID=${IMAGE_NAME}:${IMAGE_TAG}" >> $GITHUB_ENV
 
-          # Показываем размер
-          echo "✅ Image pushed successfully"
-          docker images ${IMAGE_NAME}:${IMAGE_TAG}
+          echo "📦 Image will be built as: ${IMAGE_NAME}:${IMAGE_TAG}"
+
+      - name: Login to Container Registry for build-push-action
+        timeout-minutes: 5
+        uses: docker/login-action@v3
+        with:
+          registry: cr.yandex
+          username: json_key
+          password: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
+
+      - name: Build and push Docker image
+        timeout-minutes: 30
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+            ${{ env.IMAGE_NAME }}:latest
+          cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache,mode=max
+          platforms: linux/amd64
+
+      - name: Check image size
+        timeout-minutes: 5
+        env:
+          YC_SERVICE_ACCOUNT_KEY: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
+        run: |
+          echo "$YC_SERVICE_ACCOUNT_KEY" | docker login \
+            --username json_key \
+            --password-stdin \
+            cr.yandex
+
+          echo "📊 Checking image size..."
+          docker images "${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}" --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}"
+
+          # Получаем размер образа
+          IMAGE_SIZE=$(docker images "${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}" --format "{{.Size}}")
+          echo "Image size: ${IMAGE_SIZE}"
+
+          # Простая проверка размера без bc (работает с форматом типа "123MB" или "1.2GB")
+          if echo "$IMAGE_SIZE" | grep -qE '[0-9]+(\.[0-9]+)?GB'; then
+            echo "⚠️  WARNING: Image size is ${IMAGE_SIZE}, which is larger than recommended 500MB"
+            echo "Consider optimizing the Dockerfile or using .dockerignore to exclude unnecessary files"
+          elif echo "$IMAGE_SIZE" | grep -qE '[5-9][0-9]{2,}MB|[0-9]{4,}MB'; then
+            SIZE_NUM=$(echo "$IMAGE_SIZE" | grep -oE '[0-9]+' | head -1)
+            if [ -n "$SIZE_NUM" ] && [ "$SIZE_NUM" -gt 500 ]; then
+              echo "⚠️  WARNING: Image size is ${IMAGE_SIZE}, which is larger than recommended 500MB"
+              echo "Consider optimizing the Dockerfile or using .dockerignore to exclude unnecessary files"
+            else
+              echo "✅ Image size is acceptable: ${IMAGE_SIZE}"
+            fi
+          else
+            echo "✅ Image size is acceptable: ${IMAGE_SIZE}"
+          fi
 
       - name: Create container if not exists
+        timeout-minutes: 10
         env:
           YC_SERVICE_ACCOUNT_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
           YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
@@ -181,6 +223,7 @@ jobs:
           fi
 
       - name: Deploy to Yandex Cloud Container
+        timeout-minutes: 15
         env:
           YC_SERVICE_ACCOUNT_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
           YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
@@ -196,9 +239,37 @@ jobs:
           ADMIN_PASSWORD_VAL="${ADMIN_PASSWORD:-admin123}"
           ADMIN_TOKEN_VAL="${ADMIN_TOKEN:-admin-secret-token-change-in-production}"
 
+          # Функция для retry с простым подходом
+          deploy_with_retry() {
+            local max_attempts=3
+            local attempt=1
+            
+            while [ $attempt -le $max_attempts ]; do
+              echo "🔄 Deployment attempt $attempt of $max_attempts..."
+              
+              if [ $attempt -eq $max_attempts ]; then
+                # Последняя попытка - выполняем без дополнительных проверок
+                "$@" && return 0 || return 1
+              else
+                # Промежуточные попытки
+                if "$@"; then
+                  echo "✅ Deployment succeeded on attempt $attempt"
+                  return 0
+                else
+                  echo "⚠️  Attempt $attempt failed, waiting 10 seconds before retry..."
+                  sleep 10
+                  attempt=$((attempt + 1))
+                fi
+              fi
+            done
+            
+            echo "❌ All $max_attempts attempts failed"
+            return 1
+          }
+
           # Используем container-id если указан, иначе container-name с folder-id
           if [ -n "${YC_CONTAINER_ID}" ]; then
-            yc serverless container revision deploy \
+            deploy_with_retry yc serverless container revision deploy \
               --container-id="${YC_CONTAINER_ID}" \
               --image="${{ env.IMAGE_ID }}" \
               --memory=512m \
@@ -222,7 +293,7 @@ jobs:
               --environment ADMIN_PASSWORD="${ADMIN_PASSWORD_VAL}" \
               --environment ADMIN_TOKEN="${ADMIN_TOKEN_VAL}"
           elif [ -n "${YC_FOLDER_ID}" ]; then
-            yc serverless container revision deploy \
+            deploy_with_retry yc serverless container revision deploy \
               --container-name=lug-date-backend \
               --folder-id="${YC_FOLDER_ID}" \
               --image="${{ env.IMAGE_ID }}" \
@@ -252,6 +323,7 @@ jobs:
           fi
 
       - name: Get Container URL
+        timeout-minutes: 10
         env:
           YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
           YC_CONTAINER_ID: ${{ secrets.YC_CONTAINER_ID }}
