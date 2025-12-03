@@ -69,38 +69,46 @@ app.use(
     origin: (origin, callback) => {
       // Combine allowed origins from environment variables
       const allowed = [
-        ...(process.env.ALLOWED_ORIGINS?.split(',').map((o) => o.trim()) || []),
-        ...(process.env.ADMIN_ORIGINS?.split(',').map((o) => o.trim()) || []),
+        ...(process.env.ALLOWED_ORIGINS?.split(',')
+          .map((o) => o.trim())
+          .filter(Boolean) || []),
+        ...(process.env.ADMIN_ORIGINS?.split(',')
+          .map((o) => o.trim())
+          .filter(Boolean) || []),
         // Default admin origins
         'https://lug-admin-deploy.website.yandexcloud.net',
         'http://localhost:5174',
         'http://localhost:5173',
       ];
 
+      // Remove duplicates
+      const uniqueAllowed = [...new Set(allowed)];
+
       // In development, allow all origins for easier testing
       const isDevelopment = config.nodeEnv === 'development';
 
       // Log CORS decisions for debugging
       if (origin) {
-        const isAllowed = !origin || allowed.includes(origin) || isDevelopment;
+        const isAllowed = !origin || uniqueAllowed.includes(origin) || isDevelopment;
         logger.info({
           type: 'cors_check',
           origin,
           allowed: isAllowed,
-          allowedOrigins: allowed,
+          allowedOrigins: uniqueAllowed,
           isDevelopment,
+          method: 'OPTIONS', // Preflight requests
         });
       }
 
       // Allow request if no origin (same-origin) or origin is in allowed list
       // In development, allow all origins
-      if (!origin || allowed.includes(origin) || isDevelopment) {
+      if (!origin || uniqueAllowed.includes(origin) || isDevelopment) {
         callback(null, true);
       } else {
         logger.warn({
           type: 'cors_blocked',
           origin,
-          allowedOrigins: allowed,
+          allowedOrigins: uniqueAllowed,
         });
         callback(new Error('Not allowed by CORS'));
       }
@@ -117,6 +125,8 @@ app.use(
     ],
     exposedHeaders: ['Content-Type', 'Authorization'],
     maxAge: 86400, // 24 hours
+    preflightContinue: false, // Let CORS handle preflight
+    optionsSuccessStatus: 200, // Some legacy browsers (IE11) choke on 204
   })
 );
 

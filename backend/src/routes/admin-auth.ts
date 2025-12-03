@@ -8,6 +8,11 @@ import { logger } from '../logger';
 
 const router = Router();
 
+// Handle OPTIONS requests for CORS preflight
+router.options('*', (req: Request, res: Response) => {
+  res.status(200).end();
+});
+
 // Simple admin credentials (should be moved to environment variables in production)
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
