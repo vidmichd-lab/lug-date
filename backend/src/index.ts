@@ -63,6 +63,7 @@ const PORT = config.port;
 
 // Security headers - MUST be first
 // Configure Helmet to work with CORS
+// IMPORTANT: Helmet must be configured to not interfere with CORS headers
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -80,6 +81,8 @@ app.use(
     },
     crossOriginEmbedderPolicy: false, // Disable for Telegram WebApp compatibility
     crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow cross-origin resources
+    // Don't interfere with CORS headers
+    crossOriginOpenerPolicy: false,
   })
 );
 
@@ -87,6 +90,7 @@ app.use(
 app.use(requestLogger);
 
 // CORS configuration - MUST be before rate limiter to allow preflight requests
+// This middleware automatically handles OPTIONS preflight requests
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -146,9 +150,9 @@ app.use(
       'Content-Length',
     ],
     exposedHeaders: ['Content-Type', 'Authorization'],
-    maxAge: 86400, // 24 hours
-    preflightContinue: false, // Let CORS handle preflight automatically
-    optionsSuccessStatus: 200, // Some legacy browsers (IE11) choke on 204
+    maxAge: 86400, // 24 hours - cache preflight response for 24 hours
+    preflightContinue: false, // CORS middleware handles preflight automatically (returns 204/200)
+    optionsSuccessStatus: 200, // Return 200 for OPTIONS requests (some browsers expect this)
   })
 );
 
