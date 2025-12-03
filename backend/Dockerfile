@@ -4,7 +4,8 @@ FROM node:20-alpine AS builder
 WORKDIR /build
 
 # Копируем package files для кэширования слоёв
-COPY package*.json ./
+# Важно: копируем package-lock.json для npm ci
+COPY package.json package-lock.json ./
 COPY backend/package*.json ./backend/
 COPY shared/package*.json ./shared/
 
@@ -26,13 +27,14 @@ FROM node:20-alpine
 WORKDIR /function
 
 # Копируем только package files
-COPY package*.json ./
+# Важно: копируем package-lock.json для npm ci
+COPY package.json package-lock.json ./
 COPY backend/package*.json ./backend/
 COPY shared/package*.json ./shared/
 
 # Устанавливаем только production зависимости
 # Отключаем prepare скрипт (husky не нужен в Docker и требует .git)
-RUN npm ci --only=production --omit=dev --ignore-scripts && \
+RUN npm ci --omit=dev --ignore-scripts && \
     npm cache clean --force && \
     rm -rf /tmp/* /var/tmp/*
 

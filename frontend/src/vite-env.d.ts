@@ -7,8 +7,8 @@ declare global {
     Telegram?: {
       WebApp: import('@twa-dev/types').WebApp;
     };
+    ym?: (counterId: number, method: string, target: string, params?: any) => void;
   }
 }
 
 export {};
-

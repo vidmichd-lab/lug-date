@@ -9,7 +9,7 @@ import { logger } from '../../logger';
 
 async function main() {
   try {
-    console.log('🔄 Initializing YDB connection...');
+    logger.info({ type: 'migration_start', message: 'Initializing YDB connection...' });
     await initYDBForMigrations();
 
     // Verify connection is actually established
@@ -17,30 +17,29 @@ async function main() {
       throw new Error('YDB connection failed. Check your credentials and network connection.');
     }
 
-    console.log('✅ YDB connected successfully');
+    logger.info({ type: 'migration_ydb_connected', message: 'YDB connected successfully' });
 
-    console.log('🔄 Running migrations...');
+    logger.info({ type: 'migration_running', message: 'Running migrations...' });
     await runMigrations();
 
-    console.log('✅ Migrations completed successfully');
+    logger.info({ type: 'migration_completed', message: 'Migrations completed successfully' });
     process.exit(0);
   } catch (error) {
-    console.error('❌ Migration failed:', error);
-    logger.error({ error, type: 'migration_script_failed' });
-    
+    logger.error({ error, type: 'migration_script_failed', message: 'Migration failed' });
+
     // Provide helpful error message
     if (error instanceof Error) {
       if (error.message.includes('credentials')) {
-        console.error('\n💡 Tip: Make sure you have set one of:');
-        console.error('   - YDB_TOKEN_DEV in .env');
-        console.error('   - YC_SERVICE_ACCOUNT_KEY_FILE in .env (pointing to yc-service-account-key.json)');
-        console.error('   - YC_SERVICE_ACCOUNT_KEY in .env');
+        logger.error({
+          type: 'migration_credentials_error',
+          message: 'YDB credentials not configured',
+          tip: 'Make sure you have set one of: YDB_TOKEN_DEV, YC_SERVICE_ACCOUNT_KEY_FILE, or YC_SERVICE_ACCOUNT_KEY in .env',
+        });
       }
     }
-    
+
     process.exit(1);
   }
 }
 
 main();
-

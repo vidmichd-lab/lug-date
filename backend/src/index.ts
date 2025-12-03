@@ -5,6 +5,7 @@ dotenv.config({ path: resolve(process.cwd(), '.env') });
 
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import adminRoutes from './routes/admin';
 import adminManagementRoutes from './routes/admin-management';
 import adminAuthRoutes from './routes/admin-auth';
@@ -59,6 +60,26 @@ initObjectStorage();
 
 const app = express();
 const PORT = config.port;
+
+// Security headers - MUST be first
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'none'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false, // Disable for Telegram WebApp compatibility
+  })
+);
 
 // Request logging middleware (before routes)
 app.use(requestLogger);
