@@ -110,8 +110,8 @@ app.use(
       // In development, allow all origins for easier testing
       const isDevelopment = config.nodeEnv === 'development';
 
-      // Log CORS decisions for debugging
-      if (origin) {
+      // Log CORS decisions for debugging (only in development to avoid log spam)
+      if (origin && isDevelopment) {
         const isAllowed = !origin || uniqueAllowed.includes(origin) || isDevelopment;
         logger.info({
           type: 'cors_check',
@@ -119,7 +119,6 @@ app.use(
           allowed: isAllowed,
           allowedOrigins: uniqueAllowed,
           isDevelopment,
-          method: 'OPTIONS', // Preflight requests
         });
       }
 
@@ -148,7 +147,7 @@ app.use(
     ],
     exposedHeaders: ['Content-Type', 'Authorization'],
     maxAge: 86400, // 24 hours
-    preflightContinue: false, // Let CORS handle preflight
+    preflightContinue: false, // Let CORS handle preflight automatically
     optionsSuccessStatus: 200, // Some legacy browsers (IE11) choke on 204
   })
 );
@@ -156,12 +155,6 @@ app.use(
 // Apply general rate limiting to all routes (after CORS)
 // Note: OPTIONS requests are skipped by rate limiter
 app.use(generalLimiter);
-
-// Handle OPTIONS requests explicitly before body parsers
-// This ensures preflight requests are handled correctly
-app.options('*', (req, res) => {
-  res.status(200).end();
-});
 
 // JSON body parser - only for requests with Content-Type: application/json
 app.use(
