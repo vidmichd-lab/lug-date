@@ -63,9 +63,13 @@ export const adminAuthMiddleware = (req: Request, res: Response, next: NextFunct
   logger.info({
     type: 'admin_auth_token_check',
     path: req.path || req.url,
+    method: req.method,
     tokenLength: token.length,
     expectedTokenLength: ADMIN_TOKEN.length,
+    tokenPrefix: token.substring(0, 10),
+    expectedTokenPrefix: ADMIN_TOKEN.substring(0, 10),
     tokensMatch: token === ADMIN_TOKEN,
+    hasTokenEnv: !!process.env.ADMIN_TOKEN,
   });
 
   if (token !== ADMIN_TOKEN) {

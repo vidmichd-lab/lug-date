@@ -42,7 +42,13 @@ router.post('/login', async (req: Request, res: Response) => {
 
     // Проверка авторизации
     if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-      logger.info({ type: 'admin_login_success', username });
+      logger.info({
+        type: 'admin_login_success',
+        username,
+        tokenLength: ADMIN_TOKEN.length,
+        tokenPrefix: ADMIN_TOKEN.substring(0, 10),
+        hasTokenEnv: !!process.env.ADMIN_TOKEN,
+      });
       return res.json({
         success: true,
         data: {
