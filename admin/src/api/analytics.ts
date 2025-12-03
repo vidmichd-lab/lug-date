@@ -41,11 +41,29 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Handle 403 Unauthorized - clear token and redirect to login
-    if (error.response?.status === 403 && error.response?.data?.error?.code === 'UNAUTHORIZED') {
-      console.warn('⚠️ Unauthorized access in analytics, clearing token and redirecting to login');
-      localStorage.removeItem('admin_token');
-      window.location.reload();
+    // Handle 403 Forbidden
+    if (error.response?.status === 403) {
+      const errorCode = error.response?.data?.error?.code;
+      const errorMessage = error.response?.data?.error?.message;
+
+      console.error('❌ 403 Forbidden in analytics:', {
+        code: errorCode,
+        message: errorMessage,
+        url: error.config?.url,
+        method: error.config?.method,
+        hasToken: !!localStorage.getItem('admin_token'),
+        tokenPrefix: localStorage.getItem('admin_token')?.substring(0, 20),
+        responseData: error.response?.data,
+      });
+
+      if (errorCode === 'UNAUTHORIZED') {
+        console.warn(
+          '⚠️ Unauthorized access in analytics, clearing token and redirecting to login'
+        );
+        localStorage.removeItem('admin_token');
+        window.location.reload();
+      }
+
       return Promise.reject(error);
     }
 

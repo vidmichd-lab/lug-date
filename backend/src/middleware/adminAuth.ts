@@ -19,9 +19,22 @@ logger.info({
 export const adminAuthMiddleware = (req: Request, res: Response, next: NextFunction) => {
   // Skip auth for login and logout endpoints
   const path = req.path || req.url || '';
+  const fullPath = req.originalUrl || req.url || '';
+
+  // Skip auth for login and logout endpoints
   if (path.includes('/api/admin/auth/login') || path.includes('/api/admin/auth/logout')) {
     return next();
   }
+
+  // Log all admin requests for debugging (including analytics)
+  logger.info({
+    type: 'admin_auth_middleware_check',
+    path: path,
+    fullPath: fullPath,
+    method: req.method,
+    url: req.url,
+    originalUrl: req.originalUrl,
+  });
 
   // Get token from Authorization header
   const authHeader = req.headers.authorization;
