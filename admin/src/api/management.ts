@@ -67,10 +67,11 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    // Handle 403 Unauthorized - clear token and redirect to login
+    // Handle 403 Forbidden
     if (error.response?.status === 403) {
       const errorCode = error.response?.data?.error?.code;
       const errorMessage = error.response?.data?.error?.message;
+      const responseData = error.response?.data;
 
       console.error('❌ 403 Forbidden:', {
         code: errorCode,
@@ -79,9 +80,16 @@ api.interceptors.response.use(
         method: error.config?.method,
         hasToken: !!localStorage.getItem('admin_token'),
         tokenPrefix: localStorage.getItem('admin_token')?.substring(0, 20),
+        responseStatus: error.response?.status,
+        responseData: responseData,
+        responseHeaders: error.response?.headers,
+        requestHeaders: error.config?.headers,
       });
 
-      if (errorCode === 'UNAUTHORIZED') {
+      // Log full error for debugging
+      console.error('Full error object:', error);
+
+      if (errorCode === 'UNAUTHORIZED' || !errorCode) {
         console.warn('⚠️ Unauthorized access, clearing token and redirecting to login');
         localStorage.removeItem('admin_token');
         // Trigger page reload to show login form
