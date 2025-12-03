@@ -39,6 +39,13 @@ jobs:
       - name: Build shared package
         run: npm run build --workspace=shared
 
+      - name: Install Yandex Cloud CLI
+        run: |
+          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
+          echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
+          # Source bashrc to make yc available immediately
+          source "$HOME/.bashrc" || true
+
       - name: Get Backend URL
         id: get-backend-url
         timeout-minutes: 10
@@ -47,9 +54,20 @@ jobs:
           YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
           YC_CONTAINER_ID: ${{ secrets.YC_CONTAINER_ID }}
         run: |
-          # Install Yandex Cloud CLI
-          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
-          echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
+          # Use full path to yc or ensure PATH is set
+          export PATH="$HOME/yandex-cloud/bin:$PATH"
+
+          # Verify yc is available
+          if ! command -v yc &> /dev/null; then
+            echo "❌ ERROR: yc command not found after installation"
+            echo "Trying to use full path..."
+            YC_BIN="$HOME/yandex-cloud/bin/yc"
+            if [ ! -f "$YC_BIN" ]; then
+              echo "❌ ERROR: yc binary not found at $YC_BIN"
+              exit 1
+            fi
+            alias yc="$YC_BIN"
+          fi
 
           # Configure YC CLI
           echo "$YC_SERVICE_ACCOUNT_KEY" > /tmp/yc-sa-key.json
@@ -61,8 +79,6 @@ jobs:
           if [ -n "$YC_FOLDER_ID" ]; then
             yc config set folder-id "$YC_FOLDER_ID" || true
           fi
-
-          export PATH=$PATH:$HOME/yandex-cloud/bin
 
           # Get backend URL
           BACKEND_URL=""
