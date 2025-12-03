@@ -8,13 +8,22 @@ import { JSDOM } from 'jsdom';
 
 // Create a JSDOM window for DOMPurify to work in Node.js environment
 // DOMPurify requires a DOM, so we create a minimal one
-const createDOMPurify = () => {
-  const window = new JSDOM('').window;
-  return DOMPurify(window as any);
-};
+// Lazy initialization to avoid errors if JSDOM fails
+let purifyInstance: ReturnType<typeof DOMPurify> | null = null;
 
-// Initialize DOMPurify instance
-const purify = createDOMPurify();
+const getDOMPurify = () => {
+  if (!purifyInstance) {
+    try {
+      const window = new JSDOM('').window;
+      purifyInstance = DOMPurify(window as any);
+    } catch (error) {
+      // Fallback: if DOMPurify fails, we'll use basic sanitization
+      console.error('Failed to initialize DOMPurify:', error);
+      return null;
+    }
+  }
+  return purifyInstance;
+};
 
 /**
  * Sanitize text input - removes HTML and dangerous content
@@ -25,13 +34,22 @@ export function sanitizeText(text: string): string {
     return '';
   }
 
-  // Use DOMPurify to sanitize HTML content
-  // Config: strip all HTML tags, keep only text content
-  const sanitized = purify.sanitize(text, {
-    ALLOWED_TAGS: [], // No HTML tags allowed
-    ALLOWED_ATTR: [], // No attributes allowed
-    KEEP_CONTENT: true, // Keep text content
-  });
+  const purify = getDOMPurify();
+
+  // Use DOMPurify to sanitize HTML content if available
+  // Fallback to basic sanitization if DOMPurify is not available
+  let sanitized: string;
+  if (purify) {
+    // Config: strip all HTML tags, keep only text content
+    sanitized = purify.sanitize(text, {
+      ALLOWED_TAGS: [], // No HTML tags allowed
+      ALLOWED_ATTR: [], // No attributes allowed
+      KEEP_CONTENT: true, // Keep text content
+    });
+  } else {
+    // Fallback: basic HTML tag removal
+    sanitized = text.replace(/<[^>]*>/g, '');
+  }
 
   // Remove control characters except newlines and tabs
   // eslint-disable-next-line no-control-regex

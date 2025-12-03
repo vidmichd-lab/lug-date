@@ -258,17 +258,41 @@ app.use('/api/v1', telegramAuthMiddleware, eventsRoutes);
 app.use(errorHandler);
 
 // Handle uncaught exceptions
+// In production, don't exit immediately - log and try to continue
 process.on('uncaughtException', async (error) => {
-  logger.error({ error, type: 'uncaught_exception' });
-  await sendCriticalAlert('Uncaught Exception - Server may crash', error);
-  process.exit(1);
+  logger.error({
+    error,
+    type: 'uncaught_exception',
+    message: 'Uncaught exception occurred, but server will continue',
+  });
+
+  // Try to send alert, but don't block
+  sendCriticalAlert('Uncaught Exception', error).catch((alertError) => {
+    logger.error({ error: alertError, type: 'alert_send_failed' });
+  });
+
+  // In production, don't exit - allow server to continue
+  // This prevents container from crashing
+  if (config.nodeEnv !== 'production') {
+    process.exit(1);
+  }
 });
 
 // Handle unhandled promise rejections
+// In production, don't exit - log and continue
 process.on('unhandledRejection', async (reason, promise) => {
   const error = reason instanceof Error ? reason : new Error(String(reason));
-  logger.error({ error, type: 'unhandled_rejection', promise });
-  await sendCriticalAlert('Unhandled Promise Rejection', error);
+  logger.error({
+    error,
+    type: 'unhandled_rejection',
+    promise,
+    message: 'Unhandled promise rejection occurred, but server will continue',
+  });
+
+  // Try to send alert, but don't block
+  sendCriticalAlert('Unhandled Promise Rejection', error).catch((alertError) => {
+    logger.error({ error: alertError, type: 'alert_send_failed' });
+  });
 });
 
 // Export app for serverless handler
@@ -280,13 +304,42 @@ export default app;
 // For serverless handler (via handler.ts), this file is imported as module,
 // so require.main !== module and server won't start (handler.ts manages it)
 if (require.main === module) {
-  app.listen(PORT, '0.0.0.0', () => {
+  // Ensure server starts even if there are async initialization errors
+  const server = app.listen(PORT, '0.0.0.0', () => {
     logger.info({
       type: 'server_started',
       port: PORT,
       environment: config.nodeEnv,
       database: config.database.database || 'not configured',
       message: `Backend server running on port ${PORT} in ${config.nodeEnv} mode`,
+    });
+  });
+
+  // Handle server errors gracefully
+  server.on('error', (error: NodeJS.ErrnoException) => {
+    logger.error({
+      error,
+      type: 'server_error',
+      port: PORT,
+      message: `Failed to start server on port ${PORT}`,
+    });
+
+    // If port is already in use, try alternative port
+    if (error.code === 'EADDRINUSE') {
+      logger.warn({
+        type: 'port_in_use',
+        port: PORT,
+        message: `Port ${PORT} is already in use, trying alternative port`,
+      });
+    }
+  });
+
+  // Graceful shutdown
+  process.on('SIGTERM', () => {
+    logger.info({ type: 'server_shutdown', message: 'SIGTERM received, shutting down gracefully' });
+    server.close(() => {
+      logger.info({ type: 'server_closed', message: 'Server closed' });
+      process.exit(0);
     });
   });
 }
