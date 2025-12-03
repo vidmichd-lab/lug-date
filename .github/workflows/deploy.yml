@@ -104,61 +104,117 @@ jobs:
 
           # Try to get BACKEND_URL
           BACKEND_URL=""
+          CONTAINER_JSON=""
+
           if [ -n "${YC_CONTAINER_ID}" ]; then
-            if ! BACKEND_URL=$(yc serverless container get --id="${YC_CONTAINER_ID}" --format json 2>/dev/null | jq -r '.url' 2>/dev/null); then
-              echo "❌ ERROR: Failed to get backend URL using container ID"
-              echo "yc command failed or returned invalid JSON"
-              exit 1
-            else
-              echo "✅ Got backend URL from container ID: ${BACKEND_URL}"
+            echo "🔍 Fetching container info using container ID..."
+            CONTAINER_JSON=$(yc serverless container get --id="${YC_CONTAINER_ID}" --format json 2>&1)
+            YC_EXIT_CODE=$?
+            
+            if [ $YC_EXIT_CODE -ne 0 ]; then
+              echo "❌ ERROR: yc command failed with exit code $YC_EXIT_CODE"
+              echo "Output: ${CONTAINER_JSON}"
+            exit 1
+          fi
+
+            echo "📄 Container JSON response:"
+            echo "${CONTAINER_JSON}" | jq '.' || echo "${CONTAINER_JSON}"
+            
+            BACKEND_URL=$(echo "${CONTAINER_JSON}" | jq -r '.url // empty' 2>/dev/null)
+            
+            if [ -z "${BACKEND_URL}" ] || [ "${BACKEND_URL}" == "null" ]; then
+              echo "⚠️  WARNING: Container exists but URL field is empty or null"
+              echo "This might mean the container hasn't been deployed yet or has no active revision"
+              echo "Trying to get URL from status or other fields..."
+              
+              # Попробуем получить URL из других полей
+              BACKEND_URL=$(echo "${CONTAINER_JSON}" | jq -r '.status.url // .url // empty' 2>/dev/null)
+              
+              if [ -z "${BACKEND_URL}" ] || [ "${BACKEND_URL}" == "null" ]; then
+                echo "❌ ERROR: Cannot extract backend URL from container info"
+                echo "Container may not have an active revision. Please deploy backend first."
+            exit 1
+          fi
             fi
+            
+            echo "✅ Got backend URL from container ID: ${BACKEND_URL}"
+            
           elif [ -n "${YC_FOLDER_ID}" ]; then
-            if ! BACKEND_URL=$(yc serverless container get --name=lug-date-backend --folder-id="${YC_FOLDER_ID}" --format json 2>/dev/null | jq -r '.url' 2>/dev/null); then
-              echo "❌ ERROR: Failed to get backend URL using folder ID"
-              echo "yc command failed or returned invalid JSON"
+            echo "🔍 Fetching container info using folder ID and name..."
+            CONTAINER_JSON=$(yc serverless container get --name=lug-date-backend --folder-id="${YC_FOLDER_ID}" --format json 2>&1)
+            YC_EXIT_CODE=$?
+            
+            if [ $YC_EXIT_CODE -ne 0 ]; then
+              echo "❌ ERROR: yc command failed with exit code $YC_EXIT_CODE"
+              echo "Output: ${CONTAINER_JSON}"
+            exit 1
+          fi
+
+            echo "📄 Container JSON response:"
+            echo "${CONTAINER_JSON}" | jq '.' || echo "${CONTAINER_JSON}"
+            
+            BACKEND_URL=$(echo "${CONTAINER_JSON}" | jq -r '.url // empty' 2>/dev/null)
+            
+            if [ -z "${BACKEND_URL}" ] || [ "${BACKEND_URL}" == "null" ]; then
+              echo "⚠️  WARNING: Container exists but URL field is empty or null"
+              echo "This might mean the container hasn't been deployed yet or has no active revision"
+              echo "Trying to get URL from status or other fields..."
+              
+              # Попробуем получить URL из других полей
+              BACKEND_URL=$(echo "${CONTAINER_JSON}" | jq -r '.status.url // .url // empty' 2>/dev/null)
+              
+              if [ -z "${BACKEND_URL}" ] || [ "${BACKEND_URL}" == "null" ]; then
+                echo "❌ ERROR: Cannot extract backend URL from container info"
+                echo "Container may not have an active revision. Please deploy backend first."
               exit 1
-            else
-              echo "✅ Got backend URL from folder ID: ${BACKEND_URL}"
             fi
+            fi
+            
+            echo "✅ Got backend URL from folder ID: ${BACKEND_URL}"
+            
           else
             echo "❌ ERROR: Cannot get backend URL - neither YC_CONTAINER_ID nor YC_FOLDER_ID is set"
-            echo "Please check:"
+              echo "Please check:"
             echo "  1. YC_CONTAINER_ID or YC_FOLDER_ID is set in GitHub Secrets"
             echo "  2. Backend container exists in Yandex Cloud"
             echo "  3. Service account has permissions to read container info"
-            exit 1
+              exit 1
           fi
 
           # Validate BACKEND_URL
           if [ -z "${BACKEND_URL}" ] || [ "${BACKEND_URL}" == "null" ] || [ "${BACKEND_URL}" == "" ]; then
-            echo "❌ ERROR: Backend URL is empty or null"
+            echo "❌ ERROR: Backend URL is empty or null after extraction"
+            echo "Container JSON was:"
+            echo "${CONTAINER_JSON}"
+            echo ""
             echo "Please check:"
             echo "  1. Backend container exists in Yandex Cloud"
-            echo "  2. Container has been deployed successfully"
+            echo "  2. Container has been deployed successfully (has an active revision)"
             echo "  3. Service account has permissions to read container info"
+            echo "  4. Container has a valid URL assigned"
             exit 1
           fi
 
-          # Remove trailing slash from BACKEND_URL
-          BACKEND_URL="${BACKEND_URL%/}"
-          echo "✅ Backend URL: ${BACKEND_URL}"
-          echo "BACKEND_URL=${BACKEND_URL}" >> $GITHUB_ENV
-
+            # Remove trailing slash from BACKEND_URL
+            BACKEND_URL="${BACKEND_URL%/}"
+            echo "✅ Backend URL: ${BACKEND_URL}"
+            echo "BACKEND_URL=${BACKEND_URL}" >> $GITHUB_ENV
+            
           # Обновляем config.js для admin
-          printf '%s\n' \
-            '// Runtime configuration for admin panel' \
-            '// This file is loaded before the app starts' \
-            '// You can override API URL by setting window.ADMIN_CONFIG before this script loads' \
-            'window.ADMIN_CONFIG = window.ADMIN_CONFIG || {' \
-            '  // Backend URL - контейнер Yandex Serverless Containers' \
-            "  API_URL: '${BACKEND_URL}'" \
-            '};' > admin/public/config.js
-
-          echo "✅ Updated admin config.js with backend URL: ${BACKEND_URL}"
-
-          # Проверяем, что файл создан правильно
-          echo "📄 Config.js content:"
-          cat admin/public/config.js
+              printf '%s\n' \
+                '// Runtime configuration for admin panel' \
+                '// This file is loaded before the app starts' \
+                '// You can override API URL by setting window.ADMIN_CONFIG before this script loads' \
+                'window.ADMIN_CONFIG = window.ADMIN_CONFIG || {' \
+                '  // Backend URL - контейнер Yandex Serverless Containers' \
+                "  API_URL: '${BACKEND_URL}'" \
+                '};' > admin/public/config.js
+              
+              echo "✅ Updated admin config.js with backend URL: ${BACKEND_URL}"
+              
+              # Проверяем, что файл создан правильно
+              echo "📄 Config.js content:"
+              cat admin/public/config.js
 
       - name: Build frontend
         env:
@@ -333,65 +389,99 @@ jobs:
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
 
+          echo "⏳ Waiting 10 seconds for container URL to be available after deployment..."
+          sleep 10
+
           BACKEND_URL=""
-          if [ -n "${YC_CONTAINER_ID}" ]; then
-            if ! BACKEND_URL=$(yc serverless container get --id="${YC_CONTAINER_ID}" --format json 2>/dev/null | jq -r '.url' 2>/dev/null); then
-              echo "❌ ERROR: Failed to get backend URL using container ID"
-              echo "yc command failed or returned invalid JSON"
-              echo "Please check:"
-              echo "  1. Container ID is correct: ${YC_CONTAINER_ID}"
-              echo "  2. Container exists and is accessible"
-              echo "  3. Service account has permissions to read container info"
+          CONTAINER_JSON=""
+
+          # Пытаемся получить URL с несколькими попытками
+          MAX_ATTEMPTS=5
+          ATTEMPT=1
+
+          while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+            echo "🔍 Attempt $ATTEMPT/$MAX_ATTEMPTS: Fetching container info..."
+            
+            if [ -n "${YC_CONTAINER_ID}" ]; then
+              CONTAINER_JSON=$(yc serverless container get --id="${YC_CONTAINER_ID}" --format json 2>&1)
+              YC_EXIT_CODE=$?
+            elif [ -n "${YC_FOLDER_ID}" ]; then
+              CONTAINER_JSON=$(yc serverless container get --name=lug-date-backend --folder-id="${YC_FOLDER_ID}" --format json 2>&1)
+              YC_EXIT_CODE=$?
+            else
+              echo "❌ ERROR: Neither YC_CONTAINER_ID nor YC_FOLDER_ID is set"
               exit 1
             fi
-          elif [ -n "${YC_FOLDER_ID}" ]; then
-            if ! BACKEND_URL=$(yc serverless container get --name=lug-date-backend --folder-id="${YC_FOLDER_ID}" --format json 2>/dev/null | jq -r '.url' 2>/dev/null); then
-              echo "❌ ERROR: Failed to get backend URL using folder ID"
-              echo "yc command failed or returned invalid JSON"
-              echo "Please check:"
-              echo "  1. Container name is correct: lug-date-backend"
-              echo "  2. Folder ID is correct: ${YC_FOLDER_ID}"
-              echo "  3. Container exists and is accessible"
-              echo "  4. Service account has permissions to read container info"
-              exit 1
+            
+            if [ $YC_EXIT_CODE -ne 0 ]; then
+              echo "⚠️  Attempt $ATTEMPT failed: yc command returned exit code $YC_EXIT_CODE"
+              echo "Output: ${CONTAINER_JSON}"
+              if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
+                echo "❌ ERROR: Failed to get container info after $MAX_ATTEMPTS attempts"
+                exit 1
+              fi
+              echo "⏳ Waiting 5 seconds before retry..."
+              sleep 5
+              ATTEMPT=$((ATTEMPT + 1))
+              continue
             fi
-          else
-            echo "❌ ERROR: Cannot get backend URL - neither YC_CONTAINER_ID nor YC_FOLDER_ID is set"
-            echo "Please check:"
-            echo "  1. YC_CONTAINER_ID or YC_FOLDER_ID is set in GitHub Secrets"
-            echo "  2. Backend container exists in Yandex Cloud"
-            echo "  3. Service account has permissions to read container info"
-            exit 1
-          fi
+            
+            echo "📄 Container JSON response:"
+            echo "${CONTAINER_JSON}" | jq '.' || echo "${CONTAINER_JSON}"
+            
+            BACKEND_URL=$(echo "${CONTAINER_JSON}" | jq -r '.url // empty' 2>/dev/null)
+            
+            if [ -z "${BACKEND_URL}" ] || [ "${BACKEND_URL}" == "null" ]; then
+              echo "⚠️  Attempt $ATTEMPT: URL field is empty, trying alternative fields..."
+              BACKEND_URL=$(echo "${CONTAINER_JSON}" | jq -r '.status.url // .current_revision.url // empty' 2>/dev/null)
+            fi
+            
+            if [ -n "${BACKEND_URL}" ] && [ "${BACKEND_URL}" != "null" ] && [ "${BACKEND_URL}" != "" ]; then
+              echo "✅ Successfully got backend URL on attempt $ATTEMPT"
+              break
+            fi
+            
+            if [ $ATTEMPT -lt $MAX_ATTEMPTS ]; then
+              echo "⚠️  URL not available yet, waiting 5 seconds before retry..."
+              sleep 5
+            fi
+            
+            ATTEMPT=$((ATTEMPT + 1))
+          done
 
           if [ -z "${BACKEND_URL}" ] || [ "${BACKEND_URL}" == "null" ] || [ "${BACKEND_URL}" == "" ]; then
-            echo "❌ ERROR: Backend URL is empty or null"
-            echo "Please check:"
-            echo "  1. Backend container exists in Yandex Cloud"
-            echo "  2. Container has been deployed successfully"
-            echo "  3. Service account has permissions to read container info"
+            echo "❌ ERROR: Backend URL is still empty after $MAX_ATTEMPTS attempts"
+            echo "Container JSON was:"
+            echo "${CONTAINER_JSON}"
+            echo ""
+            echo "This might mean:"
+            echo "  1. Container revision is still being created"
+            echo "  2. Container has no active revision"
+            echo "  3. Container URL hasn't been assigned yet"
+            echo ""
+            echo "Please check container status in Yandex Cloud Console"
             exit 1
           fi
 
           # Remove trailing slash from BACKEND_URL
           BACKEND_URL="${BACKEND_URL%/}"
-            echo "✅ Backend deployed: ${BACKEND_URL}"
+          echo "✅ Backend deployed: ${BACKEND_URL}"
           echo "BACKEND_URL=${BACKEND_URL}" >> $GITHUB_ENV
-            echo "🔍 Health check URL: ${BACKEND_URL}/health"
-            
-            # Проверяем health бекенда
-            echo "⏳ Waiting for backend to be ready..."
-            sleep 5
-            
-            for i in {1..10}; do
-              if curl -f -s "${BACKEND_URL}/health" > /dev/null 2>&1; then
-                echo "✅ Backend is healthy!"
-                break
-              else
-                echo "⏳ Attempt $i/10: Backend not ready yet, waiting..."
-                sleep 3
-              fi
-            done
+          echo "🔍 Health check URL: ${BACKEND_URL}/health"
+
+          # Проверяем health бекенда
+          echo "⏳ Waiting for backend to be ready..."
+          sleep 5
+
+          for i in {1..10}; do
+            if curl -f -s "${BACKEND_URL}/health" > /dev/null 2>&1; then
+              echo "✅ Backend is healthy!"
+              break
+            else
+              echo "⏳ Attempt $i/10: Backend not ready yet, waiting..."
+              sleep 3
+            fi
+          done
 
       - name: Deploy Frontend
         env:
@@ -498,12 +588,12 @@ jobs:
             echo "📄 Config.js content:"
             cat admin/dist/config.js
           else
-            echo "❌ ERROR: Backend was deployed but BACKEND_URL is not available!"
-            echo "This indicates a deployment failure. Please check:"
-            echo "  1. Backend deployment completed successfully"
-            echo "  2. 'Get Backend URL' step ran and set BACKEND_URL"
-            echo "  3. Backend container exists and is accessible"
-            exit 1
+              echo "❌ ERROR: Backend was deployed but BACKEND_URL is not available!"
+              echo "This indicates a deployment failure. Please check:"
+              echo "  1. Backend deployment completed successfully"
+              echo "  2. 'Get Backend URL' step ran and set BACKEND_URL"
+              echo "  3. Backend container exists and is accessible"
+              exit 1
           fi
 
           # Финальная проверка: убеждаемся, что config.js существует перед деплоем
