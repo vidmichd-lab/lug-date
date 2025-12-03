@@ -142,7 +142,7 @@ jobs:
           password: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
 
       - name: Build and push Docker image
-        timeout-minutes: 30
+        timeout-minutes: 45
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -154,6 +154,9 @@ jobs:
           cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache,mode=max
           platforms: linux/amd64
+          # Оптимизация для больших образов и медленных соединений
+          no-cache: false
+          pull: true
 
       - name: Check image size
         timeout-minutes: 5

@@ -32,7 +32,9 @@ COPY shared/package*.json ./shared/
 
 # Устанавливаем только production зависимости
 # Отключаем prepare скрипт (husky не нужен в Docker и требует .git)
-RUN npm ci --only=production --omit=dev --ignore-scripts
+RUN npm ci --only=production --omit=dev --ignore-scripts && \
+    npm cache clean --force && \
+    rm -rf /tmp/* /var/tmp/*
 
 # Копируем собранный код из builder
 COPY --from=builder /build/backend/dist ./backend/dist
@@ -40,7 +42,14 @@ COPY --from=builder /build/shared/dist ./shared/dist
 
 # Обновляем ссылку на shared пакет в package.json
 # Структура: /function/backend и /function/shared
-RUN sed -i.bak 's|"@dating-app/shared": "\*"|"@dating-app/shared": "file:../shared/dist"|' backend/package.json && rm backend/package.json.bak
+RUN sed -i.bak 's|"@dating-app/shared": "\*"|"@dating-app/shared": "file:../shared/dist"|' backend/package.json && \
+    rm -f backend/package.json.bak && \
+    # Удаляем ненужные файлы для уменьшения размера
+    find . -name "*.map" -delete && \
+    find . -name "*.ts" -not -path "*/node_modules/*" -delete && \
+    find . -name "*.tsx" -not -path "*/node_modules/*" -delete && \
+    find . -name "tsconfig.json" -delete && \
+    rm -rf /tmp/* /var/tmp/*
 
 # Копируем service account key (будет монтироваться в runtime)
 RUN mkdir -p /function/keys
