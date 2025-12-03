@@ -1,0 +1,161 @@
+name: Deploy Admin Only
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - 'admin/**'
+      - 'shared/**'
+      - '.github/workflows/deploy-admin.yml'
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  deploy-admin:
+    name: Deploy Admin to Production
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    environment:
+      name: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared package
+        run: npm run build --workspace=shared
+
+      - name: Get Backend URL
+        id: get-backend-url
+        timeout-minutes: 10
+        env:
+          YC_SERVICE_ACCOUNT_KEY: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
+          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
+          YC_CONTAINER_ID: ${{ secrets.YC_CONTAINER_ID }}
+        run: |
+          # Install Yandex Cloud CLI
+          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
+          echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
+
+          # Configure YC CLI
+          echo "$YC_SERVICE_ACCOUNT_KEY" > /tmp/yc-sa-key.json
+          yc config profile create sa-profile || true
+          yc config set service-account-key /tmp/yc-sa-key.json
+          if [ -n "$YC_CLOUD_ID" ]; then
+            yc config set cloud-id "$YC_CLOUD_ID" || true
+          fi
+          if [ -n "$YC_FOLDER_ID" ]; then
+            yc config set folder-id "$YC_FOLDER_ID" || true
+          fi
+
+          export PATH=$PATH:$HOME/yandex-cloud/bin
+
+          # Get backend URL
+          BACKEND_URL=""
+          if [ -n "${YC_CONTAINER_ID}" ]; then
+            echo "🔍 Fetching container info using container ID..."
+            CONTAINER_JSON=$(yc serverless container get --id="${YC_CONTAINER_ID}" --format json 2>&1)
+            BACKEND_URL=$(echo "${CONTAINER_JSON}" | jq -r '.url // .status.url // .current_revision.url // empty' 2>/dev/null)
+          elif [ -n "${YC_FOLDER_ID}" ]; then
+            echo "🔍 Fetching container info using folder ID and name..."
+            CONTAINER_JSON=$(yc serverless container get --name=lug-date-backend --folder-id="${YC_FOLDER_ID}" --format json 2>&1)
+            BACKEND_URL=$(echo "${CONTAINER_JSON}" | jq -r '.url // .status.url // .current_revision.url // empty' 2>/dev/null)
+          fi
+
+          if [ -z "${BACKEND_URL}" ] || [ "${BACKEND_URL}" == "null" ]; then
+            echo "⚠️  WARNING: Cannot get backend URL, using default from config.js"
+            BACKEND_URL=""
+          else
+            echo "✅ Got backend URL: ${BACKEND_URL}"
+            echo "BACKEND_URL=${BACKEND_URL}" >> $GITHUB_ENV
+          fi
+
+      - name: Build admin
+        run: NODE_ENV=production npm run build --workspace=admin
+
+      - name: Update config.js with backend URL
+        if: env.BACKEND_URL != ''
+        run: |
+          echo "📝 Updating admin/public/config.js with backend URL: ${BACKEND_URL}"
+          cat > admin/public/config.js << EOF
+          // Runtime configuration for admin panel
+          // This file is loaded before the app starts
+          // You can override API URL by setting window.ADMIN_CONFIG before this script loads
+          window.ADMIN_CONFIG = window.ADMIN_CONFIG || {
+            // Backend URL - контейнер Yandex Serverless Containers
+            // Этот файл автоматически обновляется при деплое через GitHub Actions
+            API_URL: '${BACKEND_URL}'
+          };
+          EOF
+
+          # Also update dist/config.js
+          cp admin/public/config.js admin/dist/config.js
+
+          echo "✅ Updated config.js files"
+          cat admin/dist/config.js
+
+      - name: Deploy Admin
+        timeout-minutes: 15
+        env:
+          ADMIN_STORAGE_BUCKET: ${{ secrets.ADMIN_STORAGE_BUCKET }}
+          ADMIN_STORAGE_ACCESS_KEY: ${{ secrets.ADMIN_STORAGE_ACCESS_KEY }}
+          ADMIN_STORAGE_SECRET_KEY: ${{ secrets.ADMIN_STORAGE_SECRET_KEY }}
+        run: |
+          if [ -z "${ADMIN_STORAGE_BUCKET}" ]; then
+            echo "❌ Error: ADMIN_STORAGE_BUCKET secret is not set"
+            exit 1
+          fi
+
+          if [ -z "${ADMIN_STORAGE_ACCESS_KEY}" ]; then
+            echo "❌ Error: ADMIN_STORAGE_ACCESS_KEY secret is not set"
+            exit 1
+          fi
+
+          if [ -z "${ADMIN_STORAGE_SECRET_KEY}" ]; then
+            echo "❌ Error: ADMIN_STORAGE_SECRET_KEY secret is not set"
+            exit 1
+          fi
+
+          # Install AWS CLI for S3
+          pip install awscli
+
+          export AWS_ACCESS_KEY_ID="${ADMIN_STORAGE_ACCESS_KEY}"
+          export AWS_SECRET_ACCESS_KEY="${ADMIN_STORAGE_SECRET_KEY}"
+          export AWS_DEFAULT_REGION="ru-central1"
+
+          echo "📦 Deploying admin to bucket: ${ADMIN_STORAGE_BUCKET}"
+
+          # Validate config.js exists
+          if [ ! -f "admin/dist/config.js" ]; then
+            echo "❌ ERROR: config.js not found in admin/dist/"
+            exit 1
+          fi
+
+          # Deploy admin panel
+          aws --endpoint-url=https://storage.yandexcloud.net s3 sync \
+            --delete \
+            admin/dist/ \
+            s3://${ADMIN_STORAGE_BUCKET}/ \
+            --exclude "*.map"
+
+          echo "✅ Admin deployed to: https://${ADMIN_STORAGE_BUCKET}.website.yandexcloud.net"
+
+          # Verify config.js is accessible
+          CONFIG_URL="https://${ADMIN_STORAGE_BUCKET}.website.yandexcloud.net/config.js"
+          echo "🔍 Verifying config.js is accessible at: ${CONFIG_URL}"
+          sleep 5
+          curl -s "${CONFIG_URL}" | head -20 || echo "⚠️  Warning: config.js may not be accessible yet"
