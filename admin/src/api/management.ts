@@ -34,11 +34,14 @@ api.interceptors.request.use(
       console.log(
         '🔑 Adding auth token to request:',
         config.url,
-        'Token:',
-        token.substring(0, 20) + '...'
+        'Token prefix:',
+        token.substring(0, 20) + '...',
+        'Token length:',
+        token.length
       );
     } else {
       console.warn('⚠️ No auth token found in localStorage for request:', config.url);
+      console.warn('⚠️ Available localStorage keys:', Object.keys(localStorage));
     }
     return config;
   },
@@ -65,11 +68,26 @@ api.interceptors.response.use(
   },
   (error) => {
     // Handle 403 Unauthorized - clear token and redirect to login
-    if (error.response?.status === 403 && error.response?.data?.error?.code === 'UNAUTHORIZED') {
-      console.warn('⚠️ Unauthorized access, clearing token and redirecting to login');
-      localStorage.removeItem('admin_token');
-      // Trigger page reload to show login form
-      window.location.reload();
+    if (error.response?.status === 403) {
+      const errorCode = error.response?.data?.error?.code;
+      const errorMessage = error.response?.data?.error?.message;
+
+      console.error('❌ 403 Forbidden:', {
+        code: errorCode,
+        message: errorMessage,
+        url: error.config?.url,
+        method: error.config?.method,
+        hasToken: !!localStorage.getItem('admin_token'),
+        tokenPrefix: localStorage.getItem('admin_token')?.substring(0, 20),
+      });
+
+      if (errorCode === 'UNAUTHORIZED') {
+        console.warn('⚠️ Unauthorized access, clearing token and redirecting to login');
+        localStorage.removeItem('admin_token');
+        // Trigger page reload to show login form
+        window.location.reload();
+      }
+
       return Promise.reject(error);
     }
 
@@ -226,6 +244,12 @@ export const eventsApi = {
         maxContentLength: Infinity,
         maxBodyLength: Infinity,
       });
+
+      // Add auth token to upload requests
+      const token = localStorage.getItem('admin_token');
+      if (token) {
+        uploadApi.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      }
 
       const response = await uploadApi.post('/events/upload-image', formData);
       return response.data.data;
