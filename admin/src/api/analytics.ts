@@ -56,12 +56,18 @@ api.interceptors.response.use(
         responseData: error.response?.data,
       });
 
-      if (errorCode === 'UNAUTHORIZED') {
-        console.warn(
-          '⚠️ Unauthorized access in analytics, clearing token and redirecting to login'
+      // Не разлогинивать автоматически - дать возможность посмотреть логи
+      // Пользователь может разлогиниться вручную через кнопку "Выход"
+      if (errorCode === 'UNAUTHORIZED' || !errorCode) {
+        console.error('❌ Unauthorized access detected in analytics');
+        console.error(
+          '⚠️ Token will NOT be cleared automatically. You can clear it manually if needed.'
         );
-        localStorage.removeItem('admin_token');
-        window.location.reload();
+        console.error('💡 To logout manually, run: localStorage.clear(); location.reload();');
+        console.error('💡 Or use the "Выход" button in the navigation');
+        // НЕ очищаем токен автоматически - даем возможность посмотреть логи
+        // localStorage.removeItem('admin_token');
+        // window.location.reload();
       }
 
       return Promise.reject(error);

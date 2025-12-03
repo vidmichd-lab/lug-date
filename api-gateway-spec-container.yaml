@@ -1,0 +1,41 @@
+openapi: 3.0.0
+info:
+  title: Dating App API Gateway
+  version: 1.0.0
+  description: API Gateway для Dating App Backend (Serverless Container)
+paths:
+  /{proxy+}:
+    x-yc-apigateway-any-method:
+      x-yc-apigateway-integration:
+        type: cloud_container
+        container_id: YOUR_CONTAINER_ID_HERE
+        service_account_id: aje0defcl8b2577p01hg
+      summary: Проксирование всех запросов к Serverless Container
+      description: Все запросы проксируются к контейнеру бекенда
+      parameters:
+        - name: proxy
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Путь запроса (например, /health, /api/admin/management/users)
+      responses:
+        '200':
+          description: Успешный ответ
+        '400':
+          description: Ошибка запроса
+        '403':
+          description: Доступ запрещен
+        '500':
+          description: Внутренняя ошибка сервера
+  /:
+    get:
+      x-yc-apigateway-integration:
+        type: cloud_container
+        container_id: YOUR_CONTAINER_ID_HERE
+        service_account_id: aje0defcl8b2577p01hg
+      summary: Корневой путь
+      description: Проксирование корневого пути к контейнеру
+      responses:
+        '200':
+          description: Успешный ответ

@@ -89,11 +89,17 @@ api.interceptors.response.use(
       // Log full error for debugging
       console.error('Full error object:', error);
 
+      // Не разлогинивать автоматически - дать возможность посмотреть логи
+      // Пользователь может разлогиниться вручную через кнопку
       if (errorCode === 'UNAUTHORIZED' || !errorCode) {
-        console.warn('⚠️ Unauthorized access, clearing token and redirecting to login');
-        localStorage.removeItem('admin_token');
-        // Trigger page reload to show login form
-        window.location.reload();
+        console.error('❌ Unauthorized access detected');
+        console.error(
+          '⚠️ Token will NOT be cleared automatically. You can clear it manually if needed.'
+        );
+        console.error('💡 To logout manually, run: localStorage.clear(); location.reload();');
+        // НЕ очищаем токен автоматически - даем возможность посмотреть логи
+        // localStorage.removeItem('admin_token');
+        // window.location.reload();
       }
 
       return Promise.reject(error);
