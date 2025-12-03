@@ -1,23 +1,23 @@
 .progressContainer {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-sm, 8px);
   align-items: center;
   width: 100%;
-  padding: var(--spacing-base) 0;
+  height: 24px;
 }
 
 .progressStep {
   flex: 1;
   height: 6px;
-  background-color: rgba(0, 0, 0, 0.1);
-  border-radius: var(--radius-full);
+  background-color: var(--color-shape-100, #f4f4f4);
+  border-radius: 123123px;
   transition: background-color 0.3s ease-in-out;
 }
 
 .progressStepActive {
-  background-color: var(--color-text, #000000);
+  background-color: var(--color-typography-main-100, #1e1e1e);
 }
 
 .progressStepCompleted {
-  background-color: var(--color-text, #000000);
+  background-color: var(--color-typography-main-100, #1e1e1e);
 }

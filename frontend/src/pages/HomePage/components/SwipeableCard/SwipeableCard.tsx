@@ -16,6 +16,7 @@ export const SwipeableCard: FC<SwipeableCardProps> = ({
   nextCard,
   onSwipeLeft,
   onSwipeRight,
+  onLinkClick,
 }) => {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -99,12 +100,9 @@ export const SwipeableCard: FC<SwipeableCardProps> = ({
     };
   }, [isDragging, handleMove, handleEnd]);
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-    },
-    []
-  );
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+  }, []);
 
   const handleMouseUp = useCallback(() => {
     // Handled by global handler
@@ -155,7 +153,7 @@ export const SwipeableCard: FC<SwipeableCardProps> = ({
           }}
         >
           {nextCard.type === 'event' ? (
-            <EventCard event={nextCard.data as any} />
+            <EventCard event={nextCard.data as any} onLinkClick={onLinkClick} />
           ) : (
             <ProfileCard profile={nextCard.data as any} />
           )}
@@ -177,7 +175,7 @@ export const SwipeableCard: FC<SwipeableCardProps> = ({
         onTouchEnd={handleTouchEnd}
       >
         {card.type === 'event' ? (
-          <EventCard event={card.data as any} />
+          <EventCard event={card.data as any} onLinkClick={onLinkClick} />
         ) : (
           <ProfileCard profile={card.data as any} />
         )}
@@ -185,4 +183,3 @@ export const SwipeableCard: FC<SwipeableCardProps> = ({
     </>
   );
 };
-

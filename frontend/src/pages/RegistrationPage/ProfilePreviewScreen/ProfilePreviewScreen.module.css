@@ -16,29 +16,42 @@
   max-width: 351px;
   width: 100%;
   margin: 0 auto;
+  gap: 44px;
+}
+
+.profileCardScrollContainer {
+  background: var(--color-shape-100, #f4f4f4);
+  height: 550px;
+  overflow-x: clip;
+  overflow-y: auto;
+  border-radius: var(--rounding-card, 32px);
+  width: 100%;
 }
 
 .profileCardPreview {
-  background: #ffffff;
-  border-radius: 20px;
+  background: var(--color-shape-100, #f4f4f4);
+  border-radius: var(--rounding-card, 32px);
   overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  max-width: 400px;
-  margin: 0 auto var(--spacing-2xl) auto;
+  width: 351px;
+  min-height: 542px;
+  margin: 0 auto;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .profilePhotoSection {
   position: relative;
   width: 100%;
-  aspect-ratio: 3 / 4;
+  height: 351px;
   overflow: hidden;
 }
 
 .profileCardHeader {
   position: absolute;
-  top: 16px;
-  left: 16px;
-  right: 16px;
+  top: var(--l-r-shape, 16px);
+  left: var(--l-r-shape, 16px);
+  right: var(--l-r-shape, 16px);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -46,26 +59,36 @@
 }
 
 .goalBadge {
-  background: #ffffff;
-  color: #000000;
-  padding: 8px 16px;
-  border-radius: 24px;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.2;
+  background: var(--color-inverted, #ffffff);
+  color: var(--color-typography-main-100, #1e1e1e);
+  padding: 12px;
+  height: 32px;
+  border-radius: var(--rounding-button-round, 999px);
+  font-size: var(--font-body-size, 16px);
+  font-weight: var(--font-body-weight, 400);
+  line-height: var(--font-body-line-height, 20px);
+  letter-spacing: var(--font-body-letter-spacing, -0.2px);
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  box-sizing: border-box;
 }
 
 .menuButton {
-  background: transparent;
+  background: rgba(30, 30, 30, 0.05);
+  backdrop-filter: blur(8px);
   border: none;
-  color: #ffffff;
-  font-size: 24px;
+  color: var(--color-inverted, #ffffff);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--rounding-button-round, 999px);
   cursor: pointer;
   padding: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: opacity 0.2s ease;
+  box-sizing: border-box;
 }
 
 .menuButton:hover {
@@ -94,41 +117,69 @@
 }
 
 .profileCardContent {
-  padding: 20px 24px;
+  padding: var(--l-r-shape, 16px);
+  padding-bottom: var(--t-b-shape, 24px);
+}
+
+.profileDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.nameAndAgeContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.jobTitleContainer {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  width: 100%;
 }
 
 .profileName {
-  font-size: 24px;
-  font-weight: 600;
-  line-height: 1.2;
-  color: #000000;
-  margin: 0 0 8px 0;
+  font-size: var(--font-h2-size, 24px);
+  font-weight: var(--font-h2-weight, 500);
+  line-height: var(--font-h2-line-height, 28px);
+  letter-spacing: var(--font-h2-letter-spacing, -0.25px);
+  color: var(--color-typography-main-100, #1e1e1e);
+  margin: 0;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-family: var(--font-family);
+}
+
+.profileName .age {
+  color: var(--color-typography-main-40, rgba(30, 30, 30, 0.4));
 }
 
 .profileJob {
-  font-size: 14px;
-  font-weight: 400;
-  color: #666666;
+  font-size: var(--font-body-size, 16px);
+  font-weight: var(--font-body-weight, 400);
+  line-height: var(--font-body-line-height, 20px);
+  letter-spacing: var(--font-body-letter-spacing, -0.2px);
+  color: var(--color-typography-main-40, rgba(30, 30, 30, 0.4));
   margin: 0 0 12px 0;
-  line-height: 1.4;
 }
 
 .profileBio {
-  font-size: 14px;
-  font-weight: 400;
-  color: #000000;
-  line-height: 1.5;
-  margin: 0 0 16px 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: var(--font-body-size, 16px);
+  font-weight: var(--font-body-weight, 400);
+  line-height: var(--font-body-line-height, 20px);
+  letter-spacing: var(--font-body-letter-spacing, -0.2px);
+  color: var(--color-typography-main-80, rgba(30, 30, 30, 0.8));
+  margin: 0 0 12px 0;
 }
 
 .interestsRow {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
   margin-bottom: 0;
 }
@@ -136,18 +187,23 @@
 .interestTagSmall {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: transparent;
+  gap: 4px;
+  background: var(--color-bg-100, #ffffff);
   border: none;
-  padding: 0;
-  font-size: 14px;
-  color: #000000;
-  font-weight: 400;
+  padding: 4px 12px 12px 4px;
+  height: 32px;
+  border-radius: var(--rounding-button-round, 999px);
+  font-size: var(--font-body-size, 16px);
+  color: var(--color-typography-main-100, #1e1e1e);
+  font-weight: var(--font-body-weight, 400);
+  line-height: var(--font-body-line-height, 20px);
+  letter-spacing: var(--font-body-letter-spacing, -0.2px);
+  box-sizing: border-box;
 }
 
 .interestIconSmall {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -161,21 +217,26 @@
 }
 
 .createProfileButton {
-  background: #000000;
-  color: #ffffff;
-  border-radius: 28px;
-  padding: 16px 32px;
-  font-size: 16px;
-  font-weight: 500;
+  background: var(--color-typography-main-100, #1e1e1e);
+  color: var(--color-inverted, #ffffff);
+  border-radius: var(--rounding-button-round, 999px);
+  padding: 12px 24px;
+  height: 54px;
+  font-size: var(--font-body-size, 16px);
+  font-weight: var(--font-body-weight, 400);
+  line-height: var(--font-body-line-height, 20px);
+  letter-spacing: var(--font-body-letter-spacing, -0.2px);
   border: none;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   margin: 0 auto;
-  width: fit-content;
+  min-width: 128px;
   transition: opacity 0.2s ease-in-out;
   font-family: var(--font-family);
+  white-space: nowrap;
+  box-sizing: border-box;
 }
 
 .createProfileButton:hover {
@@ -187,18 +248,60 @@
 }
 
 .createProfileIcon {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.divider {
+  background: var(--color-typography-main-5, rgba(30, 30, 30, 0.05));
+  height: 1px;
+  width: 100%;
+  border-radius: var(--rounding-button-round, 999px);
+}
+
+.statsRow {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: var(--font-body-size, 16px);
+  font-weight: var(--font-body-weight, 400);
+  line-height: var(--font-body-line-height, 20px);
+  letter-spacing: var(--font-body-letter-spacing, -0.2px);
+  font-family: var(--font-family);
+}
+
+.statsLabel {
+  color: var(--color-typography-main-40, rgba(30, 30, 30, 0.4));
+}
+
+.statsValue {
+  color: var(--color-typography-main-100, #1e1e1e);
+}
+
+.eventsGallery {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.eventPhoto {
+  width: 48px;
+  height: 64px;
+  border-radius: 12px;
+  background: var(--color-shape-100, #f4f4f4);
   flex-shrink: 0;
 }
 
 @media (max-width: 375px) {
   .profileCardPreview {
-    border-radius: 16px;
+    border-radius: 24px;
   }
 
   .profileCardContent {
-    padding: 16px 20px;
+    padding: var(--l-r-shape, 16px);
+    padding-bottom: var(--t-b-shape, 24px);
   }
 
   .profileName {

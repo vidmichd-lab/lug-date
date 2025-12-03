@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ProfileHeader } from '../../../components/ProfileHeader';
+import { Namewrong } from '../../../design-system/components/namewrong';
 import styles from './NameInputScreen.module.css';
 import type { NameInputScreenProps, NameValidationError } from './NameInputScreen.types';
 
@@ -112,28 +113,33 @@ export const NameInputScreen: React.FC<NameInputScreenProps> = ({
         <h2 className={styles.title}>{t('registration.nameInput.title')}</h2>
 
         <div className={styles.inputContainer}>
-          <input
-            ref={inputRef}
-            type="text"
-            className={`${styles.input} ${error ? styles.inputError : ''}`}
-            placeholder={t('registration.nameInput.placeholder')}
-            value={name}
-            onChange={handleChange}
-            onKeyPress={handleKeyPress}
-            maxLength={MAX_LENGTH}
-            autoComplete="given-name"
-            autoCapitalize="words"
-          />
+          <div className={styles.inputWrapper}>
+            <input
+              ref={inputRef}
+              type="text"
+              className={`${styles.input} ${error ? styles.inputError : ''}`}
+              placeholder={t('registration.nameInput.placeholder')}
+              value={name}
+              onChange={handleChange}
+              onKeyPress={handleKeyPress}
+              maxLength={MAX_LENGTH}
+              autoComplete="given-name"
+              autoCapitalize="words"
+            />
+            {error && (
+              <div className={styles.errorIcon}>
+                <Namewrong />
+              </div>
+            )}
+          </div>
           {error && (
-            <p className={styles.errorMessage}>
-              {t(`registration.nameInput.errors.${error}`)}
-            </p>
+            <p className={styles.errorMessage}>{t(`registration.nameInput.errors.${error}`)}</p>
           )}
         </div>
 
         <div className={styles.buttonContainer}>
           <button
-            className={styles.button}
+            className={`${styles.button} ${isButtonEnabled ? styles.buttonActive : ''}`}
             onClick={handleNext}
             disabled={!isButtonEnabled}
             type="button"
@@ -145,4 +151,3 @@ export const NameInputScreen: React.FC<NameInputScreenProps> = ({
     </div>
   );
 };
-

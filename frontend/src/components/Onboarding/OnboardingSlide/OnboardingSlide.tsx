@@ -17,24 +17,29 @@ export const OnboardingSlide: FC<OnboardingSlideProps> = ({
   onNext,
   totalSteps,
 }) => {
+  const showProgress = step > 1;
+  const showContent = step > 1;
+
   return (
     <div className={styles.slideContainer}>
-      <OnboardingProgress currentStep={step} totalSteps={totalSteps} />
-
-      <div className={styles.contentContainer}>
-        <div className={styles.descriptionContainer}>
-          <h1 className={styles.title}>{title}</h1>
-          <p className={styles.subtitle}>{subtitle}</p>
-
-          {illustration ? (
-            <img src={illustration} alt="" className={styles.illustration} loading="lazy" />
-          ) : (
-            <div className={styles.illustrationPlaceholder}>
-              {/* Placeholder for future illustration */}
-            </div>
-          )}
+      {showProgress && (
+        <div className={styles.progressWrapper}>
+          <OnboardingProgress currentStep={step} totalSteps={totalSteps} />
         </div>
-      </div>
+      )}
+
+      {showContent && (
+        <div className={styles.contentContainer}>
+          <div className={styles.descriptionContainer}>
+            <h1 className={styles.title}>{title}</h1>
+            {subtitle && <p className={styles.subtitle}>{subtitle}</p>}
+
+            {illustration ? (
+              <img src={illustration} alt="" className={styles.illustration} loading="lazy" />
+            ) : null}
+          </div>
+        </div>
+      )}
 
       <div className={styles.buttonContainer}>
         <button className={styles.button} onClick={onNext} type="button">

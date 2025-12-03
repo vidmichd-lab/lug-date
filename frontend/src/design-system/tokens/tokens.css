@@ -2,18 +2,47 @@
 
 :root {
   /* Colors - Light theme */
-  --color-primary: #FF6B6B;
-  --color-secondary: #4ECDC4;
-  --color-background: #FFFFFF;
-  --color-background-secondary: #F8F9FA;
-  --color-text: #2D3436;
-  --color-text-secondary: #636E72;
-  --color-border: #DFE6E9;
-  --color-error: #FF3B30;
-  --color-success: #34C759;
-  --color-warning: #FF9500;
-  --color-info: #007AFF;
-  
+  --color-primary: #ff6b6b;
+  --color-secondary: #4ecdc4;
+  --color-background: #ffffff;
+  --color-background-secondary: #f8f9fa;
+  --color-text: #1e1e1e;
+  --color-text-secondary: #636e72;
+  --color-border: #dfe6e9;
+  --color-error: #ff3b30;
+  --color-success: #34c759;
+  --color-warning: #ff9500;
+  --color-info: #007aff;
+
+  /* Figma Variables - Typography colors */
+  --color-typography-main-100: #1e1e1e;
+  --color-typography-main-80: rgba(30, 30, 30, 0.8);
+  --color-typography-main-60: rgba(30, 30, 30, 0.6);
+  --color-typography-main-40: rgba(30, 30, 30, 0.4);
+  --color-typography-main-20: rgba(30, 30, 30, 0.2);
+  --color-typography-main-5: rgba(30, 30, 30, 0.05);
+
+  /* Figma Variables - Shape colors */
+  --color-shape-100: #f4f4f4;
+  --color-shape-40: rgba(244, 244, 244, 0.4);
+
+  /* Figma Variables - States */
+  --color-states-wrong-100: #ff3b48;
+  --color-states-wrong-80: rgba(255, 59, 72, 0.8);
+  --color-states-wrong-8: rgba(255, 59, 72, 0.08);
+
+  /* Figma Variables - Inverted */
+  --color-inverted: #ffffff;
+
+  /* Figma Variables - Background */
+  --color-bg-100: #ffffff;
+  --color-bg-0: rgba(255, 255, 255, 0);
+
+  /* Figma Variables - Always Light (for overlays) */
+  --color-always-light-100: #ffffff;
+  --color-always-light-75: rgba(255, 255, 255, 0.75);
+  --color-always-light-50: rgba(255, 255, 255, 0.5);
+
   /* Spacing */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
@@ -25,7 +54,15 @@
   --spacing-3xl: 40px;
   --spacing-4xl: 48px;
   --spacing-5xl: 64px;
-  
+
+  /* Figma Variables - Spacing */
+  --l-r-mobile: 12px;
+  --l-r-shape: 16px;
+  --between-title-input: 24px;
+  --between-title-text: 8px;
+  --between-input-input: 8px;
+  --between-input-text: 12px;
+
   /* Radius */
   --radius-none: 0px;
   --radius-sm: 4px;
@@ -34,51 +71,60 @@
   --radius-xl: 16px;
   --radius-2xl: 24px;
   --radius-full: 9999px;
-  
+
+  /* Figma Variables - Radius */
+  --rounding-button-round: 999px;
+  --rounding-button-l: 16px;
+  --rounding-card: 32px;
+
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  
+
   /* Typography */
-  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-family:
+    'Roboto Flex', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
   --font-h1-size: 32px;
   --font-h1-weight: 700;
   --font-h1-line-height: 40px;
   --font-h2-size: 24px;
-  --font-h2-weight: 600;
-  --font-h2-line-height: 32px;
+  --font-h2-weight: 500;
+  --font-h2-line-height: 28px;
+  --font-h2-letter-spacing: -0.25px;
   --font-h3-size: 20px;
   --font-h3-weight: 600;
   --font-h3-line-height: 28px;
   --font-body-size: 16px;
   --font-body-weight: 400;
-  --font-body-line-height: 24px;
+  --font-body-line-height: 20px;
+  --font-body-letter-spacing: -0.2px;
   --font-body-small-size: 14px;
   --font-body-small-weight: 400;
-  --font-body-small-line-height: 20px;
+  --font-body-small-line-height: 18px;
   --font-caption-size: 12px;
   --font-caption-weight: 400;
   --font-caption-line-height: 16px;
-  
+
   /* Breakpoints */
   --breakpoint-mobile: 375px;
   --breakpoint-tablet: 768px;
   --breakpoint-desktop: 1024px;
 }
 
-[data-theme="dark"] {
+[data-theme='dark'] {
   /* Colors - Dark theme */
-  --color-primary: #FF8E8E;
-  --color-secondary: #6EDDD6;
-  --color-background: #1A1A1A;
-  --color-background-secondary: #2D2D2D;
-  --color-text: #FFFFFF;
-  --color-text-secondary: #CCCCCC;
+  --color-primary: #ff8e8e;
+  --color-secondary: #6eddd6;
+  --color-background: #1a1a1a;
+  --color-background-secondary: #2d2d2d;
+  --color-text: #ffffff;
+  --color-text-secondary: #cccccc;
   --color-border: #404040;
-  --color-error: #FF5C5C;
-  --color-success: #4CD964;
-  --color-warning: #FFB340;
-  --color-info: #5AC8FA;
+  --color-error: #ff5c5c;
+  --color-success: #4cd964;
+  --color-warning: #ffb340;
+  --color-info: #5ac8fa;
 }

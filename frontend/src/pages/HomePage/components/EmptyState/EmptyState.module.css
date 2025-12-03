@@ -3,58 +3,96 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 60vh;
-  padding: 32px;
+  flex: 1;
+  padding: 0 var(--l-r-mobile, 12px);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  justify-content: center;
   text-align: center;
 }
 
 .emptyTitle {
-  font-size: 22px;
-  font-weight: 600;
-  margin-bottom: 12px;
-  color: #000000;
+  font-family: var(--font-family);
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 28px;
+  letter-spacing: -0.25px;
+  color: var(--color-typography-main-100, #1e1e1e);
+  margin: 0;
+  white-space: pre;
 }
 
 .emptySubtitle {
-  font-size: 14px;
-  color: #666666;
-  text-align: center;
-  margin-bottom: 24px;
-  max-width: 280px;
-  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  font-family: var(--font-family);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.2px;
+  color: var(--color-typography-main-80, rgba(30, 30, 30, 0.8));
+  margin: 0;
+  white-space: pre;
+}
+
+.emptySubtitle p {
+  margin: 0;
 }
 
 .refreshButton {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  background: #ffffff;
-  border: 1px solid #e0e0e0;
-  border-radius: 24px;
-  padding: 12px 24px;
+  background: var(--color-typography-main-100, #1e1e1e);
+  border: none;
+  border-radius: 13123px;
+  padding: 12px 20px;
+  min-width: 128px;
+  height: 48px;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  color: #000000;
-  transition: all 0.2s ease;
   font-family: var(--font-family);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.2px;
+  color: var(--color-inverted, #ffffff);
+  white-space: pre;
+  transition: opacity 0.2s ease;
 }
 
 .refreshButton:hover {
-  background: #f5f5f5;
-  border-color: #bdbdbd;
+  opacity: 0.9;
 }
 
 .refreshButton:active {
-  transform: scale(0.98);
+  opacity: 0.8;
+}
+
+.refreshButton svg {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor;
 }
 
 @media (max-width: 375px) {
   .emptyTitle {
-    font-size: 20px;
+    font-size: 22px;
   }
 
   .emptySubtitle {
-    font-size: 13px;
+    font-size: 14px;
+  }
+
+  .refreshButton {
+    height: 44px;
+    padding: 10px 16px;
+    font-size: 14px;
   }
 }

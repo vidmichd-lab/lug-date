@@ -4,7 +4,14 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { FeedHeader, SwipeableCard, ActionButtons, BottomNav, EmptyState } from './components';
+import {
+  FeedHeader,
+  SwipeableCard,
+  ActionButtons,
+  BottomNav,
+  EmptyState,
+  FilterSheet,
+} from './components';
 import type { FeedTab } from './components';
 import { sortCards } from './utils';
 import type { Card } from './utils';
@@ -14,11 +21,12 @@ import { useUserStore } from '../../stores';
 import styles from './HomePage.module.css';
 
 // Mock categories for events (TODO: get from API)
-const EVENT_CATEGORIES = ['all', 'art', 'music', 'theater', 'cinema', 'sport', 'food'];
+const EVENT_CATEGORIES = ['Кафе', 'Выставки', 'Спектакли', 'Что-то еще', 'Другой'];
 
 export function HomePage() {
   const [activeTab, setActiveTab] = useState<FeedTab>('events');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
   const [cards, setCards] = useState<Card[]>([]);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,20 +43,20 @@ export function HomePage() {
       }
     });
 
-    // Filter by category for events
-    if (activeTab === 'events' && selectedCategory !== 'all') {
+    // Filter by selected categories for events
+    if (activeTab === 'events' && selectedCategories.length > 0) {
       filtered = filtered.filter(
-        (card) => card.type === 'event' && (card.data as any).category === selectedCategory
+        (card) => card.type === 'event' && selectedCategories.includes((card.data as any).category)
       );
     }
 
     return filtered;
-  }, [cards, activeTab, selectedCategory]);
+  }, [cards, activeTab, selectedCategories]);
 
   // Sort cards
   const sortedCards = useMemo(() => {
-    return sortCards(filteredCards, selectedCategory !== 'all');
-  }, [filteredCards, selectedCategory]);
+    return sortCards(filteredCards, selectedCategories.length > 0);
+  }, [filteredCards, selectedCategories]);
 
   const currentCard = sortedCards[currentCardIndex];
   const nextCard = sortedCards[currentCardIndex + 1];
@@ -57,20 +65,21 @@ export function HomePage() {
   const fetchCards = useCallback(async () => {
     setIsLoading(true);
     try {
-      const category = selectedCategory === 'all' ? undefined : selectedCategory;
       const type = activeTab === 'events' ? 'events' : 'profiles';
-      
+
       // Build query string
       const params = new URLSearchParams();
       params.append('type', type);
-      if (category) params.append('category', category);
+      if (selectedCategories.length > 0) {
+        selectedCategories.forEach((cat) => params.append('category', cat));
+      }
       params.append('limit', '20');
       params.append('offset', '0');
 
       const response = await api.get<{ cards: Card[]; pagination: { total: number } }>(
         `/api/v1/feed?${params.toString()}`,
         {
-          requireAuth: false, // Allow guest mode
+          requireAuth: false, // Allow guest mode - can view cards without registration
         }
       );
 
@@ -87,22 +96,30 @@ export function HomePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [activeTab, selectedCategory]);
+  }, [activeTab, selectedCategories]);
 
   useEffect(() => {
     fetchCards();
   }, [fetchCards]);
 
+  // Update cards when categories change
+  useEffect(() => {
+    if (!isLoading) {
+      fetchCards();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategories]);
+
   // Check if user is authenticated
   const isAuthenticated = useCallback(() => {
     // Check if user exists in store
     if (user) return true;
-    
+
     // Check if Telegram WebApp initData exists
     if (typeof window !== 'undefined' && window.Telegram?.WebApp?.initData) {
       return true;
     }
-    
+
     return false;
   }, [user]);
 
@@ -178,14 +195,40 @@ export function HomePage() {
     fetchCards();
   }, [fetchCards]);
 
-  const handleTabChange = useCallback(
-    (tab: FeedTab) => {
-      setActiveTab(tab);
-      setSelectedCategory('all');
-      setCurrentCardIndex(0);
-    },
-    []
-  );
+  const handleTabChange = useCallback((tab: FeedTab) => {
+    setActiveTab(tab);
+    setSelectedCategories([]);
+    setCurrentCardIndex(0);
+  }, []);
+
+  const handleFilterClick = useCallback(() => {
+    setShowFilterSheet(true);
+  }, []);
+
+  const handleCategoryToggle = useCallback((category: string) => {
+    setSelectedCategories((prev) => {
+      if (prev.includes(category)) {
+        return prev.filter((c) => c !== category);
+      }
+      return [...prev, category];
+    });
+  }, []);
+
+  const handleLinkClick = useCallback(() => {
+    if (!currentCard) return;
+
+    // Check authentication before opening link
+    if (!isAuthenticated()) {
+      setShowRegistrationModal(true);
+      return;
+    }
+
+    // Open link (if available in card data)
+    const eventData = currentCard.data as any;
+    if (eventData.linkUrl) {
+      window.open(eventData.linkUrl, '_blank', 'noopener,noreferrer');
+    }
+  }, [currentCard, isAuthenticated]);
 
   if (isLoading) {
     return (
@@ -200,10 +243,8 @@ export function HomePage() {
       <FeedHeader
         activeTab={activeTab}
         onTabChange={handleTabChange}
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
-        categories={EVENT_CATEGORIES}
-        showCategories={activeTab === 'events'}
+        onFilterClick={handleFilterClick}
+        hasActiveFilters={selectedCategories.length > 0}
       />
 
       <div className={styles.cardStack}>
@@ -214,6 +255,7 @@ export function HomePage() {
               nextCard={nextCard || null}
               onSwipeLeft={handleSwipeLeft}
               onSwipeRight={handleSwipeRight}
+              onLinkClick={handleLinkClick}
             />
             <ActionButtons onDislike={handleSwipeLeft} onLike={handleSwipeRight} />
           </>
@@ -224,6 +266,14 @@ export function HomePage() {
 
       <BottomNav activeTab="feed" />
 
+      <FilterSheet
+        isOpen={showFilterSheet}
+        onClose={() => setShowFilterSheet(false)}
+        categories={EVENT_CATEGORIES}
+        selectedCategories={selectedCategories}
+        onCategoryToggle={handleCategoryToggle}
+      />
+
       <RegistrationModal
         isOpen={showRegistrationModal}
         onClose={() => setShowRegistrationModal(false)}
@@ -231,4 +281,3 @@ export function HomePage() {
     </div>
   );
 }
-

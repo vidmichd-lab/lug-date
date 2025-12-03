@@ -18,7 +18,7 @@ export const ActionButtons: FC<ActionButtonsProps> = ({ onDislike, onLike }) => 
         className={`${styles.actionButton} ${styles.dislikeButton}`}
         onClick={onDislike}
         type="button"
-        aria-label="Dislike"
+        aria-label="Скрыть событие"
       >
         <svg
           width="24"
@@ -40,7 +40,7 @@ export const ActionButtons: FC<ActionButtonsProps> = ({ onDislike, onLike }) => 
         className={`${styles.actionButton} ${styles.likeButton}`}
         onClick={onLike}
         type="button"
-        aria-label="Like"
+        aria-label="Добавить в избранное"
       >
         <svg
           width="24"

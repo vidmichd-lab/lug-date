@@ -54,8 +54,10 @@ export const AboutYouScreen: React.FC<AboutYouScreenProps> = ({
       />
 
       <div className={styles.content}>
-        <h2 className={styles.title}>{t('registration.aboutYou.title')}</h2>
-        <p className={styles.subtitle}>{t('registration.aboutYou.subtitle')}</p>
+        <div className={styles.titleContainer}>
+          <h2 className={styles.title}>{t('registration.aboutYou.title')}</h2>
+          <p className={styles.subtitle}>{t('registration.aboutYou.subtitle')}</p>
+        </div>
 
         <div className={styles.formFields}>
           <InputWithIcon

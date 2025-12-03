@@ -5,6 +5,7 @@
 
 import { FC } from 'react';
 import { useTranslation } from 'react-i18next';
+import { OnboardingProgress } from '../OnboardingProgress';
 import styles from './OnboardingAuthSelection.module.css';
 import type { OnboardingAuthSelectionProps } from './OnboardingAuthSelection.types';
 
@@ -16,6 +17,17 @@ export const OnboardingAuthSelection: FC<OnboardingAuthSelectionProps> = ({
 
   return (
     <div className={styles.container}>
+      <div className={styles.progressWrapper}>
+        <OnboardingProgress currentStep={3} totalSteps={3} />
+      </div>
+
+      <div className={styles.contentContainer}>
+        <div className={styles.descriptionContainer}>
+          <h1 className={styles.title}>{t('onboarding.slide3.title')}</h1>
+          <p className={styles.subtitle}>{t('onboarding.slide3.subtitle')}</p>
+        </div>
+      </div>
+
       <div className={styles.buttonContainer}>
         <button className={styles.primaryButton} onClick={onTelegramAuth} type="button">
           <svg

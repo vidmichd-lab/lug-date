@@ -77,19 +77,21 @@ export const CitySelectionScreen: React.FC<CitySelectionScreenProps> = ({
           ))}
         </div>
 
-        <button className={styles.helpLink} onClick={handleOpenModal} type="button">
-          {t('registration.citySelection.helpLink')}
-        </button>
-
-        <div className={styles.buttonContainer}>
-          <button
-            className={styles.button}
-            onClick={handleNext}
-            disabled={!isButtonEnabled}
-            type="button"
-          >
-            {t('common.next')}
+        <div className={styles.helpLinkContainer}>
+          <button className={styles.helpLink} onClick={handleOpenModal} type="button">
+            {t('registration.citySelection.helpLink')}
           </button>
+
+          <div className={styles.buttonContainer}>
+            <button
+              className={`${styles.button} ${isButtonEnabled ? styles.buttonActive : ''}`}
+              onClick={handleNext}
+              disabled={!isButtonEnabled}
+              type="button"
+            >
+              {t('common.next')}
+            </button>
+          </div>
         </div>
       </div>
 

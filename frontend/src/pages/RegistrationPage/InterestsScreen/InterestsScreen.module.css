@@ -52,7 +52,7 @@
 .interestsGrid {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-sm);
+  gap: 12px;
   margin-bottom: var(--spacing-xl);
 }
 

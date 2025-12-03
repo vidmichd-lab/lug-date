@@ -1,152 +1,136 @@
 .container {
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
   min-height: 100vh;
   width: 100%;
   background-color: var(--color-background, #ffffff);
-  padding: 0 var(--spacing-base);
+  padding: 48px var(--l-r-mobile, 12px);
   box-sizing: border-box;
 }
 
 .content {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  padding: var(--spacing-xl) 0;
-  max-width: 351px;
+  gap: var(--between-title-input, 24px);
   width: 100%;
-  margin: 0 auto;
+  flex: 1;
 }
 
 .title {
-  font-size: 24px;
-  font-weight: 600;
-  line-height: 32px;
-  color: var(--color-text, #000000);
-  margin: 0 0 var(--spacing-xl) 0;
+  font-family: var(--font-family);
+  font-size: var(--font-h2-size, 24px);
+  font-weight: var(--font-h2-weight, 500);
+  line-height: var(--font-h2-line-height, 28px);
+  letter-spacing: var(--font-h2-letter-spacing, -0.25px);
+  color: var(--color-typography-main-100, #1e1e1e);
+  margin: 0;
+  width: 100%;
 }
 
 .dateInputContainer {
   display: flex;
-  gap: var(--spacing-md);
+  gap: var(--between-input-input, 8px);
   width: 100%;
-  justify-content: space-between;
+  overflow: hidden;
+  border-radius: var(--rounding-button-l, 16px);
 }
 
 .dateInput {
   flex: 1;
   height: 54px;
-  padding: var(--spacing-base);
-  background-color: #f5f5f5;
-  border: 2px solid transparent;
-  border-radius: var(--radius-lg);
-  font-size: var(--font-body-size, 16px);
-  font-weight: 400;
-  color: var(--color-text, #000000);
+  padding: 12px 16px;
+  background-color: var(--color-shape-100, #f4f4f4);
+  border: none;
+  border-radius: var(--rounding-button-l, 16px);
   font-family: var(--font-family);
+  font-size: var(--font-body-size, 16px);
+  font-weight: var(--font-body-weight, 400);
+  line-height: var(--font-body-line-height, 20px);
+  letter-spacing: var(--font-body-letter-spacing, -0.2px);
+  color: var(--color-typography-main-100, #1e1e1e);
   text-align: center;
   box-sizing: border-box;
   transition:
-    border-color 0.2s ease-in-out,
-    background-color 0.2s ease-in-out;
+    background-color 0.2s ease-in-out,
+    color 0.2s ease-in-out;
 }
 
 .dateInput::placeholder {
-  color: #9e9e9e;
+  color: var(--color-typography-main-40, rgba(30, 30, 30, 0.4));
 }
 
 .dateInput:focus {
   outline: none;
-  background-color: var(--color-background, #ffffff);
-  border-color: var(--color-text, #000000);
+  background-color: var(--color-shape-100, #f4f4f4);
 }
 
 .dateInputError {
-  border-color: #ff0000;
-  background-color: var(--color-background, #ffffff);
-  color: #ff0000;
+  background-color: var(--color-states-wrong-8, rgba(255, 59, 72, 0.08));
+  color: var(--color-states-wrong-100, #ff3b48);
 }
 
 .dateInputDay {
-  max-width: 111px;
+  /* Equal width with others */
 }
 
 .dateInputMonth {
-  max-width: 111px;
+  /* Equal width with others */
 }
 
 .dateInputYear {
-  max-width: 111px;
+  /* Equal width with others */
 }
 
-.checkboxContainer {
-  margin-top: var(--spacing-lg);
+.errorContainer {
   display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  cursor: pointer;
-}
-
-.checkbox {
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--color-border, #dfe6e9);
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition:
-    background-color 0.2s ease-in-out,
-    border-color 0.2s ease-in-out;
-}
-
-.checkboxChecked {
-  background-color: var(--color-text, #000000);
-  border-color: var(--color-text, #000000);
-}
-
-.checkboxInput {
-  display: none;
-}
-
-.checkboxLabel {
-  flex: 1;
-  font-size: var(--font-body-small-size, 14px);
-  font-weight: 400;
-  color: var(--color-text-secondary, #666666);
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  cursor: pointer;
-}
-
-.checkboxIcon {
-  width: 16px;
-  height: 16px;
-  color: #9e9e9e;
-  cursor: help;
-  flex-shrink: 0;
-}
-
-.errorBlock {
-  margin-top: var(--spacing-base);
-  padding: var(--spacing-base);
-  background-color: #ffe5e5;
-  border-radius: var(--radius-lg);
+  flex-direction: column;
+  gap: var(--between-input-text, 12px);
+  width: 100%;
 }
 
 .errorMessage {
+  font-family: var(--font-family);
   font-size: var(--font-body-small-size, 14px);
-  font-weight: 400;
-  color: #ff0000;
+  font-weight: var(--font-body-small-weight, 400);
+  line-height: var(--font-body-small-line-height, 18px);
+  color: var(--color-states-wrong-80, rgba(255, 59, 72, 0.8));
   margin: 0;
-  line-height: 20px;
+  width: 100%;
+}
+
+.switchContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--between-title-input, 24px);
+  align-items: center;
+  width: 100%;
+}
+
+.switchWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 351px;
+}
+
+.switchLabel {
+  font-family: var(--font-family);
+  font-size: var(--font-body-size, 16px);
+  font-weight: var(--font-body-weight, 400);
+  line-height: var(--font-body-line-height, 20px);
+  letter-spacing: var(--font-body-letter-spacing, -0.2px);
+  color: var(--color-typography-main-100, #1e1e1e);
+  white-space: nowrap;
+}
+
+.switch {
+  flex-shrink: 0;
 }
 
 .buttonContainer {
-  margin-top: auto;
-  padding: var(--spacing-xl) 0 var(--spacing-2xl) 0;
   width: 100%;
   display: flex;
   justify-content: center;
@@ -155,31 +139,36 @@
 .button {
   min-width: 128px;
   height: 54px;
-  padding: var(--spacing-base) 48px;
-  background-color: var(--color-text, #000000);
-  color: var(--color-background, #ffffff);
+  padding: 12px 24px;
+  background-color: var(--color-shape-40, rgba(244, 244, 244, 0.4));
+  color: var(--color-typography-main-20, rgba(30, 30, 30, 0.2));
   border: none;
-  border-radius: 28px;
+  border-radius: var(--rounding-button-round, 999px);
+  font-family: var(--font-family);
   font-size: var(--font-body-size, 16px);
-  font-weight: 500;
+  font-weight: var(--font-body-weight, 400);
+  line-height: var(--font-body-line-height, 20px);
+  letter-spacing: var(--font-body-letter-spacing, -0.2px);
   cursor: pointer;
   transition:
-    opacity 0.2s ease-in-out,
-    background-color 0.2s ease-in-out;
-  font-family: var(--font-family);
+    background-color 0.2s ease-in-out,
+    color 0.2s ease-in-out;
+  white-space: nowrap;
 }
 
-.button:hover:not(:disabled) {
+.button:not(:disabled):hover {
   opacity: 0.9;
 }
 
-.button:active:not(:disabled) {
+.button:not(:disabled):active {
   opacity: 0.8;
 }
 
 .button:disabled {
-  background-color: #e0e0e0;
-  color: #9e9e9e;
   cursor: not-allowed;
-  opacity: 0.6;
+}
+
+.buttonActive {
+  background-color: var(--color-typography-main-100, #1e1e1e);
+  color: var(--color-inverted, #ffffff);
 }

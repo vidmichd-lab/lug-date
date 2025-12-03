@@ -6,10 +6,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ProfileHeader } from '../../../components/ProfileHeader';
+import { Viewswitch } from '../../../design-system/components/viewswitch';
 import { validateDateOfBirth } from './utils';
 import styles from './DateOfBirthScreen.module.css';
 import type { DateOfBirthScreenProps, DateValidationError } from './DateOfBirthScreen.types';
-
 
 export const DateOfBirthScreen: React.FC<DateOfBirthScreenProps> = ({
   onNext,
@@ -23,7 +23,7 @@ export const DateOfBirthScreen: React.FC<DateOfBirthScreenProps> = ({
   const [month, setMonth] = useState(initialDate?.month || '');
   const [year, setYear] = useState(initialDate?.year || '');
   const [showAge, setShowAge] = useState(initialShowAge);
-  const [error, setError] = useState<DateValidationError>(null);
+  const [_error, setError] = useState<DateValidationError>(null);
 
   const dayRef = useRef<HTMLInputElement>(null);
   const monthRef = useRef<HTMLInputElement>(null);
@@ -102,6 +102,63 @@ export const DateOfBirthScreen: React.FC<DateOfBirthScreenProps> = ({
   const isButtonEnabled = validation?.isValid === true;
   const isUnderAge = validation?.error === 'under-age';
 
+  // Special layout for under-age error
+  if (isUnderAge) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.content}>
+          <h2 className={styles.title}>{t('registration.dateOfBirth.title')}</h2>
+
+          <div className={styles.errorContainer}>
+            <div className={styles.dateInputContainer}>
+              <input
+                ref={dayRef}
+                type="text"
+                inputMode="numeric"
+                className={`${styles.dateInput} ${styles.dateInputDay} ${styles.dateInputError}`}
+                placeholder="31"
+                value={day}
+                onChange={handleDayChange}
+                maxLength={2}
+              />
+              <input
+                ref={monthRef}
+                type="text"
+                inputMode="numeric"
+                className={`${styles.dateInput} ${styles.dateInputMonth} ${styles.dateInputError}`}
+                placeholder="01"
+                value={month}
+                onChange={handleMonthChange}
+                maxLength={2}
+              />
+              <input
+                ref={yearRef}
+                type="text"
+                inputMode="numeric"
+                className={`${styles.dateInput} ${styles.dateInputYear} ${styles.dateInputError}`}
+                placeholder="2009"
+                value={year}
+                onChange={handleYearChange}
+                maxLength={4}
+              />
+            </div>
+            <p className={styles.errorMessage}>{t('registration.dateOfBirth.errors.underAge')}</p>
+          </div>
+        </div>
+
+        <div className={styles.buttonContainer}>
+          <button
+            className={`${styles.button} ${styles.buttonActive}`}
+            onClick={handleExit}
+            type="button"
+          >
+            {t('registration.dateOfBirth.exit')}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.container}>
       <ProfileHeader
@@ -120,9 +177,7 @@ export const DateOfBirthScreen: React.FC<DateOfBirthScreenProps> = ({
             ref={dayRef}
             type="text"
             inputMode="numeric"
-            className={`${styles.dateInput} ${styles.dateInputDay} ${
-              error ? styles.dateInputError : ''
-            }`}
+            className={`${styles.dateInput} ${styles.dateInputDay}`}
             placeholder="31"
             value={day}
             onChange={handleDayChange}
@@ -132,9 +187,7 @@ export const DateOfBirthScreen: React.FC<DateOfBirthScreenProps> = ({
             ref={monthRef}
             type="text"
             inputMode="numeric"
-            className={`${styles.dateInput} ${styles.dateInputMonth} ${
-              error ? styles.dateInputError : ''
-            }`}
+            className={`${styles.dateInput} ${styles.dateInputMonth}`}
             placeholder="01"
             value={month}
             onChange={handleMonthChange}
@@ -144,119 +197,44 @@ export const DateOfBirthScreen: React.FC<DateOfBirthScreenProps> = ({
             ref={yearRef}
             type="text"
             inputMode="numeric"
-            className={`${styles.dateInput} ${styles.dateInputYear} ${
-              error ? styles.dateInputError : ''
-            }`}
+            className={`${styles.dateInput} ${styles.dateInputYear}`}
             placeholder="2000"
             value={year}
             onChange={handleYearChange}
             maxLength={4}
           />
         </div>
+      </div>
 
-        {error === 'under-age' && (
-          <div className={styles.errorBlock}>
-            <p className={styles.errorMessage}>
-              {t('registration.dateOfBirth.errors.underAge')}
-            </p>
-          </div>
-        )}
-
-        {isButtonEnabled && !isUnderAge && (
-          <div className={styles.checkboxContainer}>
-            <div
-              className={`${styles.checkbox} ${showAge ? styles.checkboxChecked : ''}`}
+      {isButtonEnabled && (
+        <div className={styles.switchContainer}>
+          <div className={styles.switchWrapper}>
+            <span className={styles.switchLabel}>{t('registration.dateOfBirth.showAge')}</span>
+            <Viewswitch
+              className={styles.switch}
+              property1={showAge ? 'Default' : 'Variant4'}
               onClick={() => setShowAge(!showAge)}
-            >
-              {showAge && (
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 12 12"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M10 3L4.5 8.5L2 6"
-                    stroke="white"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              )}
-            </div>
-            <label
-              htmlFor="showAge"
-              className={styles.checkboxLabel}
-              onClick={() => setShowAge(!showAge)}
-            >
-              <span>{t('registration.dateOfBirth.showAge')}</span>
-              <svg
-                className={styles.checkboxIcon}
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // TODO: Show tooltip with explanation
-                }}
-              >
-                <path
-                  d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M12 16V12"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M12 8H12.01"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </label>
-            <input
-              type="checkbox"
-              id="showAge"
-              className={styles.checkboxInput}
-              checked={showAge}
-              onChange={(e) => setShowAge(e.target.checked)}
             />
           </div>
-        )}
-
-        <div className={styles.buttonContainer}>
-          {isUnderAge ? (
+          <div className={styles.buttonContainer}>
             <button
-              className={styles.button}
-              onClick={handleExit}
-              type="button"
-            >
-              {t('registration.dateOfBirth.exit')}
-            </button>
-          ) : (
-            <button
-              className={styles.button}
+              className={`${styles.button} ${styles.buttonActive}`}
               onClick={handleNext}
-              disabled={!isButtonEnabled}
               type="button"
             >
               {t('common.next')}
             </button>
-          )}
+          </div>
         </div>
-      </div>
+      )}
+
+      {!isButtonEnabled && (
+        <div className={styles.buttonContainer}>
+          <button className={styles.button} onClick={handleNext} disabled type="button">
+            {t('common.next')}
+          </button>
+        </div>
+      )}
     </div>
   );
 };
-

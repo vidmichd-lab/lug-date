@@ -69,7 +69,7 @@ export const GenderSelectionScreen: React.FC<GenderSelectionScreenProps> = ({
 
         <div className={styles.buttonContainer}>
           <button
-            className={styles.button}
+            className={`${styles.button} ${isButtonEnabled ? styles.buttonActive : ''}`}
             onClick={handleNext}
             disabled={!isButtonEnabled}
             type="button"

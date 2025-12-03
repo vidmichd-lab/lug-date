@@ -37,15 +37,16 @@
 .photoContainer {
   position: relative;
   width: 100%;
-  max-width: 400px;
-  aspect-ratio: 1 / 1;
-  background: #f5f5f5;
-  border-radius: 20px;
+  max-width: 351px;
+  height: 351px;
+  background: var(--color-shape-100, #f4f4f4);
+  border-radius: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto var(--spacing-2xl) auto;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .photoContainer.hasImage {
@@ -60,9 +61,9 @@
 }
 
 .photoPlaceholderIcon {
-  width: 80px;
-  height: 80px;
-  color: #bdbdbd;
+  width: 64px;
+  height: 64px;
+  color: var(--color-typography-main-100, #1e1e1e);
 }
 
 .loadingOverlay {
@@ -99,20 +100,24 @@
 
 .uploadButton {
   width: 100%;
-  max-width: 400px;
+  max-width: 351px;
   height: 54px;
-  padding: var(--spacing-base) var(--spacing-xl);
-  background-color: var(--color-text, #000000);
-  color: var(--color-background, #ffffff);
+  padding: 12px 24px;
+  background-color: var(--color-typography-main-100, #1e1e1e);
+  color: var(--color-inverted, #ffffff);
   border: none;
-  border-radius: 28px;
+  border-radius: var(--rounding-button-round, 999px);
   font-size: var(--font-body-size, 16px);
-  font-weight: 500;
+  font-weight: var(--font-body-weight, 400);
+  line-height: var(--font-body-line-height, 20px);
+  letter-spacing: var(--font-body-letter-spacing, -0.2px);
   cursor: pointer;
   transition: opacity 0.2s ease-in-out;
   font-family: var(--font-family);
   margin: 0 auto;
   display: block;
+  white-space: nowrap;
+  box-sizing: border-box;
 }
 
 .uploadButton:hover:not(:disabled) {
@@ -130,12 +135,12 @@
 
 .buttonGroup {
   display: flex;
-  gap: 12px;
+  gap: var(--between-input-input, 8px);
   align-items: center;
   justify-content: center;
   margin-top: var(--spacing-xl);
   width: 100%;
-  max-width: 400px;
+  max-width: 351px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -144,20 +149,26 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: #f5f5f5;
-  color: var(--color-text, #000000);
-  border-radius: 28px;
-  padding: 12px 20px;
+  flex: 1;
+  min-width: 128px;
+  height: 54px;
+  background: var(--color-shape-100, #f4f4f4);
+  color: var(--color-typography-main-100, #1e1e1e);
+  border-radius: var(--rounding-button-round, 999px);
+  padding: 12px 24px;
   font-size: var(--font-body-size, 16px);
-  font-weight: 500;
+  font-weight: var(--font-body-weight, 400);
+  line-height: var(--font-body-line-height, 20px);
+  letter-spacing: var(--font-body-letter-spacing, -0.2px);
   border: none;
   cursor: pointer;
   transition: background-color 0.2s ease-in-out;
   font-family: var(--font-family);
+  box-sizing: border-box;
 }
 
 .refreshButton:hover:not(:disabled) {
-  background: #ececec;
+  opacity: 0.9;
 }
 
 .refreshButton:active:not(:disabled) {
@@ -170,25 +181,29 @@
 }
 
 .refreshIcon {
-  width: 18px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
 }
 
 .nextButton {
   flex: 1;
-  max-width: 200px;
+  min-width: 128px;
   height: 54px;
-  padding: var(--spacing-base) 48px;
-  background-color: var(--color-text, #000000);
-  color: var(--color-background, #ffffff);
+  padding: 12px 24px;
+  background-color: var(--color-typography-main-100, #1e1e1e);
+  color: var(--color-inverted, #ffffff);
   border: none;
-  border-radius: 28px;
+  border-radius: var(--rounding-button-round, 999px);
   font-size: var(--font-body-size, 16px);
-  font-weight: 500;
+  font-weight: var(--font-body-weight, 400);
+  line-height: var(--font-body-line-height, 20px);
+  letter-spacing: var(--font-body-letter-spacing, -0.2px);
   cursor: pointer;
   transition: opacity 0.2s ease-in-out;
   font-family: var(--font-family);
+  white-space: nowrap;
+  box-sizing: border-box;
 }
 
 .nextButton:hover:not(:disabled) {
@@ -210,16 +225,17 @@
   }
 
   .photoContainer {
-    border-radius: 16px;
+    max-width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
   }
 
   .buttonGroup {
-    flex-direction: column;
-    gap: var(--spacing-md);
+    flex-direction: row;
+    gap: var(--between-input-input, 8px);
   }
 
   .nextButton {
-    max-width: 100%;
-    width: 100%;
+    flex: 1;
   }
 }

@@ -1,22 +1,26 @@
 .interestTag {
   display: inline-flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  background-color: #f5f5f5;
-  color: var(--color-text, #000000);
-  border-radius: 24px;
-  padding: 10px var(--spacing-lg);
-  font-size: 15px;
-  font-weight: 500;
+  gap: 8px;
+  background-color: var(--color-shape-100, #f4f4f4);
+  color: var(--color-typography-main-100, #1e1e1e);
+  border-radius: var(--rounding-button-round, 999px);
+  padding: 12px;
+  height: 40px;
+  font-size: var(--font-body-size, 16px);
+  font-weight: var(--font-body-weight, 400);
+  line-height: var(--font-body-line-height, 20px);
+  letter-spacing: var(--font-body-letter-spacing, -0.2px);
   cursor: pointer;
   transition: all 0.2s ease-in-out;
   border: none;
   white-space: nowrap;
   font-family: var(--font-family);
+  box-sizing: border-box;
 }
 
 .interestTag:hover:not(:disabled) {
-  background-color: #ececec;
+  opacity: 0.9;
 }
 
 .interestTag:active:not(:disabled) {
@@ -29,18 +33,18 @@
 }
 
 .interestTagSelected {
-  background-color: var(--color-text, #000000);
-  color: var(--color-background, #ffffff);
+  background-color: var(--color-typography-main-100, #1e1e1e);
+  color: var(--color-inverted, #ffffff);
 }
 
 .interestTagSelected:hover {
-  background-color: var(--color-text, #000000);
+  background-color: var(--color-typography-main-100, #1e1e1e);
   opacity: 0.9;
 }
 
 .interestIcon {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -62,10 +66,9 @@
 
 /* Ensure icon components from design-system are properly sized */
 .interestIcon > div {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-

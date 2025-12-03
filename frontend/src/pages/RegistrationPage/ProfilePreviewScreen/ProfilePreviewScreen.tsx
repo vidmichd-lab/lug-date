@@ -60,16 +60,16 @@ export const ProfilePreviewScreen: React.FC<ProfilePreviewScreenProps> = ({
     try {
       // TODO: Call API to complete registration and save profile data
       // For now, just mark onboarding as completed and navigate
-      
+
       // Mark onboarding as completed (this allows access to main app)
       completeOnboarding();
-      
+
       // Clear registration data
       resetRegistration();
-      
+
       // Mark registration as completed
       localStorage.setItem('registrationCompleted', 'true');
-      
+
       // Navigate to home
       navigate('/');
       onComplete();
@@ -90,108 +90,120 @@ export const ProfilePreviewScreen: React.FC<ProfilePreviewScreenProps> = ({
       />
 
       <div className={styles.content}>
-        <div className={styles.profileCardPreview}>
-          {/* Photo Section with Header */}
-          <div className={styles.profilePhotoSection}>
-            <div className={styles.profileCardHeader}>
-              {goalLabel && (
-                <span className={styles.goalBadge}>{goalLabel}</span>
+        <div className={styles.profileCardScrollContainer}>
+          <div className={styles.profileCardPreview}>
+            {/* Photo Section with Header */}
+            <div className={styles.profilePhotoSection}>
+              <div className={styles.profileCardHeader}>
+                {goalLabel && <span className={styles.goalBadge}>{goalLabel}</span>}
+                <button className={styles.menuButton} type="button" aria-label="Menu">
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <circle cx="12" cy="6" r="1.5" fill="currentColor" />
+                    <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+                    <circle cx="12" cy="18" r="1.5" fill="currentColor" />
+                  </svg>
+                </button>
+              </div>
+              {data.photoUrl ? (
+                <img src={data.photoUrl} alt={data.firstName} className={styles.profilePhoto} />
+              ) : (
+                <div className={styles.profilePhotoPlaceholder}>
+                  <svg
+                    width="80"
+                    height="80"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z"
+                      fill="#BDBDBD"
+                    />
+                  </svg>
+                </div>
               )}
-              <button className={styles.menuButton} type="button" aria-label="Menu">
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <circle cx="12" cy="6" r="1.5" fill="currentColor" />
-                  <circle cx="12" cy="12" r="1.5" fill="currentColor" />
-                  <circle cx="12" cy="18" r="1.5" fill="currentColor" />
-                </svg>
-              </button>
             </div>
-            {data.photoUrl ? (
-              <img
-                src={data.photoUrl}
-                alt={data.firstName}
-                className={styles.profilePhoto}
-              />
-            ) : (
-              <div className={styles.profilePhotoPlaceholder}>
-                <svg
-                  width="80"
-                  height="80"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z"
-                    fill="#BDBDBD"
-                  />
-                </svg>
-              </div>
-            )}
-          </div>
 
-          {/* Info Section */}
-          <div className={styles.profileCardContent}>
-            <h2 className={styles.profileName}>
-              {data.firstName}
-              {age !== null && data.showAge && ` ${age}`}
-            </h2>
-
-            {jobText && <p className={styles.profileJob}>{jobText}</p>}
-
-            {data.bio && (
-              <p className={styles.profileBio}>{data.bio}</p>
-            )}
-
-            {displayInterests.length > 0 && (
-              <div className={styles.interestsRow}>
-                {displayInterests.map((interest, index) => {
-                  if (!interest) return null;
-                  const IconComponent = interest.iconComponent;
-                  return (
-                    <div key={interest.id || index} className={styles.interestTagSmall}>
-                      <span
-                        className={styles.interestIconSmall}
-                        style={{ backgroundColor: interest.color }}
-                      >
-                        <IconComponent />
-                      </span>
-                      <span>{interest.label}</span>
+            {/* Info Section */}
+            <div className={styles.profileCardContent}>
+              <div className={styles.profileDetails}>
+                <div className={styles.nameAndAgeContainer}>
+                  <h2 className={styles.profileName}>
+                    <span>{data.firstName}</span>
+                    {age !== null && data.showAge && <span className={styles.age}>{age}</span>}
+                  </h2>
+                  {jobText && (
+                    <div className={styles.jobTitleContainer}>
+                      <p className={styles.profileJob}>{jobText}</p>
                     </div>
-                  );
-                })}
+                  )}
+                </div>
+
+                {data.bio && <p className={styles.profileBio}>{data.bio}</p>}
+
+                {displayInterests.length > 0 && (
+                  <div className={styles.interestsRow}>
+                    {displayInterests.map((interest, index) => {
+                      if (!interest) return null;
+                      const IconComponent = interest.iconComponent;
+                      return (
+                        <div key={interest.id || index} className={styles.interestTagSmall}>
+                          <span
+                            className={styles.interestIconSmall}
+                            style={{ backgroundColor: interest.color }}
+                          >
+                            <IconComponent />
+                          </span>
+                          <span>{interest.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            )}
+            </div>
+
+            {/* Divider */}
+            <div className={styles.divider} />
+
+            {/* Stats Section */}
+            <div className={styles.profileCardContent}>
+              <div className={styles.profileDetails}>
+                <div className={styles.statsRow}>
+                  <span className={styles.statsLabel}>Событий посещено</span>
+                  <span className={styles.statsValue}>4</span>
+                </div>
+                <div className={styles.eventsGallery}>
+                  {/* Placeholder for event photos */}
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className={styles.eventPhoto} />
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <button
-          className={styles.createProfileButton}
-          onClick={handleCreateProfile}
-          type="button"
-        >
+        <button className={styles.createProfileButton} onClick={handleCreateProfile} type="button">
           <span>{t('registration.profilePreview.createButton')}</span>
           <svg
             className={styles.createProfileIcon}
-            width="20"
-            height="20"
+            width="24"
+            height="24"
             viewBox="0 0 24 24"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
           >
-            <path
-              d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z"
-              fill="currentColor"
-            />
+            <path d="M12 4L20 12L12 20L4 12L12 4Z" fill="currentColor" />
           </svg>
         </button>
       </div>
     </div>
   );
 };
-
