@@ -230,7 +230,7 @@ app.get('/', (req, res) => {
   // Root endpoint - API information
   res.json({
     service: 'dating-app-backend',
-    version: '1.0.0',
+    version: '1.0.2',
     status: 'running',
     endpoints: {
       health: '/health',
