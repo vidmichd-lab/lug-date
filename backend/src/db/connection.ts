@@ -56,12 +56,25 @@ class YDBClient {
         serviceAccountKeyFile = process.env.YC_SERVICE_ACCOUNT_KEY_FILE.startsWith('/')
           ? process.env.YC_SERVICE_ACCOUNT_KEY_FILE
           : resolve(process.cwd(), process.env.YC_SERVICE_ACCOUNT_KEY_FILE);
-        process.env.YC_SERVICE_ACCOUNT_KEY_FILE = serviceAccountKeyFile;
-        logger.debug({ type: 'ydb_service_account_path_resolved', path: serviceAccountKeyFile });
-      } else {
-        // Try to find service account key in common locations
+
+        // Check if file exists, if not try to find it automatically
+        if (!existsSync(serviceAccountKeyFile)) {
+          logger.warn({
+            type: 'ydb_service_account_file_not_found',
+            path: serviceAccountKeyFile,
+            message: 'Service account key file from env not found, trying auto-discovery',
+          });
+          serviceAccountKeyFile = undefined; // Reset to trigger auto-discovery
+        } else {
+          process.env.YC_SERVICE_ACCOUNT_KEY_FILE = serviceAccountKeyFile;
+          logger.debug({ type: 'ydb_service_account_path_resolved', path: serviceAccountKeyFile });
+        }
+      }
+
+      // Auto-discovery: Try to find service account key in common locations
+      if (!serviceAccountKeyFile) {
         const possiblePaths = [
-          resolve(process.cwd(), 'yc-service-account-key.json'), // Root of project
+          resolve(process.cwd(), 'yc-service-account-key.json'), // Current directory
           resolve(process.cwd(), '..', 'yc-service-account-key.json'), // One level up (if running from backend/)
           resolve(process.cwd(), '../yc-service-account-key.json'), // One level up (alternative)
         ];
@@ -70,7 +83,11 @@ class YDBClient {
           if (existsSync(path)) {
             serviceAccountKeyFile = path;
             process.env.YC_SERVICE_ACCOUNT_KEY_FILE = serviceAccountKeyFile;
-            logger.debug({ type: 'ydb_service_account_auto_found', path: serviceAccountKeyFile });
+            logger.info({
+              type: 'ydb_service_account_auto_found',
+              path: serviceAccountKeyFile,
+              searchedPaths: possiblePaths,
+            });
             break;
           }
         }
