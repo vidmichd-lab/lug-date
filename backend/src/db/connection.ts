@@ -166,19 +166,33 @@ class YDBClient {
         // - Metadata service (when running in Yandex Cloud)
         // This is the recommended approach for YDB SDK 5.x
 
-        // Если есть файл Service Account, убеждаемся что он используется
-        // getCredentialsFromEnv() должен автоматически использовать YC_SERVICE_ACCOUNT_KEY_FILE
-        // Но если он пытается использовать metadata service, это вызовет ошибку
-        // Поэтому явно устанавливаем переменную окружения перед вызовом
+        // Если есть файл Service Account, используем его напрямую через getSACredentialsFromJson
+        // Это избегает попыток использовать metadata service в GitHub Actions
         if (serviceAccountKeyFile && existsSync(serviceAccountKeyFile)) {
-          // Убеждаемся, что переменная установлена
-          process.env.YC_SERVICE_ACCOUNT_KEY_FILE = serviceAccountKeyFile;
-          // Убираем другие источники credentials, чтобы избежать fallback на metadata service
-          delete process.env.YC_SERVICE_ACCOUNT_KEY; // Убираем, если был установлен
+          try {
+            // Используем getSACredentialsFromJson для явной загрузки из файла
+            const saCredentials = getSACredentialsFromJson(serviceAccountKeyFile);
+            // Приводим к типу IAuthService, который ожидает Driver
+            credentials = saCredentials as any;
+            logger.info({
+              type: 'ydb_credentials_loaded',
+              method: 'getSACredentialsFromJson',
+              hasServiceAccountFile: true,
+              path: serviceAccountKeyFile,
+            });
+          } catch (error) {
+            logger.warn({
+              error,
+              type: 'ydb_sa_file_load_failed',
+              message: 'Failed to load SA from file, trying getCredentialsFromEnv',
+            });
+            // Fallback to getCredentialsFromEnv только если файл не загрузился
+            credentials = getCredentialsFromEnv();
+          }
+        } else {
+          // Если файла нет, используем getCredentialsFromEnv
+          credentials = getCredentialsFromEnv();
         }
-
-        // Используем getCredentialsFromEnv, который должен использовать файл из YC_SERVICE_ACCOUNT_KEY_FILE
-        credentials = getCredentialsFromEnv();
         logger.info({
           type: 'ydb_credentials_loaded',
           method: 'getCredentialsFromEnv',
