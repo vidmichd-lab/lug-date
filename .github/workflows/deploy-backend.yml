@@ -254,6 +254,7 @@ jobs:
           ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
           IMAGE_ID: ${{ env.IMAGE_ID }}
         run: |
+          set -euo pipefail  # Exit on error, undefined vars, pipe failures
           export PATH="$PATH:$HOME/yandex-cloud/bin"
 
           # Validate IMAGE_ID is set
@@ -271,6 +272,22 @@ jobs:
           fi
 
           echo "📦 Deploying image: ${IMAGE_ID}"
+
+          # Validate and log critical variables (without exposing secrets)
+          echo "🔍 Validating deployment variables..."
+          if [ -z "${YC_CONTAINER_ID}" ] && [ -z "${YC_FOLDER_ID}" ]; then
+            echo "❌ ERROR: Neither YC_CONTAINER_ID nor YC_FOLDER_ID is set"
+            exit 1
+          fi
+
+          if [ -z "${YC_SERVICE_ACCOUNT_ID}" ]; then
+            echo "❌ ERROR: YC_SERVICE_ACCOUNT_ID is not set"
+            exit 1
+          fi
+
+          echo "✅ YC_CONTAINER_ID: ${YC_CONTAINER_ID:+set (length: ${#YC_CONTAINER_ID})}"
+          echo "✅ YC_FOLDER_ID: ${YC_FOLDER_ID:+set (length: ${#YC_FOLDER_ID})}"
+          echo "✅ YC_SERVICE_ACCOUNT_ID: ${YC_SERVICE_ACCOUNT_ID:+set (length: ${#YC_SERVICE_ACCOUNT_ID})}"
 
           # Set default values for admin credentials using bash parameter expansion
           ADMIN_USERNAME_VAL="${ADMIN_USERNAME:-admin}"
@@ -306,7 +323,8 @@ jobs:
           }
 
           # Используем container-id если указан, иначе container-name с folder-id
-          if [ -n "${YC_CONTAINER_ID}" ]; then
+          if [ -n "${YC_CONTAINER_ID:-}" ]; then
+            echo "🚀 Deploying to container ID: ${YC_CONTAINER_ID}"
             deploy_with_retry yc serverless container revision deploy \
               --container-id="${YC_CONTAINER_ID}" \
               --image="${IMAGE_ID}" \
@@ -332,7 +350,8 @@ jobs:
               --environment "ADMIN_USERNAME=${ADMIN_USERNAME_VAL}" \
               --environment "ADMIN_PASSWORD=${ADMIN_PASSWORD_VAL}" \
               --environment "ADMIN_TOKEN=${ADMIN_TOKEN_VAL}"
-          elif [ -n "${YC_FOLDER_ID}" ]; then
+          elif [ -n "${YC_FOLDER_ID:-}" ]; then
+            echo "🚀 Deploying to container name: lug-date-backend in folder: ${YC_FOLDER_ID}"
             deploy_with_retry yc serverless container revision deploy \
               --container-name=lug-date-backend \
               --folder-id="${YC_FOLDER_ID}" \
