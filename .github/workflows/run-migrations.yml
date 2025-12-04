@@ -1,0 +1,81 @@
+name: Run Database Migrations
+
+on:
+  workflow_dispatch: # Ручной запуск
+  push:
+    branches: [main]
+    paths:
+      - 'backend/src/db/migrations/**'
+      - '.github/workflows/run-migrations.yml'
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  run-migrations:
+    name: Run database migrations
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    environment:
+      name: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared package
+        run: npm run build --workspace=shared
+
+      - name: Run migrations
+        timeout-minutes: 10
+        env:
+          YC_SERVICE_ACCOUNT_KEY: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
+          YDB_ENDPOINT: ${{ secrets.YDB_ENDPOINT }}
+          YDB_DATABASE: ${{ secrets.YDB_DATABASE }}
+        run: |
+          cd backend
+
+          # Создаём временный файл с Service Account ключом
+          echo "$YC_SERVICE_ACCOUNT_KEY" > /tmp/yc-sa-key.json
+          export YC_SERVICE_ACCOUNT_KEY_FILE="/tmp/yc-sa-key.json"
+
+          # Проверяем переменные окружения
+          if [ -z "$YDB_ENDPOINT" ] || [ -z "$YDB_DATABASE" ]; then
+            echo "❌ ERROR: YDB_ENDPOINT or YDB_DATABASE is not set"
+            exit 1
+          fi
+
+          echo "🔌 Connecting to YDB..."
+          echo "Endpoint: $YDB_ENDPOINT"
+          echo "Database: $YDB_DATABASE"
+
+          echo "🚀 Running migrations..."
+          npm run migrate
+
+      - name: Check migration status
+        timeout-minutes: 3
+        env:
+          YC_SERVICE_ACCOUNT_KEY: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
+          YDB_ENDPOINT: ${{ secrets.YDB_ENDPOINT }}
+          YDB_DATABASE: ${{ secrets.YDB_DATABASE }}
+        run: |
+          cd backend
+
+          # Создаём временный файл с Service Account ключом
+          echo "$YC_SERVICE_ACCOUNT_KEY" > /tmp/yc-sa-key.json
+          export YC_SERVICE_ACCOUNT_KEY_FILE="/tmp/yc-sa-key.json"
+
+          echo "📋 Checking migration status..."
+          npm run migrate:status
