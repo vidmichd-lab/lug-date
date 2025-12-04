@@ -7,6 +7,9 @@ import { LoginPage } from './pages/LoginPage';
 import './App.css';
 import styles from './App.module.css';
 
+// App version for deployment tracking
+const APP_VERSION = '1.0.0';
+
 type Page = 'dashboard' | 'users' | 'events' | 'settings';
 
 function App() {
