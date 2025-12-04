@@ -90,6 +90,12 @@ api.interceptors.response.use(
         responseData: responseData,
         responseHeaders: error.response?.headers,
         requestHeaders: error.config?.headers,
+        // Check if it's a CORS error
+        isCorsError: errorCode === 'CORS_ERROR' || errorMessage?.includes('CORS'),
+        // Check if it's a rate limit error
+        isRateLimitError: errorCode === 'RATE_LIMIT_EXCEEDED',
+        // Full response for debugging
+        fullResponse: JSON.stringify(responseData, null, 2),
       });
 
       // Расширенное логирование для диагностики
