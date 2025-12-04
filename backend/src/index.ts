@@ -311,8 +311,31 @@ app.use(
 
 app.use(
   '/api/admin/management',
+  (req, res, next) => {
+    // Log BEFORE rate limiter
+    logger.info({
+      type: 'admin_management_before_limiter',
+      method: req.method,
+      url: req.url,
+      path: req.path,
+      originalUrl: req.originalUrl,
+      origin: req.headers.origin || 'not set',
+      hasAuthHeader: !!req.headers.authorization,
+      authHeaderPrefix: req.headers.authorization?.substring(0, 30) || 'not set',
+    });
+    next();
+  },
   adminLimiter,
   (req, res, next) => {
+    // Log AFTER rate limiter
+    logger.info({
+      type: 'admin_management_after_limiter',
+      method: req.method,
+      url: req.url,
+      path: req.path,
+      origin: req.headers.origin || 'not set',
+      hasAuthHeader: !!req.headers.authorization,
+    });
     // Skip auth for OPTIONS requests (CORS preflight)
     if (req.method === 'OPTIONS') {
       return next();
