@@ -230,49 +230,60 @@ class YDBClient {
       this.driver = new Driver(driverConfig);
 
       // Wait for driver to be ready with timeout
-      // Note: driver.ready() returns Promise<boolean> and should resolve within timeout
-      const timeout = 30000; // 30 seconds (reduced for faster failure detection)
-      logger.info({
-        type: 'ydb_driver_waiting',
-        timeout,
-        connectionString: connectionString.replace(/\?database=.*/, '?database=***'),
-      });
+      // Note: driver.ready() may hang in some network conditions
+      // We'll try to wait, but if it fails, we'll skip the check and let the first query establish connection
+      const timeout = 10000; // 10 seconds (reduced for faster failure detection)
+      const skipReadyCheck = process.env.YDB_SKIP_READY_CHECK === 'true';
 
-      try {
-        // Try to wait for driver to be ready
-        // Note: driver.ready() may hang if there are network issues
-        // We use a shorter timeout and Promise.race to prevent infinite waiting
-        logger.debug({ type: 'ydb_driver_ready_start', timeout });
-
-        const readyPromise = this.driver.ready(timeout);
-        const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => {
-            reject(new Error(`YDB driver initialization timeout after ${timeout}ms`));
-          }, timeout + 2000); // Add 2 seconds buffer
-        });
-
-        const isReady = await Promise.race([readyPromise, timeoutPromise]);
-
-        if (!isReady) {
-          logger.error({ type: 'ydb_driver_timeout', timeout });
-          throw new Error(
-            `YDB driver initialization timeout after ${timeout}ms. Check your network connection and credentials.`
-          );
-        }
-
-        logger.info({ type: 'ydb_driver_ready', timeout, isReady });
-      } catch (error) {
-        logger.error({
-          error,
-          type: 'ydb_driver_ready_failed',
-          message: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined,
+      if (!skipReadyCheck) {
+        logger.info({
+          type: 'ydb_driver_waiting',
           timeout,
+          connectionString: connectionString.replace(/\?database=.*/, '?database=***'),
         });
-        throw error;
+
+        try {
+          // Try to wait for driver to be ready with a short timeout
+          logger.debug({ type: 'ydb_driver_ready_start', timeout });
+
+          const readyPromise = this.driver.ready(timeout);
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => {
+              reject(new Error(`YDB driver initialization timeout after ${timeout}ms`));
+            }, timeout + 1000); // Add 1 second buffer
+          });
+
+          const isReady = await Promise.race([readyPromise, timeoutPromise]);
+
+          if (!isReady) {
+            logger.warn({
+              type: 'ydb_driver_timeout',
+              timeout,
+              message: 'Driver ready check timed out, will try to connect on first query',
+            });
+            // Don't throw error - let first query establish connection
+          } else {
+            logger.info({ type: 'ydb_driver_ready', timeout, isReady });
+          }
+        } catch (error) {
+          // If ready() check fails, log warning but continue
+          // The driver will establish connection on first query
+          logger.warn({
+            error,
+            type: 'ydb_driver_ready_check_failed',
+            message: 'Driver ready check failed, will try to connect on first query',
+            timeout,
+          });
+        }
+      } else {
+        logger.info({
+          type: 'ydb_driver_ready_check_skipped',
+          message: 'Skipping driver.ready() check (YDB_SKIP_READY_CHECK=true)',
+        });
       }
 
-      logger.info({ type: 'ydb_driver_ready' });
+      // Mark as connected (even if ready() check failed, connection will be established on first query)
+      logger.info({ type: 'ydb_driver_initialized' });
 
       this.isConnected = true;
       this.isConnecting = false;
