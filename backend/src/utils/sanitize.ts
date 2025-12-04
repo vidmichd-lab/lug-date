@@ -15,10 +15,14 @@ const getDOMPurify = () => {
   if (!purifyInstance) {
     try {
       const window = new JSDOM('').window;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       purifyInstance = DOMPurify(window as any);
     } catch (error) {
       // Fallback: if DOMPurify fails, we'll use basic sanitization
-      console.error('Failed to initialize DOMPurify:', error);
+      // Only log in development
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('Failed to initialize DOMPurify:', error);
+      }
       return null;
     }
   }
@@ -62,19 +66,23 @@ export function sanitizeText(text: string): string {
 /**
  * Sanitize object recursively
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function sanitizeObject<T extends Record<string, any>>(obj: T): T {
   const sanitized = { ...obj };
 
   for (const key in sanitized) {
     if (typeof sanitized[key] === 'string') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       sanitized[key] = sanitizeText(sanitized[key]) as any;
     } else if (
       typeof sanitized[key] === 'object' &&
       sanitized[key] !== null &&
       !Array.isArray(sanitized[key])
     ) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       sanitized[key] = sanitizeObject(sanitized[key]) as any;
     } else if (Array.isArray(sanitized[key])) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       sanitized[key] = sanitized[key].map((item: any) =>
         typeof item === 'string'
           ? sanitizeText(item)

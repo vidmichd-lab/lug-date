@@ -38,7 +38,9 @@ export const EventPopup: FC<EventPopupProps> = ({ eventId, onClose }) => {
           setEvent(response.data.event);
         }
       } catch (error) {
-        console.error('Failed to fetch event:', error);
+        if (import.meta.env.DEV) {
+          console.error('Failed to fetch event:', error);
+        }
       } finally {
         setIsLoading(false);
       }

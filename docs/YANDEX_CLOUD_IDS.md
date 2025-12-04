@@ -103,3 +103,5 @@ yc serverless container list --folder-id=$(yc config get folder-id)
 - ID контейнера обычно начинается с `bb`
 
 
+
+

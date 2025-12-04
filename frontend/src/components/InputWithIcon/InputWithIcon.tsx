@@ -10,7 +10,8 @@ import type { InputWithIconProps } from './InputWithIcon.types';
 
 const IconSvg: FC<{ type: InputWithIconProps['icon'] }> = ({ type }) => {
   // Map icon types to Icon component names
-  const iconMap: Record<InputWithIconProps['icon'], Parameters<typeof Icon>[0]['name']> = {
+  type IconName = Parameters<typeof Icon>[0]['name'];
+  const iconMap: Record<InputWithIconProps['icon'], IconName> = {
     briefcase: 'job',
     building: 'company',
     edit: 'edit',

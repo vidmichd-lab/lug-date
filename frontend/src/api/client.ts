@@ -11,7 +11,7 @@ export interface ApiResponse<T> {
   error?: {
     message: string;
     code?: string;
-    details?: any;
+    details?: unknown;
   };
 }
 
@@ -32,16 +32,20 @@ class ApiClient {
    */
   private getInitData(): string | null {
     if (typeof window === 'undefined' || !window.Telegram?.WebApp) {
-      console.warn('Telegram WebApp not available');
+      if (import.meta.env.DEV) {
+        console.warn('Telegram WebApp not available');
+      }
       return null;
     }
-    
+
     const initData = window.Telegram.WebApp.initData;
     if (!initData) {
-      console.warn('Telegram initData not available');
+      if (import.meta.env.DEV) {
+        console.warn('Telegram initData not available');
+      }
       return null;
     }
-    
+
     return initData;
   }
 
@@ -61,7 +65,9 @@ class ApiClient {
         headers['Authorization'] = `Bearer ${initData}`;
       } else if (options.requireAuth === true) {
         // If auth is explicitly required but not available, log warning
-        console.warn('Authentication required but Telegram initData not available');
+        if (import.meta.env.DEV) {
+          console.warn('Authentication required but Telegram initData not available');
+        }
       }
     }
 
@@ -158,15 +164,11 @@ class ApiClient {
 
         // Retry on network errors or 5xx errors
         if (!result.success && attempt < maxRetries && retries > 0) {
-          const shouldRetry =
-            response.status >= 500 ||
-            result.error?.code === 'NETWORK_ERROR';
+          const shouldRetry = response.status >= 500 || result.error?.code === 'NETWORK_ERROR';
 
           if (shouldRetry) {
             // Exponential backoff
-            await new Promise((resolve) =>
-              setTimeout(resolve, Math.pow(2, attempt) * 1000)
-            );
+            await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempt) * 1000));
             continue;
           }
         }
@@ -175,9 +177,7 @@ class ApiClient {
       } catch (error) {
         // Network error
         if (attempt < maxRetries && retries > 0) {
-          await new Promise((resolve) =>
-            setTimeout(resolve, Math.pow(2, attempt) * 1000)
-          );
+          await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempt) * 1000));
           continue;
         }
 
@@ -215,7 +215,7 @@ class ApiClient {
    */
   async post<T>(
     endpoint: string,
-    data?: any,
+    data?: unknown,
     options?: RequestOptions
   ): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
@@ -230,7 +230,7 @@ class ApiClient {
    */
   async put<T>(
     endpoint: string,
-    data?: any,
+    data?: unknown,
     options?: RequestOptions
   ): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
@@ -245,7 +245,7 @@ class ApiClient {
    */
   async patch<T>(
     endpoint: string,
-    data?: any,
+    data?: unknown,
     options?: RequestOptions
   ): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
@@ -321,16 +321,14 @@ export const apiClient = new ApiClient(API_BASE_URL);
 
 // Export convenience methods
 export const api = {
-  get: <T>(endpoint: string, options?: RequestOptions) =>
-    apiClient.get<T>(endpoint, options),
-  post: <T>(endpoint: string, data?: any, options?: RequestOptions) =>
+  get: <T>(endpoint: string, options?: RequestOptions) => apiClient.get<T>(endpoint, options),
+  post: <T>(endpoint: string, data?: unknown, options?: RequestOptions) =>
     apiClient.post<T>(endpoint, data, options),
-  put: <T>(endpoint: string, data?: any, options?: RequestOptions) =>
+  put: <T>(endpoint: string, data?: unknown, options?: RequestOptions) =>
     apiClient.put<T>(endpoint, data, options),
-  patch: <T>(endpoint: string, data?: any, options?: RequestOptions) =>
+  patch: <T>(endpoint: string, data?: unknown, options?: RequestOptions) =>
     apiClient.patch<T>(endpoint, data, options),
-  delete: <T>(endpoint: string, options?: RequestOptions) =>
-    apiClient.delete<T>(endpoint, options),
+  delete: <T>(endpoint: string, options?: RequestOptions) => apiClient.delete<T>(endpoint, options),
   upload: <T>(
     endpoint: string,
     file: File,
@@ -338,4 +336,3 @@ export const api = {
     options?: RequestOptions
   ) => apiClient.upload<T>(endpoint, file, additionalData, options),
 };
-

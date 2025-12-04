@@ -339,6 +339,7 @@ jobs:
               --execution-timeout=30s \
               --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
               --environment NODE_ENV=production \
+              --environment CONTAINER_MODE=true \
               --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }} \
               --environment YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT }} \
               --environment YDB_DATABASE=${{ secrets.YDB_DATABASE }} \
@@ -364,6 +365,7 @@ jobs:
               --execution-timeout=30s \
               --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
               --environment NODE_ENV=production \
+              --environment CONTAINER_MODE=true \
               --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }} \
               --environment YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT }} \
               --environment YDB_DATABASE=${{ secrets.YDB_DATABASE }} \

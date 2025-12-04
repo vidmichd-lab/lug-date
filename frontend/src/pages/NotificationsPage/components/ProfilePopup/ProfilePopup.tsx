@@ -37,7 +37,9 @@ export const ProfilePopup: FC<ProfilePopupProps> = ({ userId, onClose }) => {
           setProfile(response.data.user);
         }
       } catch (error) {
-        console.error('Failed to fetch profile:', error);
+        if (import.meta.env.DEV) {
+          console.error('Failed to fetch profile:', error);
+        }
       } finally {
         setIsLoading(false);
       }

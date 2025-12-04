@@ -38,7 +38,9 @@ export function measurePerformance() {
     const fcpObserver = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
         if (entry.name === 'first-contentful-paint') {
-          console.log('FCP:', entry.startTime, 'ms');
+          if (import.meta.env.DEV) {
+            console.log('FCP:', entry.startTime, 'ms');
+          }
         }
       }
     });
@@ -48,7 +50,9 @@ export function measurePerformance() {
     const lcpObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
       const lastEntry = entries[entries.length - 1];
-      console.log('LCP:', lastEntry.startTime, 'ms');
+      if (import.meta.env.DEV) {
+        console.log('LCP:', lastEntry.startTime, 'ms');
+      }
     });
     lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
 
@@ -56,11 +60,17 @@ export function measurePerformance() {
     let clsValue = 0;
     const clsObserver = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
-        if (!(entry as any).hadRecentInput) {
-          clsValue += (entry as any).value;
+        const layoutShiftEntry = entry as PerformanceEntry & {
+          hadRecentInput?: boolean;
+          value?: number;
+        };
+        if (!layoutShiftEntry.hadRecentInput && layoutShiftEntry.value !== undefined) {
+          clsValue += layoutShiftEntry.value;
         }
       }
-      console.log('CLS:', clsValue);
+      if (import.meta.env.DEV) {
+        console.log('CLS:', clsValue);
+      }
     });
     clsObserver.observe({ entryTypes: ['layout-shift'] });
   }

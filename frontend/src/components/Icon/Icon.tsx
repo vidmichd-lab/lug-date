@@ -144,7 +144,9 @@ export const Icon: FC<IconProps> = ({ name, size = 24, className, color }) => {
   const IconComponent = iconMap[name];
 
   if (!IconComponent) {
-    console.warn(`Icon "${name}" not found`);
+    if (import.meta.env.DEV) {
+      console.warn(`Icon "${name}" not found`);
+    }
     return null;
   }
 

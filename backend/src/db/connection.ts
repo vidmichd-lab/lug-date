@@ -154,23 +154,17 @@ class YDBClient {
 
       // Create YDB driver configuration
       // Use connectionString format
-      const driverConfig: any = {
+      // Note: Driver constructor accepts IDriverSettings interface
+      const driverConfig = {
         connectionString,
         authService: credentials,
-      };
-
-      // Add logging if logger interface matches
-      try {
-        driverConfig.logger = {
+        logger: {
           error: (message: string) => logger.error({ message, type: 'ydb_sdk_error' }),
           warn: (message: string) => logger.warn({ message, type: 'ydb_sdk_warn' }),
           info: (message: string) => logger.info({ message, type: 'ydb_sdk_info' }),
           debug: (message: string) => logger.debug({ message, type: 'ydb_sdk_debug' }),
-        } as Logger;
-      } catch (error) {
-        // Logger may not be supported in this SDK version
-        logger.debug({ error, type: 'ydb_logger_config_failed' });
-      }
+        } as Logger,
+      };
 
       logger.info({ type: 'ydb_driver_creating' });
       this.driver = new Driver(driverConfig);
