@@ -165,7 +165,29 @@ class YDBClient {
         // - YDB_TOKEN
         // - Metadata service (when running in Yandex Cloud)
         // This is the recommended approach for YDB SDK 5.x
-        credentials = getCredentialsFromEnv();
+
+        // Если есть файл Service Account, используем его явно, чтобы избежать попыток использовать metadata service
+        if (serviceAccountKeyFile && existsSync(serviceAccountKeyFile)) {
+          try {
+            credentials = getSACredentialsFromJson(serviceAccountKeyFile);
+            logger.info({
+              type: 'ydb_credentials_loaded',
+              method: 'getSACredentialsFromJson',
+              hasServiceAccountFile: true,
+              path: serviceAccountKeyFile,
+            });
+          } catch (error) {
+            logger.warn({
+              error,
+              type: 'ydb_sa_file_load_failed',
+              message: 'Failed to load SA from file, trying getCredentialsFromEnv',
+            });
+            // Fallback to getCredentialsFromEnv
+            credentials = getCredentialsFromEnv();
+          }
+        } else {
+          credentials = getCredentialsFromEnv();
+        }
         logger.info({
           type: 'ydb_credentials_loaded',
           method: 'getCredentialsFromEnv',
