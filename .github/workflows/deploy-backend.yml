@@ -249,6 +249,7 @@ jobs:
           YC_SERVICE_ACCOUNT_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
           YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
           YC_CONTAINER_ID: ${{ secrets.YC_CONTAINER_ID }}
+          YC_SERVICE_ACCOUNT_KEY: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
           ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
@@ -291,9 +292,11 @@ jobs:
 
           # Кодируем YC_SERVICE_ACCOUNT_KEY в base64 для безопасной передачи через environment variable
           # Это необходимо, так как JSON ключ содержит многострочное содержимое и специальные символы
+          # Используем переменную окружения для безопасной передачи секрета
           YC_SERVICE_ACCOUNT_KEY_B64=""
-          if [ -n "${{ secrets.YC_SERVICE_ACCOUNT_KEY }}" ]; then
-            YC_SERVICE_ACCOUNT_KEY_B64=$(echo -n "${{ secrets.YC_SERVICE_ACCOUNT_KEY }}" | base64 -w 0)
+          if [ -n "${YC_SERVICE_ACCOUNT_KEY:-}" ]; then
+            # Используем printf для безопасной обработки многострочного содержимого
+            YC_SERVICE_ACCOUNT_KEY_B64=$(printf '%s' "${YC_SERVICE_ACCOUNT_KEY}" | base64 -w 0)
             echo "✅ YC_SERVICE_ACCOUNT_KEY encoded to base64 (length: ${#YC_SERVICE_ACCOUNT_KEY_B64})"
           else
             echo "⚠️  WARNING: YC_SERVICE_ACCOUNT_KEY is not set"
@@ -344,7 +347,6 @@ jobs:
               --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
               --environment "NODE_ENV=production" \
               --environment "CONTAINER_MODE=true" \
-              --environment "PORT=8080" \
               --environment "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" \
               --environment "YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT }}" \
               --environment "YDB_DATABASE=${{ secrets.YDB_DATABASE }}" \
@@ -372,7 +374,6 @@ jobs:
               --service-account-id="${YC_SERVICE_ACCOUNT_ID}" \
               --environment "NODE_ENV=production" \
               --environment "CONTAINER_MODE=true" \
-              --environment "PORT=8080" \
               --environment "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" \
               --environment "YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT }}" \
               --environment "YDB_DATABASE=${{ secrets.YDB_DATABASE }}" \
