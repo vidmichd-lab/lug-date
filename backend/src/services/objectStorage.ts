@@ -63,36 +63,59 @@ class ObjectStorageService {
   }
 
   /**
-   * Upload file to Object Storage
+   * Upload file to Object Storage with cache headers
    */
   async uploadFile(
     key: string,
     buffer: Buffer,
     contentType: string,
-    metadata?: Record<string, string>
+    metadata?: Record<string, string>,
+    options?: {
+      cacheControl?: string;
+      maxAge?: number; // Cache max age in seconds (default: 1 year for images)
+    }
   ): Promise<string> {
     if (!this.s3Client || !this.config) {
       throw new Error('Object Storage not initialized');
     }
 
     try {
+      // Determine cache control based on content type
+      let cacheControl = options?.cacheControl;
+      if (!cacheControl) {
+        // Default cache settings
+        const maxAge = options?.maxAge || (contentType.startsWith('image/') ? 31536000 : 86400); // 1 year for images, 1 day for others
+        cacheControl = `public, max-age=${maxAge}, immutable`;
+      }
+
+      // Generate ETag from file content (MD5 hash)
+      const crypto = await import('crypto');
+      const etag = crypto.createHash('md5').update(buffer).digest('hex');
+
       const command = new PutObjectCommand({
         Bucket: this.config.bucket,
         Key: key,
         Body: buffer,
         ContentType: contentType,
-        Metadata: metadata,
+        CacheControl: cacheControl,
+        Metadata: {
+          ...metadata,
+          etag, // Store ETag in metadata for reference
+        },
+        // Set ETag header for conditional requests
+        // Note: S3 automatically sets ETag, but we can also set it in metadata
       });
 
       await this.s3Client.send(command);
 
       // Return public URL
       const url = `${this.config.endpoint}/${this.config.bucket}/${key}`;
-      
+
       logger.info({
         type: 'object_storage_upload_success',
         key,
         contentType,
+        cacheControl,
       });
 
       return url;
@@ -110,10 +133,20 @@ class ObjectStorageService {
    * Upload multiple files
    */
   async uploadFiles(
-    files: Array<{ key: string; buffer: Buffer; contentType: string; metadata?: Record<string, string> }>
+    files: Array<{
+      key: string;
+      buffer: Buffer;
+      contentType: string;
+      metadata?: Record<string, string>;
+      cacheControl?: string;
+      maxAge?: number;
+    }>
   ): Promise<string[]> {
     const uploads = files.map((file) =>
-      this.uploadFile(file.key, file.buffer, file.contentType, file.metadata)
+      this.uploadFile(file.key, file.buffer, file.contentType, file.metadata, {
+        cacheControl: file.cacheControl,
+        maxAge: file.maxAge,
+      })
     );
 
     return Promise.all(uploads);
@@ -162,4 +195,3 @@ export const objectStorageService = new ObjectStorageService();
 export function initObjectStorage(): void {
   objectStorageService.initialize();
 }
-

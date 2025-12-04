@@ -56,9 +56,17 @@ export class MatchRepository {
 
   /**
    * Get matches for user
+   * Uses composite indexes (userId1, createdAt) and (userId2, createdAt) for optimal performance
+   * Note: YDB will use indexes for both parts of OR condition
    */
-  async getMatchesByUserId(userId: string, limit: number = 20, offset: number = 0): Promise<Match[]> {
+  async getMatchesByUserId(
+    userId: string,
+    limit: number = 20,
+    offset: number = 0
+  ): Promise<Match[]> {
     try {
+      // YDB can use both composite indexes idx_matches_user1_created and idx_matches_user2_created
+      // for the OR condition, making this query efficient
       const query = `
         SELECT * FROM matches 
         WHERE userId1 = $userId OR userId2 = $userId
@@ -81,9 +89,12 @@ export class MatchRepository {
 
   /**
    * Check if match exists between two users
+   * Uses composite index (userId1, userId2) for optimal performance
    */
   async matchExists(userId1: string, userId2: string): Promise<boolean> {
     try {
+      // Use composite index idx_matches_user1_user2 for faster lookup
+      // Check both directions: (userId1, userId2) and (userId2, userId1)
       const query = `
         SELECT COUNT(*) as count FROM matches 
         WHERE (userId1 = $userId1 AND userId2 = $userId2)
@@ -101,8 +112,26 @@ export class MatchRepository {
       throw error;
     }
   }
+
+  /**
+   * Get all matches (for metrics calculation)
+   * Note: This may be slow for large datasets - consider pagination in production
+   */
+  async getAllMatches(): Promise<Match[]> {
+    try {
+      const query = `
+        SELECT * FROM matches 
+        ORDER BY createdAt DESC;
+      `;
+
+      const results = await ydbClient.executeQuery<Match>(query);
+      return results;
+    } catch (error) {
+      logger.error({ error, type: 'matches_get_all_failed' });
+      throw error;
+    }
+  }
 }
 
 // Export singleton instance
 export const matchRepository = new MatchRepository();
-

@@ -101,6 +101,25 @@ export class UserRepository {
   }
 
   /**
+   * Get all users without pagination (for metrics calculation)
+   * Note: This may be slow for large datasets - consider pagination in production
+   */
+  async getAllUsersUnpaginated(): Promise<User[]> {
+    try {
+      const query = `
+        SELECT * FROM users 
+        ORDER BY createdAt DESC;
+      `;
+
+      const results = await ydbClient.executeQuery<User>(query);
+      return results;
+    } catch (error) {
+      logger.error({ error, type: 'users_get_all_unpaginated_failed' });
+      throw error;
+    }
+  }
+
+  /**
    * Get total users count
    */
   async getUsersCount(): Promise<number> {
@@ -176,4 +195,3 @@ export class UserRepository {
 
 // Export singleton instance
 export const userRepository = new UserRepository();
-

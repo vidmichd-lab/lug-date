@@ -38,9 +38,9 @@ bot.start(async (ctx) => {
 bot.help((ctx) => {
   ctx.reply(
     'Available commands:\n' +
-    '/start - Start the bot\n' +
-    '/help - Show this help message\n' +
-    '/profile - Open your profile'
+      '/start - Start the bot\n' +
+      '/help - Show this help message\n' +
+      '/profile - Open your profile'
   );
 });
 
@@ -58,28 +58,36 @@ bot.on('text', async (ctx: Context) => {
  * Send match notification to user
  * Called by backend webhook
  */
-export async function sendMatchNotification(userId: number, matchData: {
-  matchId: string;
-  matchedUserId: string;
-  matchedUserName: string;
-  eventId?: string;
-  eventTitle?: string;
-}) {
+export async function sendMatchNotification(
+  userId: number,
+  matchData: {
+    matchId: string;
+    matchedUserId: string;
+    matchedUserName: string;
+    eventId?: string;
+    eventTitle?: string;
+  }
+) {
   try {
-    const message = `🎉 У вас новый матч!\n\n` +
+    const message =
+      `🎉 У вас новый матч!\n\n` +
       `Вы понравились ${matchData.matchedUserName}!\n` +
       (matchData.eventTitle ? `Событие: ${matchData.eventTitle}\n` : '') +
       `\nНачните общение прямо сейчас! 💬`;
-    
+
     await bot.telegram.sendMessage(userId, message, {
       reply_markup: {
-        inline_keyboard: [[
-          {
-            text: 'Открыть чат',
-            web_app: { url: `${process.env.FRONTEND_URL || 'https://app.yourdomain.com'}/matches/${matchData.matchId}` }
-          }
-        ]]
-      }
+        inline_keyboard: [
+          [
+            {
+              text: 'Открыть чат',
+              web_app: {
+                url: `${process.env.FRONTEND_URL || 'https://app.yourdomain.com'}/matches/${matchData.matchId}`,
+              },
+            },
+          ],
+        ],
+      },
     });
   } catch (error) {
     console.error('Error sending match notification:', error);
@@ -93,20 +101,37 @@ bot.catch((err, ctx) => {
 });
 
 // Launch bot (uses polling by default in development)
-bot.launch().then(() => {
-  console.log(`✅ Bot started in ${config.nodeEnv} mode`);
-  // Get bot info
-  bot.telegram.getMe().then((botInfo) => {
-    console.log(`Bot username: @${botInfo.username}`);
-  }).catch((err) => {
-    console.warn('Could not get bot info:', err.message);
+bot
+  .launch()
+  .then(async () => {
+    console.log(`✅ Bot started in ${config.nodeEnv} mode`);
+    // Get bot info
+    bot.telegram
+      .getMe()
+      .then((botInfo) => {
+        console.log(`Bot username: @${botInfo.username}`);
+      })
+      .catch((err) => {
+        console.warn('Could not get bot info:', err.message);
+      });
+
+    // Start queue consumer for match notifications
+    // This runs in background and processes messages from YMQ
+    if (process.env.YMQ_QUEUE_URL) {
+      const { startQueueConsumer } = await import('./queueConsumer');
+      startQueueConsumer(bot).catch((error) => {
+        console.error('❌ Failed to start queue consumer:', error);
+        // Don't exit - bot should continue working even if queue consumer fails
+      });
+    } else {
+      console.log('⚠️  YMQ_QUEUE_URL not set, queue consumer will not start');
+    }
+  })
+  .catch((error) => {
+    console.error('❌ Failed to start bot:', error);
+    process.exit(1);
   });
-}).catch((error) => {
-  console.error('❌ Failed to start bot:', error);
-  process.exit(1);
-});
 
 // Graceful stop
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
-

@@ -16,6 +16,7 @@ import savedEventsRoutes from './routes/saved-events';
 import notificationsRoutes from './routes/notifications';
 import userRoutes from './routes/user';
 import eventsRoutes from './routes/events';
+import gdprRoutes from './routes/gdpr';
 import { config } from './config';
 import { initErrorMonitoring } from './monitoring';
 import { requestLogger } from './middleware/requestLogger';
@@ -24,10 +25,15 @@ import { generalLimiter, adminLimiter, uploadLimiter } from './middleware/rateLi
 import { sanitizeMiddleware } from './utils/sanitize';
 import { telegramAuthMiddleware } from './middleware/telegramAuth';
 import { adminAuthMiddleware } from './middleware/adminAuth';
+import {
+  apiVersionMiddleware,
+  getCurrentApiVersion,
+  getAllApiVersions,
+} from './middleware/apiVersion';
+import { tracingMiddleware, getTraceContext } from './middleware/tracing';
 import { logger } from './logger';
 import { sendCriticalAlert } from './alerts';
 import { initYDB, ydbClient } from './db/connection';
-import { runMigrations } from './db/migrations';
 import { initObjectStorage } from './services/objectStorage';
 
 // Initialize error monitoring (Yandex Cloud Logging + Catcher)
@@ -50,26 +56,35 @@ logger.info({
   message: 'Application starting...',
 });
 
-// Initialize YDB connection and run migrations
-// Don't block server startup - allow app to start even if DB is not available
-// This ensures health check endpoint works and container doesn't crash
+// Initialize YDB connection
+// Migrations are now run separately via `npm run migrate` command
+// This prevents issues with parallel migration execution in scaled environments
 initYDB()
   .then(async () => {
-    // Run migrations after successful connection
+    // Check migration status (but don't run migrations automatically)
     try {
-      await runMigrations();
-      logger.info({
-        type: 'ydb_migrations_completed',
-        message: 'Migrations completed successfully',
-      });
+      const { getMigrationStatus } = await import('./db/migrations');
+      const status = await getMigrationStatus();
+
+      if (status.pending.length > 0) {
+        logger.warn({
+          type: 'migrations_pending',
+          pending: status.pending,
+          message: `There are ${status.pending.length} pending migrations. Run 'npm run migrate' to apply them.`,
+        });
+      } else {
+        logger.info({
+          type: 'migrations_up_to_date',
+          message: 'All migrations are up to date',
+        });
+      }
     } catch (error) {
-      logger.error({
+      logger.warn({
         error,
-        type: 'migrations_failed_on_startup',
-        message: 'Migrations failed, but server will continue',
+        type: 'migration_status_check_failed',
+        message: 'Could not check migration status',
       });
-      // Don't exit - allow server to start and handle requests
-      // Health check will show DB status
+      // Don't fail startup - just log warning
     }
   })
   .catch((error) => {
@@ -118,6 +133,9 @@ app.use(
     crossOriginOpenerPolicy: false,
   })
 );
+
+// Distributed tracing middleware (before request logger)
+app.use(tracingMiddleware);
 
 // Request logging middleware (before routes)
 app.use(requestLogger);
@@ -228,6 +246,8 @@ app.use((req, res, next) => {
 
 app.get('/', (req, res) => {
   // Root endpoint - API information
+  const traceContext = getTraceContext(req);
+
   res.json({
     service: 'dating-app-backend',
     version: '1.0.2',
@@ -237,6 +257,19 @@ app.get('/', (req, res) => {
       api: '/api/v1',
       admin: '/api/admin',
     },
+    apiVersions: getAllApiVersions().map((v) => ({
+      version: v.version,
+      status: v.status,
+      deprecationDate: v.deprecationDate,
+      sunsetDate: v.sunsetDate,
+    })),
+    currentVersion: getCurrentApiVersion(),
+    tracing: traceContext
+      ? {
+          traceId: traceContext.traceId,
+          spanId: traceContext.spanId,
+        }
+      : undefined,
     timestamp: new Date().toISOString(),
   });
 });
@@ -361,6 +394,8 @@ app.use(
 );
 
 // User API routes - require Telegram authentication
+// Apply API versioning middleware before routes
+app.use('/api/v1', apiVersionMiddleware);
 app.use('/api/v1/matches', telegramAuthMiddleware, matchesRoutes);
 app.use('/api/v1/photos', uploadLimiter, telegramAuthMiddleware, photosRoutes);
 app.use('/api/v1', telegramAuthMiddleware, feedRoutes);
@@ -368,6 +403,7 @@ app.use('/api/v1', telegramAuthMiddleware, savedEventsRoutes);
 app.use('/api/v1', telegramAuthMiddleware, notificationsRoutes);
 app.use('/api/v1', telegramAuthMiddleware, userRoutes);
 app.use('/api/v1', telegramAuthMiddleware, eventsRoutes);
+app.use('/api/v1/gdpr', gdprRoutes);
 
 // Error handling middleware (must be last)
 app.use(errorHandler);

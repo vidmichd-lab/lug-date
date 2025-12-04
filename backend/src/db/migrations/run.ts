@@ -35,6 +35,12 @@ async function main() {
           message: 'YDB credentials not configured',
           tip: 'Make sure you have set one of: YDB_TOKEN_DEV, YC_SERVICE_ACCOUNT_KEY_FILE, or YC_SERVICE_ACCOUNT_KEY in .env',
         });
+      } else if (error.message.includes('lock')) {
+        console.error('\n❌ Migration lock is already held by another process.');
+        console.error('   Please wait for the current migration to complete.');
+        console.error(
+          '   If migrations are stuck, you can manually release the lock in the database.\n'
+        );
       }
     }
 

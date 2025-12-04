@@ -105,3 +105,4 @@ yc serverless container list --folder-id=$(yc config get folder-id)
 
 
 
+

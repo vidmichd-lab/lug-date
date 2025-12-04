@@ -39,9 +39,7 @@ export const usersTable: TableSchema = {
     { name: 'updatedAt', type: 'Timestamp' },
   ],
   primaryKey: ['id'],
-  indexes: [
-    { name: 'idx_telegram_id', columns: ['telegramId'] },
-  ],
+  indexes: [{ name: 'idx_telegram_id', columns: ['telegramId'] }],
 };
 
 /**
@@ -84,6 +82,10 @@ export const matchesTable: TableSchema = {
     { name: 'idx_user1', columns: ['userId1'] },
     { name: 'idx_user2', columns: ['userId2'] },
     { name: 'idx_event', columns: ['eventId'] },
+    // Composite indexes for performance (created in migration 003)
+    { name: 'idx_user1_user2', columns: ['userId1', 'userId2'] },
+    { name: 'idx_user1_created', columns: ['userId1', 'createdAt'] },
+    { name: 'idx_user2_created', columns: ['userId2', 'createdAt'] },
   ],
 };
 
@@ -105,6 +107,9 @@ export const likesTable: TableSchema = {
     { name: 'idx_to_user', columns: ['toUserId'] },
     { name: 'idx_event', columns: ['eventId'] },
     { name: 'idx_from_to', columns: ['fromUserId', 'toUserId'] },
+    // Composite indexes for performance (created in migration 003)
+    { name: 'idx_from_to_event', columns: ['fromUserId', 'toUserId', 'eventId'] },
+    { name: 'idx_to_created', columns: ['toUserId', 'createdAt'] },
   ],
 };
 
@@ -154,4 +159,3 @@ export const allSchemas: TableSchema[] = [
   likesTable,
   messagesTable,
 ];
-

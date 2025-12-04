@@ -3,7 +3,7 @@
  * Main feed screen with events and profiles
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   FeedHeader,
   SwipeableCard,
@@ -15,9 +15,9 @@ import {
 import type { FeedTab } from './components';
 import { sortCards } from './utils';
 import type { Card } from './utils';
-import { api } from '../../api/client';
 import { RegistrationModal } from '../../components/RegistrationModal';
 import { useUserStore } from '../../stores';
+import { useFeed, useLikeAction } from '../../hooks';
 import styles from './HomePage.module.css';
 
 // Mock categories for events (TODO: get from API)
@@ -27,11 +27,54 @@ export function HomePage() {
   const [activeTab, setActiveTab] = useState<FeedTab>('events');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [showFilterSheet, setShowFilterSheet] = useState(false);
-  const [cards, setCards] = useState<Card[]>([]);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
   const { user } = useUserStore();
+
+  // Use React Query hooks for data fetching
+  const feedType = activeTab === 'events' ? 'events' : 'profiles';
+  const {
+    data: feedData,
+    isLoading,
+    refetch,
+  } = useFeed(
+    {
+      type: feedType,
+      categories: selectedCategories,
+      limit: 20,
+      offset: 0,
+    },
+    { requireAuth: false } // Allow guest mode
+  );
+
+  const likeAction = useLikeAction();
+
+  // Extract cards from feed data and transform to Card format
+  const cards = useMemo(() => {
+    if (!feedData?.cards) return [];
+    return feedData.cards.map((card: any) => {
+      // API returns cards in format: { id, type, title, description, ... }
+      // We need to transform to: { id, type, data: {...}, createdAt }
+      const cardData = {
+        id: card.id,
+        title: card.title,
+        description: card.description,
+        imageUrl: card.imageUrl,
+        category: card.category,
+        location: card.location,
+        date: card.date,
+        linkUrl: card.linkUrl,
+        ...card, // Include any other fields
+      };
+
+      return {
+        id: card.id,
+        type: card.type as 'event' | 'profile',
+        data: cardData as any,
+        createdAt: card.createdAt || card.date || new Date().toISOString(),
+      } as Card;
+    });
+  }, [feedData]);
 
   // Filter cards by type and category
   const filteredCards = useMemo(() => {
@@ -61,54 +104,10 @@ export function HomePage() {
   const currentCard = sortedCards[currentCardIndex];
   const nextCard = sortedCards[currentCardIndex + 1];
 
-  // Fetch cards from API
-  const fetchCards = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const type = activeTab === 'events' ? 'events' : 'profiles';
-
-      // Build query string
-      const params = new URLSearchParams();
-      params.append('type', type);
-      if (selectedCategories.length > 0) {
-        selectedCategories.forEach((cat) => params.append('category', cat));
-      }
-      params.append('limit', '20');
-      params.append('offset', '0');
-
-      const response = await api.get<{ cards: Card[]; pagination: { total: number } }>(
-        `/api/v1/feed?${params.toString()}`,
-        {
-          requireAuth: false, // Allow guest mode - can view cards without registration
-        }
-      );
-
-      if (response.success && response.data) {
-        setCards(response.data.cards || []);
-        setCurrentCardIndex(0);
-      } else {
-        console.error('Failed to fetch cards:', response.error);
-        setCards([]);
-      }
-    } catch (error) {
-      console.error('Failed to fetch cards:', error);
-      setCards([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [activeTab, selectedCategories]);
-
+  // Reset card index when cards change
   useEffect(() => {
-    fetchCards();
-  }, [fetchCards]);
-
-  // Update cards when categories change
-  useEffect(() => {
-    if (!isLoading) {
-      fetchCards();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategories]);
+    setCurrentCardIndex(0);
+  }, [cards.length, activeTab]);
 
   // Check if user is authenticated
   const isAuthenticated = useCallback(() => {
@@ -133,29 +132,24 @@ export function HomePage() {
     }
 
     try {
-      const response = await api.post(
-        '/api/v1/feed/action',
-        {
-          cardId: currentCard.id,
-          cardType: currentCard.type,
-          action: 'dislike',
-        },
-        { requireAuth: true }
-      );
-
-      if (response.success) {
-        setCurrentCardIndex((prev) => prev + 1);
-      } else if (response.error?.code === 'UNAUTHORIZED') {
+      await likeAction.mutateAsync({
+        cardId: currentCard.id,
+        cardType: currentCard.type as 'event' | 'profile',
+        action: 'dislike',
+      });
+      // Card will be removed from cache automatically via optimistic update
+      setCurrentCardIndex((prev) => prev + 1);
+    } catch (error: any) {
+      console.error('Failed to record action:', error);
+      // If unauthorized, show registration modal
+      if (error?.message?.includes('UNAUTHORIZED') || error?.code === 'UNAUTHORIZED') {
         setShowRegistrationModal(true);
       } else {
+        // Still advance card even if API call fails
         setCurrentCardIndex((prev) => prev + 1);
       }
-    } catch (error) {
-      console.error('Failed to record action:', error);
-      // Still advance card even if API call fails
-      setCurrentCardIndex((prev) => prev + 1);
     }
-  }, [currentCard, isAuthenticated]);
+  }, [currentCard, isAuthenticated, likeAction]);
 
   const handleSwipeRight = useCallback(async () => {
     if (!currentCard) return;
@@ -167,33 +161,28 @@ export function HomePage() {
     }
 
     try {
-      const response = await api.post(
-        '/api/v1/feed/action',
-        {
-          cardId: currentCard.id,
-          cardType: currentCard.type,
-          action: 'like',
-        },
-        { requireAuth: true }
-      );
-
-      if (response.success) {
-        setCurrentCardIndex((prev) => prev + 1);
-      } else if (response.error?.code === 'UNAUTHORIZED') {
+      await likeAction.mutateAsync({
+        cardId: currentCard.id,
+        cardType: currentCard.type as 'event' | 'profile',
+        action: 'like',
+      });
+      // Card will be removed from cache automatically via optimistic update
+      setCurrentCardIndex((prev) => prev + 1);
+    } catch (error: any) {
+      console.error('Failed to record action:', error);
+      // If unauthorized, show registration modal
+      if (error?.message?.includes('UNAUTHORIZED') || error?.code === 'UNAUTHORIZED') {
         setShowRegistrationModal(true);
       } else {
+        // Still advance card even if API call fails
         setCurrentCardIndex((prev) => prev + 1);
       }
-    } catch (error) {
-      console.error('Failed to record action:', error);
-      // Still advance card even if API call fails
-      setCurrentCardIndex((prev) => prev + 1);
     }
-  }, [currentCard, isAuthenticated]);
+  }, [currentCard, isAuthenticated, likeAction]);
 
   const handleRefresh = useCallback(() => {
-    fetchCards();
-  }, [fetchCards]);
+    refetch();
+  }, [refetch]);
 
   const handleTabChange = useCallback((tab: FeedTab) => {
     setActiveTab(tab);

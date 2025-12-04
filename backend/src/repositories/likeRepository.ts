@@ -169,8 +169,55 @@ export class LikeRepository {
       throw error;
     }
   }
+
+  /**
+   * Get likes by user ID
+   */
+  async getLikesByUserId(
+    userId: string,
+    limit: number = 1000,
+    offset: number = 0
+  ): Promise<Like[]> {
+    try {
+      const query = `
+        SELECT * FROM likes 
+        WHERE fromUserId = $userId
+        ORDER BY createdAt DESC
+        LIMIT $limit OFFSET $offset;
+      `;
+
+      const results = await ydbClient.executeQuery<Like>(query, {
+        userId,
+        limit,
+        offset,
+      });
+
+      return results;
+    } catch (error) {
+      logger.error({ error, type: 'likes_get_by_user_failed', userId });
+      throw error;
+    }
+  }
+
+  /**
+   * Get all likes (for metrics calculation)
+   * Note: This may be slow for large datasets - consider pagination in production
+   */
+  async getAllLikes(): Promise<Like[]> {
+    try {
+      const query = `
+        SELECT * FROM likes 
+        ORDER BY createdAt DESC;
+      `;
+
+      const results = await ydbClient.executeQuery<Like>(query);
+      return results;
+    } catch (error) {
+      logger.error({ error, type: 'likes_get_all_failed' });
+      throw error;
+    }
+  }
 }
 
 // Export singleton instance
 export const likeRepository = new LikeRepository();
-
