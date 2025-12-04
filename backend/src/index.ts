@@ -256,8 +256,29 @@ app.use('/api/admin/auth', adminLimiter, adminAuthRoutes);
 // Skip auth for OPTIONS requests (CORS preflight)
 app.use(
   '/api/admin',
+  (req, res, next) => {
+    // Log BEFORE rate limiter to see if request reaches here
+    logger.info({
+      type: 'admin_route_before_limiter',
+      method: req.method,
+      url: req.url,
+      path: req.path,
+      origin: req.headers.origin || 'not set',
+      hasAuthHeader: !!req.headers.authorization,
+    });
+    next();
+  },
   adminLimiter,
   (req, res, next) => {
+    // Log AFTER rate limiter to see if request passes rate limiting
+    logger.info({
+      type: 'admin_route_after_limiter',
+      method: req.method,
+      url: req.url,
+      path: req.path,
+      origin: req.headers.origin || 'not set',
+      hasAuthHeader: !!req.headers.authorization,
+    });
     // Skip auth for OPTIONS requests (CORS preflight)
     if (req.method === 'OPTIONS') {
       return next();
