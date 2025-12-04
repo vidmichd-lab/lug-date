@@ -220,6 +220,21 @@ app.use((req, res, next) => {
   }
 });
 
+app.get('/', (req, res) => {
+  // Root endpoint - API information
+  res.json({
+    service: 'dating-app-backend',
+    version: '1.0.0',
+    status: 'running',
+    endpoints: {
+      health: '/health',
+      api: '/api/v1',
+      admin: '/api/admin',
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.get('/health', (req, res) => {
   // Health check endpoint - should always respond even if DB is not connected
   // This ensures container health checks pass
