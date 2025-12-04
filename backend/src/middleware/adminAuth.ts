@@ -52,14 +52,17 @@ export const adminAuthMiddleware = (req: Request, res: Response, next: NextFunct
   // Get token from Authorization header
   const authHeader = req.headers.authorization;
 
-  // Log request for debugging
+  // Log ALL headers for debugging (especially Authorization)
   logger.info({
     type: 'admin_auth_check',
     path: req.path || req.url,
     fullPath: req.originalUrl || req.url,
     method: req.method,
     hasAuthHeader: !!authHeader,
-    authHeaderPrefix: authHeader ? authHeader.substring(0, 20) : null,
+    authHeaderPrefix: authHeader ? authHeader.substring(0, 30) : null,
+    authHeaderFull: authHeader || 'not set', // Log full header for debugging
+    allHeaders: Object.keys(req.headers),
+    authorizationHeader: req.headers.authorization || 'not set',
     origin: req.headers.origin || 'not set',
     referer: req.headers.referer || 'not set',
     clientIp: req.ip || req.socket.remoteAddress || 'unknown',
