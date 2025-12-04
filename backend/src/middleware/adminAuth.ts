@@ -98,6 +98,8 @@ export const adminAuthMiddleware = (req: Request, res: Response, next: NextFunct
   const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
   // Log token comparison (without exposing actual token)
+  const tokensMatch = token === ADMIN_TOKEN;
+
   logger.info({
     type: 'admin_auth_token_check',
     path: req.path || req.url,
@@ -107,13 +109,30 @@ export const adminAuthMiddleware = (req: Request, res: Response, next: NextFunct
     expectedTokenLength: ADMIN_TOKEN.length,
     tokenPrefix: token.substring(0, 10),
     expectedTokenPrefix: ADMIN_TOKEN.substring(0, 10),
-    tokensMatch: token === ADMIN_TOKEN,
+    tokenSuffix: token.substring(token.length - 10),
+    expectedTokenSuffix: ADMIN_TOKEN.substring(ADMIN_TOKEN.length - 10),
+    tokensMatch,
     hasTokenEnv: !!process.env.ADMIN_TOKEN,
     origin: req.headers.origin || 'not set',
     clientIp: req.ip || req.socket.remoteAddress || 'unknown',
     userAgent: req.headers['user-agent'] || 'not set',
     timestamp: new Date().toISOString(),
   });
+
+  // Если токены не совпадают, выводим более детальную информацию
+  if (!tokensMatch) {
+    logger.warn({
+      type: 'admin_auth_token_mismatch_details',
+      receivedTokenLength: token.length,
+      expectedTokenLength: ADMIN_TOKEN.length,
+      receivedTokenFirst20: token.substring(0, 20),
+      expectedTokenFirst20: ADMIN_TOKEN.substring(0, 20),
+      receivedTokenLast20: token.substring(Math.max(0, token.length - 20)),
+      expectedTokenLast20: ADMIN_TOKEN.substring(Math.max(0, ADMIN_TOKEN.length - 20)),
+      path: req.path || req.url,
+      origin: req.headers.origin || 'not set',
+    });
+  }
 
   if (token !== ADMIN_TOKEN) {
     const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
