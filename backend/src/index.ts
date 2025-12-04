@@ -38,6 +38,7 @@ logger.info({
   type: 'app_startup',
   nodeEnv: config.nodeEnv,
   port: config.port,
+  version: '1.0.0',
   databaseEndpoint: config.database.endpoint ? 'configured' : 'not configured',
   databaseName: config.database.database || 'not configured',
   hasTelegramToken: !!config.telegram.botToken,
