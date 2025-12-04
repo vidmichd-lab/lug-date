@@ -47,7 +47,11 @@ router.post('/login', async (req: Request, res: Response) => {
         username,
         tokenLength: ADMIN_TOKEN.length,
         tokenPrefix: ADMIN_TOKEN.substring(0, 10),
+        tokenSuffix: ADMIN_TOKEN.substring(ADMIN_TOKEN.length - 10),
+        tokenFirst20: ADMIN_TOKEN.substring(0, 20),
+        tokenLast20: ADMIN_TOKEN.substring(Math.max(0, ADMIN_TOKEN.length - 20)),
         hasTokenEnv: !!process.env.ADMIN_TOKEN,
+        origin: req.headers.origin || 'not set',
       });
       return res.json({
         success: true,
