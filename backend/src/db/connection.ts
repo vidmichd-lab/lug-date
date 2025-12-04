@@ -232,7 +232,7 @@ class YDBClient {
       // Wait for driver to be ready with timeout
       // Note: driver.ready() may hang in some network conditions
       // We'll try to wait, but if it fails, we'll skip the check and let the first query establish connection
-      const timeout = 10000; // 10 seconds (reduced for faster failure detection)
+      const timeout = 30000; // 30 seconds - increased for serverless YDB
       const skipReadyCheck = process.env.YDB_SKIP_READY_CHECK === 'true';
 
       if (!skipReadyCheck) {
@@ -326,11 +326,112 @@ class YDBClient {
   }
 
   /**
+   * Execute DDL query (CREATE TABLE, DROP TABLE, etc.) using YDB SDK 5.x
+   * Uses schemeClient for DDL operations
+   */
+  async executeDDL(query: string, timeoutMs: number = 60000): Promise<void> {
+    if (!this.isConnected || !this.driver) {
+      if (this.isConnecting) {
+        for (let i = 0; i < 10; i++) {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          if (this.isConnected && this.driver) {
+            break;
+          }
+        }
+        if (!this.isConnected || !this.driver) {
+          throw new Error(
+            'Database connection timeout. Please check YDB configuration and connection.'
+          );
+        }
+      } else {
+        logger.warn({ type: 'ydb_not_connected_attempting_reconnect', query });
+        try {
+          await this.connect();
+        } catch (error) {
+          logger.error({
+            type: 'ydb_reconnect_failed',
+            query,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          throw new Error('Database not connected. Please check YDB configuration and connection.');
+        }
+      }
+    }
+
+    if (!this.driver || !this.isConnected) {
+      throw new Error('Database connection failed. Please check YDB configuration and connection.');
+    }
+
+    const driver = this.driver;
+
+    logger.debug({
+      type: 'ydb_ddl_start',
+      query: query.substring(0, 200),
+      timeoutMs,
+    });
+
+    // In YDB SDK 5.x, DDL queries can be executed through tableClient
+    // Some versions use schemeClient, but tableClient.withSessionRetry also works for DDL
+    const ddlPromise = driver.tableClient.withSessionRetry(async (session) => {
+      // Execute DDL query - in YDB SDK 5.x, executeQuery works for both DDL and DML
+      await session.executeQuery(query);
+    });
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(
+          new Error(
+            `YDB DDL query timeout after ${timeoutMs}ms. Query: ${query.substring(0, 100)}...`
+          )
+        );
+      }, timeoutMs);
+    });
+
+    try {
+      await Promise.race([ddlPromise, timeoutPromise]);
+      logger.debug({ type: 'ydb_ddl_success' });
+    } catch (error) {
+      const errorDetails = {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : undefined,
+        ...(error instanceof Error && 'code' in error ? { code: (error as any).code } : {}),
+      };
+      logger.error({
+        error: errorDetails,
+        type: 'ydb_ddl_failed',
+        query: query.substring(0, 200),
+        timeoutMs,
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Execute query using YDB SDK 5.x
    *
    * Uses withSessionRetry for automatic session management and retries
+   * Automatically detects DDL queries and uses executeDDL
    */
-  async executeQuery<T = any>(query: string, params?: Record<string, any>): Promise<T[]> {
+  async executeQuery<T = any>(
+    query: string,
+    params?: Record<string, any>,
+    timeoutMs: number = 60000
+  ): Promise<T[]> {
+    // Check if this is a DDL query (CREATE, DROP, ALTER, etc.)
+    const trimmedQuery = query.trim().toUpperCase();
+    const isDDL =
+      trimmedQuery.startsWith('CREATE') ||
+      trimmedQuery.startsWith('DROP') ||
+      trimmedQuery.startsWith('ALTER') ||
+      trimmedQuery.startsWith('GRANT') ||
+      trimmedQuery.startsWith('REVOKE');
+
+    if (isDDL && !params) {
+      // DDL queries don't return rows and don't use parameters
+      await this.executeDDL(query, timeoutMs);
+      return [] as T[];
+    }
     // Try to connect if not connected
     if (!this.isConnected || !this.driver) {
       if (this.isConnecting) {
@@ -370,13 +471,15 @@ class YDBClient {
     const driver = this.driver;
 
     logger.debug({
-      type: 'ydb_query',
-      query,
-      params,
+      type: 'ydb_query_start',
+      query: query.substring(0, 200),
+      hasParams: !!params,
+      timeoutMs,
     });
 
-    // Use withSessionRetry for automatic session management
-    return await driver.tableClient.withSessionRetry(async (session) => {
+    // Wrap query execution with timeout
+    const queryPromise = driver.tableClient.withSessionRetry(async (session) => {
+      logger.debug({ type: 'ydb_query_session_acquired', query: query.substring(0, 100) });
       // Execute query using YDB SDK 5.x API
       const result = await session.executeQuery(query, params || {});
 
@@ -424,8 +527,38 @@ class YDBClient {
         }
       }
 
+      logger.debug({ type: 'ydb_query_result_received', rowsCount: rows.length });
       return rows;
     });
+
+    // Add timeout wrapper
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(
+          new Error(`YDB query timeout after ${timeoutMs}ms. Query: ${query.substring(0, 100)}...`)
+        );
+      }, timeoutMs);
+    });
+
+    try {
+      const result = await Promise.race([queryPromise, timeoutPromise]);
+      logger.debug({ type: 'ydb_query_success', rowsCount: result.length });
+      return result;
+    } catch (error) {
+      const errorDetails = {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : undefined,
+        ...(error instanceof Error && 'code' in error ? { code: (error as any).code } : {}),
+      };
+      logger.error({
+        error: errorDetails,
+        type: 'ydb_query_failed',
+        query: query.substring(0, 200),
+        timeoutMs,
+      });
+      throw error;
+    }
   }
 
   /**

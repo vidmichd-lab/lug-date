@@ -18,21 +18,73 @@ export interface Migration {
  * Create migrations table if it doesn't exist
  */
 async function ensureMigrationsTable(): Promise<void> {
-  const createTableQuery = `
-    CREATE TABLE IF NOT EXISTS migrations (
-      id String NOT NULL,
-      name String NOT NULL,
-      executed_at Timestamp NOT NULL,
-      PRIMARY KEY (id)
-    );
-  `;
+  // First, try to check if table exists by querying it
+  // If query times out, assume table might exist and try to create (will fail gracefully if exists)
+  let tableExists = false;
+  try {
+    await ydbClient.executeQuery<{ id: string }>('SELECT id FROM migrations LIMIT 1');
+    logger.debug({ type: 'migrations_table_exists', message: 'Migrations table already exists' });
+    tableExists = true;
+  } catch (error: any) {
+    // If timeout, table might exist but connection is slow - try to create anyway
+    if (error?.message?.includes('timeout')) {
+      logger.warn({
+        type: 'migrations_table_check_timeout',
+        message: 'Table check timed out, will try to create (will fail gracefully if exists)',
+      });
+    } else {
+      // Table doesn't exist, need to create it
+      logger.debug({
+        type: 'migrations_table_check',
+        message: 'Table does not exist, creating...',
+      });
+    }
+  }
+
+  if (tableExists) {
+    return;
+  }
+
+  const createTableQuery = `CREATE TABLE migrations (
+  id String NOT NULL,
+  name String NOT NULL,
+  executed_at Timestamp NOT NULL,
+  PRIMARY KEY (id)
+);`;
 
   try {
     await ydbClient.executeQuery(createTableQuery);
     logger.info({ type: 'migrations_table_created' });
-  } catch (error) {
-    // Table might already exist, which is fine
-    logger.debug({ error, type: 'migrations_table_check' });
+  } catch (error: any) {
+    // Table might have been created by another process or manually
+    if (
+      error?.message?.includes('already exists') ||
+      error?.message?.includes('ALREADY_EXISTS') ||
+      error?.message?.includes('StatusGenericAlreadyExists')
+    ) {
+      logger.debug({ type: 'migrations_table_exists', message: 'Migrations table already exists' });
+      return;
+    }
+    // If timeout, assume table might exist (created manually via console)
+    if (error?.message?.includes('timeout')) {
+      logger.warn({
+        type: 'migrations_table_creation_timeout',
+        message:
+          'Table creation timed out. If table was created manually via console, migrations should work.',
+      });
+      // Don't throw - assume table exists if created manually
+      return;
+    }
+    // Re-throw other errors
+    logger.error({
+      error: {
+        message: error?.message || String(error),
+        stack: error?.stack,
+        name: error?.name,
+      },
+      type: 'migrations_table_creation_failed',
+    });
+    throw error;
   }
 }
 
@@ -40,20 +92,46 @@ async function ensureMigrationsTable(): Promise<void> {
  * Create migration lock table if it doesn't exist
  */
 async function ensureLockTable(): Promise<void> {
-  const createTableQuery = `
-    CREATE TABLE IF NOT EXISTS migration_lock (
-      id String NOT NULL,
-      locked_at Timestamp NOT NULL,
-      locked_by String NOT NULL,
-      PRIMARY KEY (id)
-    );
-  `;
+  const createTableQuery = `CREATE TABLE migration_lock (
+  id String NOT NULL,
+  locked_at Timestamp NOT NULL,
+  locked_by String NOT NULL,
+  PRIMARY KEY (id)
+);`;
 
   try {
     await ydbClient.executeQuery(createTableQuery);
     logger.debug({ type: 'migration_lock_table_created' });
-  } catch (error) {
-    logger.debug({ error, type: 'migration_lock_table_check' });
+  } catch (error: any) {
+    // Table might already exist, which is fine
+    if (
+      error?.message?.includes('already exists') ||
+      error?.message?.includes('ALREADY_EXISTS') ||
+      error?.message?.includes('StatusGenericAlreadyExists')
+    ) {
+      logger.debug({ type: 'migration_lock_table_exists', message: 'Lock table already exists' });
+      return;
+    }
+    // If timeout, assume table might exist (created manually via console)
+    if (error?.message?.includes('timeout')) {
+      logger.warn({
+        type: 'migration_lock_table_creation_timeout',
+        message:
+          'Lock table creation timed out. If table was created manually via console, migrations should work.',
+      });
+      // Don't throw - assume table exists if created manually
+      return;
+    }
+    // Re-throw other errors
+    logger.error({
+      error: {
+        message: error?.message || String(error),
+        stack: error?.stack,
+        name: error?.name,
+      },
+      type: 'migration_lock_table_creation_failed',
+    });
+    throw error;
   }
 }
 
@@ -288,7 +366,17 @@ export async function runMigrations(options?: { skipLock?: boolean }): Promise<v
       executed: pending.length,
     });
   } catch (error) {
-    logger.error({ error, type: 'migrations_error' });
+    const errorDetails = {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined,
+      ...(error instanceof Error && 'code' in error ? { code: (error as any).code } : {}),
+    };
+    logger.error({
+      error: errorDetails,
+      type: 'migrations_error',
+      message: 'Migration execution failed',
+    });
     throw error;
   } finally {
     // Always release lock

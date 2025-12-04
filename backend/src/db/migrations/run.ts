@@ -25,7 +25,27 @@ async function main() {
     logger.info({ type: 'migration_completed', message: 'Migrations completed successfully' });
     process.exit(0);
   } catch (error) {
-    logger.error({ error, type: 'migration_script_failed', message: 'Migration failed' });
+    // Log full error details
+    const errorDetails = {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined,
+      ...(error instanceof Error && 'code' in error ? { code: (error as any).code } : {}),
+    };
+
+    logger.error({
+      error: errorDetails,
+      type: 'migration_script_failed',
+      message: 'Migration failed',
+    });
+
+    // Also output to console for better visibility
+    console.error('\n❌ Migration failed:');
+    console.error(`   ${errorDetails.message}`);
+    if (errorDetails.stack) {
+      console.error('\nStack trace:');
+      console.error(errorDetails.stack);
+    }
 
     // Provide helpful error message
     if (error instanceof Error) {
@@ -35,12 +55,16 @@ async function main() {
           message: 'YDB credentials not configured',
           tip: 'Make sure you have set one of: YDB_TOKEN_DEV, YC_SERVICE_ACCOUNT_KEY_FILE, or YC_SERVICE_ACCOUNT_KEY in .env',
         });
+        console.error('\n💡 Tip: Check your YDB credentials configuration.');
       } else if (error.message.includes('lock')) {
         console.error('\n❌ Migration lock is already held by another process.');
         console.error('   Please wait for the current migration to complete.');
         console.error(
           '   If migrations are stuck, you can manually release the lock in the database.\n'
         );
+      } else if (error.message.includes('timeout')) {
+        console.error('\n⏱️  Query timeout - YDB connection may be slow or unavailable.');
+        console.error('   Check your network connection and YDB endpoint.\n');
       }
     }
 

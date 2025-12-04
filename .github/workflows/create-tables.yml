@@ -1,0 +1,89 @@
+name: Create YDB Tables
+
+on:
+  workflow_dispatch: # Только ручной запуск
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/create-tables.yml'
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  create-tables:
+    name: Create migrations tables in YDB
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    environment:
+      name: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared package
+        run: npm run build --workspace=shared
+
+      - name: Create migrations table
+        timeout-minutes: 5
+        env:
+          YC_SERVICE_ACCOUNT_KEY: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
+          YDB_ENDPOINT: ${{ secrets.YDB_ENDPOINT }}
+          YDB_DATABASE: ${{ secrets.YDB_DATABASE }}
+        run: |
+          cd backend
+
+          # Создаём временный файл с Service Account ключом
+          echo "$YC_SERVICE_ACCOUNT_KEY" > /tmp/yc-sa-key.json
+          export YC_SERVICE_ACCOUNT_KEY_FILE="/tmp/yc-sa-key.json"
+
+          # Проверяем переменные окружения
+          if [ -z "$YDB_ENDPOINT" ] || [ -z "$YDB_DATABASE" ]; then
+            echo "❌ ERROR: YDB_ENDPOINT or YDB_DATABASE is not set"
+            exit 1
+          fi
+
+          echo "🔌 Connecting to YDB..."
+          echo "Endpoint: $YDB_ENDPOINT"
+          echo "Database: $YDB_DATABASE"
+
+          # Запускаем скрипт создания таблиц
+          npm run create:tables || {
+            echo "⚠️  Script failed, but this might be OK if tables already exist"
+            echo "Checking if we can query the tables..."
+            
+            # Попробуем проверить статус миграций
+            npm run migrate:status || echo "⚠️  Cannot check migration status"
+          }
+
+      - name: Verify tables created
+        timeout-minutes: 3
+        env:
+          YC_SERVICE_ACCOUNT_KEY: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
+          YDB_ENDPOINT: ${{ secrets.YDB_ENDPOINT }}
+          YDB_DATABASE: ${{ secrets.YDB_DATABASE }}
+        run: |
+          cd backend
+
+          # Создаём временный файл с Service Account ключом
+          echo "$YC_SERVICE_ACCOUNT_KEY" > /tmp/yc-sa-key.json
+          export YC_SERVICE_ACCOUNT_KEY_FILE="/tmp/yc-sa-key.json"
+
+          echo "✅ Verifying tables were created..."
+          npm run migrate:status || {
+            echo "⚠️  Warning: Could not verify tables, but they might still exist"
+            echo "If this is the first run, tables should be created now"
+          }

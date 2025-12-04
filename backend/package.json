@@ -17,6 +17,7 @@
     "test:coverage": "jest --coverage",
     "migrate": "tsx src/db/migrations/run.ts",
     "migrate:status": "tsx src/db/migrations/status.ts",
+    "create:tables": "tsx create-tables-manually.ts",
     "create:admin": "tsx ../scripts/create-admin.ts",
     "test:ydb": "tsx ../scripts/test-ydb-connection.ts"
   },
