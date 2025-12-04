@@ -223,8 +223,9 @@ class YDBClient {
       logger.info({ type: 'ydb_driver_creating' });
       this.driver = new Driver(driverConfig);
 
-      // Wait for driver to be ready with increased timeout
-      const timeout = 60000; // 60 seconds (increased for better reliability)
+      // Wait for driver to be ready with timeout
+      // Note: driver.ready() returns Promise<boolean> and should resolve within timeout
+      const timeout = 30000; // 30 seconds (reduced for faster failure detection)
       logger.info({
         type: 'ydb_driver_waiting',
         timeout,
@@ -232,12 +233,12 @@ class YDBClient {
       });
 
       try {
-        // Add timeout wrapper to prevent infinite hanging
+        // Use Promise.race to ensure we don't wait forever
         const readyPromise = this.driver.ready(timeout);
-        const timeoutPromise = new Promise<boolean>((_, reject) => {
+        const timeoutPromise = new Promise<never>((_, reject) => {
           setTimeout(() => {
             reject(new Error(`YDB driver initialization timeout after ${timeout}ms`));
-          }, timeout + 5000); // Add 5 seconds buffer
+          }, timeout + 1000); // Add 1 second buffer
         });
 
         const isReady = await Promise.race([readyPromise, timeoutPromise]);
@@ -247,6 +248,8 @@ class YDBClient {
             `YDB driver initialization timeout after ${timeout}ms. Check your network connection and credentials.`
           );
         }
+
+        logger.info({ type: 'ydb_driver_ready', timeout });
       } catch (error) {
         logger.error({
           error,
