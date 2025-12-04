@@ -49,7 +49,11 @@ jobs:
 
           # Создаём временный файл с Service Account ключом
           echo "$YC_SERVICE_ACCOUNT_KEY" > /tmp/yc-sa-key.json
+          chmod 600 /tmp/yc-sa-key.json
+
+          # Убеждаемся, что используется файл, а не metadata service
           export YC_SERVICE_ACCOUNT_KEY_FILE="/tmp/yc-sa-key.json"
+          unset YC_SERVICE_ACCOUNT_KEY  # Убираем из env, чтобы SDK использовал файл
 
           # Проверяем переменные окружения
           if [ -z "$YDB_ENDPOINT" ] || [ -z "$YDB_DATABASE" ]; then
@@ -60,6 +64,15 @@ jobs:
           echo "🔌 Connecting to YDB..."
           echo "Endpoint: $YDB_ENDPOINT"
           echo "Database: $YDB_DATABASE"
+          echo "Service Account Key File: $YC_SERVICE_ACCOUNT_KEY_FILE"
+
+          # Проверяем, что файл создан
+          if [ ! -f "$YC_SERVICE_ACCOUNT_KEY_FILE" ]; then
+            echo "❌ ERROR: Service Account key file not found"
+            exit 1
+          fi
+
+          echo "✅ Service Account key file exists"
 
           echo "🚀 Running migrations..."
           npm run migrate
@@ -75,7 +88,9 @@ jobs:
 
           # Создаём временный файл с Service Account ключом
           echo "$YC_SERVICE_ACCOUNT_KEY" > /tmp/yc-sa-key.json
+          chmod 600 /tmp/yc-sa-key.json
           export YC_SERVICE_ACCOUNT_KEY_FILE="/tmp/yc-sa-key.json"
+          unset YC_SERVICE_ACCOUNT_KEY  # Убираем из env, чтобы SDK использовал файл
 
           echo "📋 Checking migration status..."
           npm run migrate:status
