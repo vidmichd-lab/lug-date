@@ -185,8 +185,12 @@ class YDBClient {
 
       // Build connection string
       // Format: grpcs://endpoint:port?database=/path/to/database
+      // Note: Yandex Cloud CLI returns endpoint with ?database= already included
       let connectionString: string;
-      if (config.database.endpoint.includes('?database=')) {
+      if (
+        config.database.endpoint.includes('?database=') ||
+        config.database.endpoint.includes('/?database=')
+      ) {
         // Endpoint already contains database path
         connectionString = config.database.endpoint;
       } else {
@@ -195,7 +199,9 @@ class YDBClient {
         const dbPath = config.database.database.startsWith('/')
           ? config.database.database
           : `/${config.database.database}`;
-        connectionString = `${config.database.endpoint}?database=${encodeURIComponent(dbPath)}`;
+        // Use /?database= format (with slash) as shown in Yandex Cloud CLI output
+        const separator = config.database.endpoint.endsWith('/') ? '?' : '/?';
+        connectionString = `${config.database.endpoint}${separator}database=${encodeURIComponent(dbPath)}`;
       }
 
       logger.info({
@@ -233,15 +239,20 @@ class YDBClient {
       });
 
       try {
-        // Use Promise.race to ensure we don't wait forever
+        // Try to wait for driver to be ready
+        // Note: driver.ready() may hang if there are network issues
+        // We use a shorter timeout and Promise.race to prevent infinite waiting
+        logger.debug({ type: 'ydb_driver_ready_start', timeout });
+
         const readyPromise = this.driver.ready(timeout);
         const timeoutPromise = new Promise<never>((_, reject) => {
           setTimeout(() => {
             reject(new Error(`YDB driver initialization timeout after ${timeout}ms`));
-          }, timeout + 1000); // Add 1 second buffer
+          }, timeout + 2000); // Add 2 seconds buffer
         });
 
         const isReady = await Promise.race([readyPromise, timeoutPromise]);
+
         if (!isReady) {
           logger.error({ type: 'ydb_driver_timeout', timeout });
           throw new Error(
@@ -249,7 +260,7 @@ class YDBClient {
           );
         }
 
-        logger.info({ type: 'ydb_driver_ready', timeout });
+        logger.info({ type: 'ydb_driver_ready', timeout, isReady });
       } catch (error) {
         logger.error({
           error,
