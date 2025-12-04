@@ -10,6 +10,7 @@ import { config } from '../config';
  * General API rate limiter
  * 100 requests per minute
  * Skips OPTIONS requests (preflight) to allow CORS
+ * Note: trustProxy is set to true in Express for Yandex Cloud, so we need to configure rate limiter accordingly
  */
 export const generalLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
@@ -25,6 +26,11 @@ export const generalLimiter = rateLimit({
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   // Skip rate limiting for OPTIONS requests (CORS preflight) and in test environment
   skip: (req) => req.method === 'OPTIONS' || config.nodeEnv === 'test',
+  // Configure for trust proxy - use request IP from X-Forwarded-For header
+  // This is safe because we're behind Yandex Cloud's trusted proxy
+  validate: {
+    trustProxy: true, // Allow trust proxy for Yandex Cloud Serverless Containers
+  },
 });
 
 /**
@@ -50,6 +56,7 @@ export const uploadLimiter = rateLimit({
  * Admin API rate limiter
  * 200 requests per minute (more permissive for admin operations)
  * Skips OPTIONS requests (preflight) to allow CORS
+ * Note: trustProxy is set to true in Express for Yandex Cloud, so we need to configure rate limiter accordingly
  */
 export const adminLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
@@ -65,6 +72,11 @@ export const adminLimiter = rateLimit({
   legacyHeaders: false,
   // Skip rate limiting for OPTIONS requests (CORS preflight) and in test environment
   skip: (req) => req.method === 'OPTIONS' || config.nodeEnv === 'test',
+  // Configure for trust proxy - use request IP from X-Forwarded-For header
+  // This is safe because we're behind Yandex Cloud's trusted proxy
+  validate: {
+    trustProxy: true, // Allow trust proxy for Yandex Cloud Serverless Containers
+  },
 });
 
 /**
