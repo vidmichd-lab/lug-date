@@ -213,7 +213,15 @@ class YDBClient {
       });
 
       try {
-        const isReady = await this.driver.ready(timeout);
+        // Add timeout wrapper to prevent infinite hanging
+        const readyPromise = this.driver.ready(timeout);
+        const timeoutPromise = new Promise<boolean>((_, reject) => {
+          setTimeout(() => {
+            reject(new Error(`YDB driver initialization timeout after ${timeout}ms`));
+          }, timeout + 5000); // Add 5 seconds buffer
+        });
+
+        const isReady = await Promise.race([readyPromise, timeoutPromise]);
         if (!isReady) {
           logger.error({ type: 'ydb_driver_timeout', timeout });
           throw new Error(
