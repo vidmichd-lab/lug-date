@@ -125,8 +125,16 @@ jobs:
         env:
           YC_REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
         run: |
-          if [ -z "$YC_REGISTRY_ID" ]; then
-            echo "❌ ERROR: YC_REGISTRY_ID is not set"
+          if [ -z "${YC_REGISTRY_ID}" ] || [ "${YC_REGISTRY_ID}" = "" ]; then
+            echo "❌ ERROR: YC_REGISTRY_ID is not set in GitHub Secrets"
+            echo "Please add YC_REGISTRY_ID to GitHub Secrets → Settings → Secrets and variables → Actions"
+            echo "You can find your registry ID in Yandex Cloud Console → Container Registry"
+            exit 1
+          fi
+
+          # Validate that YC_REGISTRY_ID doesn't contain spaces or special characters that could break commands
+          if [[ "${YC_REGISTRY_ID}" =~ [[:space:]] ]]; then
+            echo "❌ ERROR: YC_REGISTRY_ID contains spaces, which is invalid"
             exit 1
           fi
 
@@ -140,6 +148,7 @@ jobs:
           echo "IMAGE_ID=${IMAGE_ID}" >> "$GITHUB_ENV"
 
           echo "📦 Image will be built as: ${IMAGE_NAME}:${IMAGE_TAG}"
+          echo "✅ Registry ID: ${YC_REGISTRY_ID}"
 
       - name: Login to Container Registry for build-push-action
         timeout-minutes: 5
@@ -243,8 +252,25 @@ jobs:
           ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+          IMAGE_ID: ${{ env.IMAGE_ID }}
         run: |
           export PATH="$PATH:$HOME/yandex-cloud/bin"
+
+          # Validate IMAGE_ID is set
+          if [ -z "${IMAGE_ID}" ] || [ "${IMAGE_ID}" = "" ]; then
+            echo "❌ ERROR: IMAGE_ID is not set"
+            echo "This usually means YC_REGISTRY_ID is not set in GitHub Secrets"
+            exit 1
+          fi
+
+          # Validate IMAGE_ID format
+          if [[ ! "${IMAGE_ID}" =~ ^cr\.yandex/ ]]; then
+            echo "❌ ERROR: IMAGE_ID has invalid format: ${IMAGE_ID}"
+            echo "Expected format: cr.yandex/<registry-id>/lug-date-backend:<tag>"
+            exit 1
+          fi
+
+          echo "📦 Deploying image: ${IMAGE_ID}"
 
           # Set default values for admin credentials using bash parameter expansion
           ADMIN_USERNAME_VAL="${ADMIN_USERNAME:-admin}"
@@ -283,7 +309,7 @@ jobs:
           if [ -n "${YC_CONTAINER_ID}" ]; then
             deploy_with_retry yc serverless container revision deploy \
               --container-id="${YC_CONTAINER_ID}" \
-              --image="${{ env.IMAGE_ID }}" \
+              --image="${IMAGE_ID}" \
               --memory=512m \
               --cores=1 \
               --execution-timeout=30s \
@@ -310,7 +336,7 @@ jobs:
             deploy_with_retry yc serverless container revision deploy \
               --container-name=lug-date-backend \
               --folder-id="${YC_FOLDER_ID}" \
-              --image="${{ env.IMAGE_ID }}" \
+              --image="${IMAGE_ID}" \
               --memory=512m \
               --cores=1 \
               --execution-timeout=30s \
