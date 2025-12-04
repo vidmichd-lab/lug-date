@@ -1,6 +1,9 @@
 # Multi-stage build для уменьшения размера
 FROM node:20-alpine AS builder
 
+# Обновляем busybox для исправления уязвимостей CVE-2024-58251 и CVE-2025-46394
+RUN apk update && apk upgrade busybox busybox-binsh ssl_client && rm -rf /var/cache/apk/*
+
 WORKDIR /build
 
 # Копируем package files для кэширования слоёв
@@ -23,6 +26,9 @@ RUN npm run build --workspace=backend
 
 # Production stage
 FROM node:20-alpine
+
+# Обновляем busybox для исправления уязвимостей CVE-2024-58251 и CVE-2025-46394
+RUN apk update && apk upgrade busybox busybox-binsh ssl_client && rm -rf /var/cache/apk/*
 
 WORKDIR /function
 
