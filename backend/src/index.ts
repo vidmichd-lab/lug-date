@@ -100,7 +100,7 @@ app.use(
         scriptSrc: ["'self'"],
         imgSrc: ["'self'", 'data:', 'https:'],
         connectSrc: ["'self'", 'https:', 'http:'], // Allow connections to any HTTPS/HTTP endpoint
-        fontSrc: ["'self'"],
+        fontSrc: ["'self'", 'data:', 'https:'], // Allow fonts from any HTTPS source
         objectSrc: ["'none'"],
         mediaSrc: ["'self'"],
         frameSrc: ["'none'"],
