@@ -254,7 +254,7 @@ jobs:
           ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
           IMAGE_ID: ${{ env.IMAGE_ID }}
         run: |
-          set -euo pipefail  # Exit on error, undefined vars, pipe failures
+          set -eo pipefail  # Exit on error, pipe failures (убрали -u для гибкости с секретами)
           export PATH="$PATH:$HOME/yandex-cloud/bin"
 
           # Validate IMAGE_ID is set
@@ -288,6 +288,16 @@ jobs:
           echo "✅ YC_CONTAINER_ID: ${YC_CONTAINER_ID:+set (length: ${#YC_CONTAINER_ID})}"
           echo "✅ YC_FOLDER_ID: ${YC_FOLDER_ID:+set (length: ${#YC_FOLDER_ID})}"
           echo "✅ YC_SERVICE_ACCOUNT_ID: ${YC_SERVICE_ACCOUNT_ID:+set (length: ${#YC_SERVICE_ACCOUNT_ID})}"
+
+          # Кодируем YC_SERVICE_ACCOUNT_KEY в base64 для безопасной передачи через environment variable
+          # Это необходимо, так как JSON ключ содержит многострочное содержимое и специальные символы
+          YC_SERVICE_ACCOUNT_KEY_B64=""
+          if [ -n "${{ secrets.YC_SERVICE_ACCOUNT_KEY }}" ]; then
+            YC_SERVICE_ACCOUNT_KEY_B64=$(echo -n "${{ secrets.YC_SERVICE_ACCOUNT_KEY }}" | base64 -w 0)
+            echo "✅ YC_SERVICE_ACCOUNT_KEY encoded to base64 (length: ${#YC_SERVICE_ACCOUNT_KEY_B64})"
+          else
+            echo "⚠️  WARNING: YC_SERVICE_ACCOUNT_KEY is not set"
+          fi
 
           # Set default values for admin credentials using bash parameter expansion
           ADMIN_USERNAME_VAL="${ADMIN_USERNAME:-admin}"
@@ -338,7 +348,7 @@ jobs:
               --environment "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" \
               --environment "YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT }}" \
               --environment "YDB_DATABASE=${{ secrets.YDB_DATABASE }}" \
-              --environment "YC_SERVICE_ACCOUNT_KEY=${{ secrets.YC_SERVICE_ACCOUNT_KEY }}" \
+              --environment "YC_SERVICE_ACCOUNT_KEY_B64=${YC_SERVICE_ACCOUNT_KEY_B64}" \
               --environment "YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET }}" \
               --environment "YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY }}" \
               --environment "YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY }}" \
@@ -366,7 +376,7 @@ jobs:
               --environment "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" \
               --environment "YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT }}" \
               --environment "YDB_DATABASE=${{ secrets.YDB_DATABASE }}" \
-              --environment "YC_SERVICE_ACCOUNT_KEY=${{ secrets.YC_SERVICE_ACCOUNT_KEY }}" \
+              --environment "YC_SERVICE_ACCOUNT_KEY_B64=${YC_SERVICE_ACCOUNT_KEY_B64}" \
               --environment "YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET }}" \
               --environment "YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY }}" \
               --environment "YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY }}" \

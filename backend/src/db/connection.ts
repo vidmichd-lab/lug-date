@@ -58,7 +58,26 @@ class YDBClient {
           : resolve(process.cwd(), process.env.YC_SERVICE_ACCOUNT_KEY_FILE);
         process.env.YC_SERVICE_ACCOUNT_KEY_FILE = serviceAccountKeyFile;
         logger.debug({ type: 'ydb_service_account_path_resolved', path: serviceAccountKeyFile });
-      } else if (process.env.YC_SERVICE_ACCOUNT_KEY) {
+      } else if (process.env.YC_SERVICE_ACCOUNT_KEY_B64 || process.env.YC_SERVICE_ACCOUNT_KEY) {
+        // If YC_SERVICE_ACCOUNT_KEY_B64 is set (base64 encoded), decode it first
+        // This is used when deploying via GitHub Actions to avoid issues with multiline JSON
+        if (process.env.YC_SERVICE_ACCOUNT_KEY_B64) {
+          try {
+            const decodedKey = Buffer.from(
+              process.env.YC_SERVICE_ACCOUNT_KEY_B64,
+              'base64'
+            ).toString('utf-8');
+            process.env.YC_SERVICE_ACCOUNT_KEY = decodedKey;
+            logger.debug({ type: 'ydb_service_account_key_decoded_from_base64' });
+          } catch (error) {
+            logger.error({
+              error,
+              type: 'ydb_service_account_key_decode_failed',
+              message: 'Failed to decode YC_SERVICE_ACCOUNT_KEY_B64',
+            });
+            throw new Error('Failed to decode YC_SERVICE_ACCOUNT_KEY_B64');
+          }
+        }
         // If YC_SERVICE_ACCOUNT_KEY is set as JSON string, write it to temp file
         logger.debug({ type: 'ydb_using_service_account_key_env' });
       }
@@ -72,6 +91,7 @@ class YDBClient {
           hasToken: !!process.env.YDB_TOKEN,
           hasServiceAccountFile: !!process.env.YC_SERVICE_ACCOUNT_KEY_FILE,
           hasServiceAccountKey: !!process.env.YC_SERVICE_ACCOUNT_KEY,
+          hasServiceAccountKeyB64: !!process.env.YC_SERVICE_ACCOUNT_KEY_B64,
           serviceAccountKeyFile: serviceAccountKeyFile || 'not set',
         });
 
