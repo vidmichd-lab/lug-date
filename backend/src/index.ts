@@ -86,6 +86,12 @@ initYDB()
 initObjectStorage();
 
 const app = express();
+
+// Trust proxy - required for Yandex Cloud Serverless Containers
+// This allows Express to correctly identify client IPs and handle X-Forwarded-For headers
+// Without this, rate limiter will fail with ERR_ERL_UNEXPECTED_X_FORWARDED_FOR
+app.set('trust proxy', true);
+
 const PORT = config.port;
 
 // Security headers - MUST be first
