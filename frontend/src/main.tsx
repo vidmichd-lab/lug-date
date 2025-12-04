@@ -10,9 +10,6 @@ import { initErrorMonitoring } from './monitoring';
 import { initMetrica } from './utils/metrica';
 import { queryClient } from './lib/queryClient';
 
-// App version for deployment tracking
-const APP_VERSION = '1.0.0';
-
 // Initialize error monitoring (Yandex AppMetrica)
 initErrorMonitoring();
 
