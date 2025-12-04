@@ -58,7 +58,25 @@ class YDBClient {
           : resolve(process.cwd(), process.env.YC_SERVICE_ACCOUNT_KEY_FILE);
         process.env.YC_SERVICE_ACCOUNT_KEY_FILE = serviceAccountKeyFile;
         logger.debug({ type: 'ydb_service_account_path_resolved', path: serviceAccountKeyFile });
-      } else if (process.env.YC_SERVICE_ACCOUNT_KEY_B64 || process.env.YC_SERVICE_ACCOUNT_KEY) {
+      } else {
+        // Try to find service account key in common locations
+        const possiblePaths = [
+          resolve(process.cwd(), 'yc-service-account-key.json'), // Root of project
+          resolve(process.cwd(), '..', 'yc-service-account-key.json'), // One level up (if running from backend/)
+          resolve(process.cwd(), '../yc-service-account-key.json'), // One level up (alternative)
+        ];
+
+        for (const path of possiblePaths) {
+          if (existsSync(path)) {
+            serviceAccountKeyFile = path;
+            process.env.YC_SERVICE_ACCOUNT_KEY_FILE = serviceAccountKeyFile;
+            logger.debug({ type: 'ydb_service_account_auto_found', path: serviceAccountKeyFile });
+            break;
+          }
+        }
+      }
+
+      if (process.env.YC_SERVICE_ACCOUNT_KEY_B64 || process.env.YC_SERVICE_ACCOUNT_KEY) {
         // If YC_SERVICE_ACCOUNT_KEY_B64 is set (base64 encoded), decode it first
         // This is used when deploying via GitHub Actions to avoid issues with multiline JSON
         if (process.env.YC_SERVICE_ACCOUNT_KEY_B64) {
