@@ -72,8 +72,8 @@ async function sendMatchNotificationToUsers(
   // Send to both users
   try {
     await Promise.all([
-      bot.telegram.sendMessage(userId1, message, keyboard),
-      bot.telegram.sendMessage(userId2, message, keyboard),
+      bot.telegram.sendMessage(telegramId1, message, keyboard),
+      bot.telegram.sendMessage(telegramId2, message, keyboard),
     ]);
 
     logger.info({
@@ -87,8 +87,8 @@ async function sendMatchNotificationToUsers(
       error,
       type: 'match_notification_send_failed',
       matchId,
-      userId1,
-      userId2,
+      telegramId1,
+      telegramId2,
     });
     throw error; // Re-throw to trigger retry
   }

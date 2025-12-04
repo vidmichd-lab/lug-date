@@ -87,7 +87,7 @@ export function useLikeAction() {
 
       return response.data;
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       // Invalidate feed to refresh cards
       invalidateQueries.feed();
 

@@ -62,7 +62,7 @@ export function useSaveEvent() {
 
       return response.data;
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       // Invalidate saved events
       invalidateQueries.savedEvents();
 
