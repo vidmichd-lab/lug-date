@@ -145,15 +145,20 @@ app.use(
       const isAllowed = !origin || uniqueAllowed.includes(origin) || isDevelopment;
 
       if (origin) {
-        if (isDevelopment || !isAllowed) {
+        // Always log CORS checks for admin origins to help debug 403 errors
+        const isAdminOrigin = origin.includes('admin') || origin.includes('lug-admin');
+        if (isDevelopment || !isAllowed || isAdminOrigin) {
           logger.info({
             type: 'cors_check',
             origin,
             allowed: isAllowed,
             allowedOrigins: uniqueAllowed,
             isDevelopment,
+            isAdminOrigin,
             hasAllowedOrigins: !!process.env.ALLOWED_ORIGINS,
             hasAdminOrigins: !!process.env.ADMIN_ORIGINS,
+            allowedOriginsValue: process.env.ALLOWED_ORIGINS || 'not set',
+            adminOriginsValue: process.env.ADMIN_ORIGINS || 'not set',
           });
         }
       }
@@ -232,21 +237,30 @@ app.use('/api/admin/auth', adminLimiter, adminAuthRoutes);
 
 // Admin routes - require admin token authentication
 // Add error handling middleware before routes to catch any errors
+// Skip auth for OPTIONS requests (CORS preflight)
 app.use(
   '/api/admin',
   adminLimiter,
-  adminAuthMiddleware,
+  (req, res, next) => {
+    // Skip auth for OPTIONS requests (CORS preflight)
+    if (req.method === 'OPTIONS') {
+      return next();
+    }
+    adminAuthMiddleware(req, res, next);
+  },
   (req, res, next) => {
     // Log admin requests for debugging
-    if (process.env.NODE_ENV === 'development') {
-      logger.info({
-        type: 'admin_request',
-        method: req.method,
-        url: req.url,
-        query: req.query,
-        headers: req.headers,
-      });
-    }
+    logger.info({
+      type: 'admin_request',
+      method: req.method,
+      url: req.url,
+      path: req.path,
+      originalUrl: req.originalUrl,
+      query: req.query,
+      origin: req.headers.origin || 'not set',
+      hasAuthHeader: !!req.headers.authorization,
+      isOptions: req.method === 'OPTIONS',
+    });
     next();
   },
   adminRoutes
@@ -255,17 +269,26 @@ app.use(
 app.use(
   '/api/admin/management',
   adminLimiter,
-  adminAuthMiddleware,
+  (req, res, next) => {
+    // Skip auth for OPTIONS requests (CORS preflight)
+    if (req.method === 'OPTIONS') {
+      return next();
+    }
+    adminAuthMiddleware(req, res, next);
+  },
   (req, res, next) => {
     // Log management requests for debugging
-    if (process.env.NODE_ENV === 'development') {
-      logger.info({
-        type: 'admin_management_request',
-        method: req.method,
-        url: req.url,
-        query: req.query,
-      });
-    }
+    logger.info({
+      type: 'admin_management_request',
+      method: req.method,
+      url: req.url,
+      path: req.path,
+      originalUrl: req.originalUrl,
+      query: req.query,
+      origin: req.headers.origin || 'not set',
+      hasAuthHeader: !!req.headers.authorization,
+      isOptions: req.method === 'OPTIONS',
+    });
     next();
   },
   adminManagementRoutes

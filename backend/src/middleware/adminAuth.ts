@@ -17,6 +17,11 @@ logger.info({
 });
 
 export const adminAuthMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  // Skip auth for OPTIONS requests (CORS preflight)
+  if (req.method === 'OPTIONS') {
+    return next();
+  }
+
   // Skip auth for login and logout endpoints
   const path = req.path || req.url || '';
   const fullPath = req.originalUrl || req.url || '';
@@ -125,6 +130,8 @@ export const adminAuthMiddleware = (req: Request, res: Response, next: NextFunct
       expectedTokenLength: ADMIN_TOKEN.length,
       tokenPrefix: token.substring(0, 10),
       expectedTokenPrefix: ADMIN_TOKEN.substring(0, 10),
+      tokenSuffix: token.substring(token.length - 10),
+      expectedTokenSuffix: ADMIN_TOKEN.substring(ADMIN_TOKEN.length - 10),
       tokensMatch: false,
       origin: req.headers.origin || 'not set',
       referer: req.headers.referer || 'not set',

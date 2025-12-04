@@ -17,7 +17,7 @@ export function errorHandler(err: AppError, req: Request, res: Response, _next: 
   const isOperational = err.isOperational !== false;
 
   // Handle CORS errors specifically
-  if (err.message === 'Not allowed by CORS') {
+  if (err.message === 'Not allowed by CORS' || err.message?.includes('CORS')) {
     logError(err, {
       method: req.method,
       url: req.url,
@@ -25,7 +25,16 @@ export function errorHandler(err: AppError, req: Request, res: Response, _next: 
       isOperational: true,
       type: 'cors_error',
       origin: req.headers.origin || 'not set',
+      referer: req.headers.referer || 'not set',
+      fullError: err.message,
     });
+
+    // Ensure CORS headers are set even for error responses
+    const origin = req.headers.origin;
+    if (origin) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+    }
 
     return res.status(403).json({
       success: false,
