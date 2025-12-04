@@ -45,6 +45,7 @@
     "migrate": "npm run migrate --workspace=backend",
     "migrate:status": "npm run migrate:status --workspace=backend",
     "create:admin": "tsx scripts/create-admin.ts",
+    "test:ydb": "tsx scripts/test-ydb-connection.ts",
     "prepare": "husky"
   },
   "devDependencies": {

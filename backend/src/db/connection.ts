@@ -53,21 +53,40 @@ class YDBClient {
       let serviceAccountKeyFile: string | undefined;
 
       if (process.env.YC_SERVICE_ACCOUNT_KEY_FILE) {
-        serviceAccountKeyFile = process.env.YC_SERVICE_ACCOUNT_KEY_FILE.startsWith('/')
-          ? process.env.YC_SERVICE_ACCOUNT_KEY_FILE
-          : resolve(process.cwd(), process.env.YC_SERVICE_ACCOUNT_KEY_FILE);
+        const envPath = process.env.YC_SERVICE_ACCOUNT_KEY_FILE;
 
-        // Check if file exists, if not try to find it automatically
-        if (!existsSync(serviceAccountKeyFile)) {
+        // Try multiple resolution strategies for relative paths
+        const possiblePaths = envPath.startsWith('/')
+          ? [envPath] // Absolute path - use as is
+          : [
+              resolve(process.cwd(), envPath), // Current working directory
+              resolve(process.cwd(), '..', envPath), // One level up (if running from backend/)
+              resolve(process.cwd(), '../yc-service-account-key.json'), // Direct parent lookup
+              resolve(process.cwd(), 'yc-service-account-key.json'), // Current dir with standard name
+            ];
+
+        // Find first existing file
+        for (const path of possiblePaths) {
+          if (existsSync(path)) {
+            serviceAccountKeyFile = path;
+            process.env.YC_SERVICE_ACCOUNT_KEY_FILE = serviceAccountKeyFile;
+            logger.debug({
+              type: 'ydb_service_account_path_resolved',
+              path: serviceAccountKeyFile,
+              originalPath: envPath,
+            });
+            break;
+          }
+        }
+
+        // If file from env not found, try auto-discovery
+        if (!serviceAccountKeyFile) {
           logger.warn({
             type: 'ydb_service_account_file_not_found',
-            path: serviceAccountKeyFile,
+            path: envPath,
+            searchedPaths: possiblePaths,
             message: 'Service account key file from env not found, trying auto-discovery',
           });
-          serviceAccountKeyFile = undefined; // Reset to trigger auto-discovery
-        } else {
-          process.env.YC_SERVICE_ACCOUNT_KEY_FILE = serviceAccountKeyFile;
-          logger.debug({ type: 'ydb_service_account_path_resolved', path: serviceAccountKeyFile });
         }
       }
 
