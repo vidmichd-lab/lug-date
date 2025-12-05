@@ -49,3 +49,4 @@ yc serverless function logs --name dating-app-backend-staging
 # Production
 yc serverless function logs --name dating-app-backend-prod
 ```
+

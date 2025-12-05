@@ -7,3 +7,4 @@ export interface MeetingConfirmationModalProps {
   onConfirm: () => void;
   onCancel: () => void;
 }
+

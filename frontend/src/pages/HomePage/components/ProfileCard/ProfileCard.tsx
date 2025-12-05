@@ -107,3 +107,4 @@ export const ProfileCard: FC<ProfileCardProps> = ({ profile }) => {
     </div>
   );
 };
+

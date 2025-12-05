@@ -8,3 +8,4 @@ export type {
   Goal,
   ProfilePageProps,
 } from './ProfilePage.types';
+

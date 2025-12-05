@@ -40,3 +40,4 @@ export function isMCPAvailable(): boolean {
   // В реальности это проверяется через доступность MCP инструментов
   return true;
 }
+

@@ -30,3 +30,4 @@ export async function importFigmaIcon(svgPath: string): Promise<string> {
   // This will be handled at build time
   return svgPath;
 }
+

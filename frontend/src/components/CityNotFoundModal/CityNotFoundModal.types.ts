@@ -6,3 +6,4 @@ export interface CityNotFoundModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
+

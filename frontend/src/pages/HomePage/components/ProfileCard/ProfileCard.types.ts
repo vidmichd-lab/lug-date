@@ -20,3 +20,4 @@ export interface ProfileCardProps {
   onLike?: () => void;
   onDislike?: () => void;
 }
+

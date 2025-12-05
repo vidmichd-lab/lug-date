@@ -52,3 +52,4 @@ export const useRecentMatches = (limit: number = 10) => {
     refetchInterval: REFETCH_INTERVAL,
   });
 };
+

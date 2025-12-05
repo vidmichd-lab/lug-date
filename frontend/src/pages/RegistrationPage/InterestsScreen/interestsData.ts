@@ -96,3 +96,4 @@ export const INTERESTS_DATA: Interest[] = [
     color: '#9C27B0',
   },
 ];
+

@@ -44,3 +44,4 @@ export const MeetingConfirmationModal: FC<MeetingConfirmationModalProps> = ({
     </div>
   );
 };
+

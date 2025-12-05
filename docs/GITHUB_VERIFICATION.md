@@ -178,3 +178,4 @@ gh auth login
 - [Подробная инструкция по настройке](GITHUB_SETUP.md)
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
 - [GitHub Environments](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment)
+

@@ -12,3 +12,4 @@ export function LoadingFallback() {
     </div>
   );
 }
+

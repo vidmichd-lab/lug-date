@@ -23,3 +23,4 @@ export interface PhotoUrls {
   };
   blurDataUrl?: string;
 }
+

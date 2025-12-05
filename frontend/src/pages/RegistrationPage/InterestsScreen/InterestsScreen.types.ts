@@ -8,3 +8,4 @@ export interface InterestsScreenProps {
   onBack: () => void;
   initialInterests?: string[];
 }
+

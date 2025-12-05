@@ -6,3 +6,4 @@ export interface EventPopupProps {
   eventId: string;
   onClose: () => void;
 }
+

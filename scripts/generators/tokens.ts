@@ -379,3 +379,4 @@ async function generateCSSFile(outputPath: string) {
 
   await fs.writeFile(path.join(outputPath, 'tokens.css'), cssContent);
 }
+

@@ -14,3 +14,4 @@ export interface CitySelectorModalProps {
   onSelect: (cityId: string) => void;
   onClose: () => void;
 }
+

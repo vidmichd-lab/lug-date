@@ -32,3 +32,4 @@ export interface GetNotificationsResponse {
   notifications: Notification[];
   unreadCount: number;
 }
+

@@ -207,3 +207,4 @@ make logs-backend
 - [Docker Compose Documentation](https://docs.docker.com/compose/)
 - [Yandex Cloud Container Registry](https://cloud.yandex.ru/docs/container-registry/)
 - [Yandex Cloud Functions](https://cloud.yandex.ru/docs/functions/)
+

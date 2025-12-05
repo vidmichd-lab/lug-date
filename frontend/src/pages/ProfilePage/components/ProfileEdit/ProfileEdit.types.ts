@@ -9,3 +9,4 @@ export interface ProfileEditProps {
   onSave: (profile: Partial<UserProfile>) => void;
   onBack: () => void;
 }
+
