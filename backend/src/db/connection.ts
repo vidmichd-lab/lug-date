@@ -166,21 +166,55 @@ class YDBClient {
         // - Metadata service (when running in Yandex Cloud)
         // This is the recommended approach for YDB SDK 5.x
 
-        // Если есть файл Service Account, устанавливаем переменную окружения
-        // чтобы getCredentialsFromEnv() правильно его использовал
+        // Если есть файл Service Account, используем его напрямую
+        // и отключаем metadata service для GitHub Actions
         if (serviceAccountKeyFile && existsSync(serviceAccountKeyFile)) {
           // Устанавливаем переменную окружения для getCredentialsFromEnv()
-          // Это правильный способ для YDB SDK 5.x
           process.env.YC_SERVICE_ACCOUNT_KEY_FILE = serviceAccountKeyFile;
+          
+          // Отключаем metadata service, чтобы SDK не пытался его использовать
+          // Это важно для GitHub Actions, где metadata service недоступен
+          delete process.env.METADATA_URL;
+          delete process.env.GCE_METADATA_HOST;
+          
           logger.info({
             type: 'ydb_service_account_file_set',
             path: serviceAccountKeyFile,
           });
         }
 
-        // Всегда используем getCredentialsFromEnv() - он правильно обработает
-        // YC_SERVICE_ACCOUNT_KEY_FILE, YC_SERVICE_ACCOUNT_KEY или YDB_TOKEN
-        credentials = getCredentialsFromEnv();
+        // Используем getCredentialsFromEnv() - он должен использовать файл,
+        // если YC_SERVICE_ACCOUNT_KEY_FILE установлен
+        try {
+          credentials = getCredentialsFromEnv();
+        } catch (error) {
+          // Если getCredentialsFromEnv() все еще пытается использовать metadata service,
+          // используем getSACredentialsFromJson напрямую как fallback
+          if (serviceAccountKeyFile && existsSync(serviceAccountKeyFile)) {
+            logger.warn({
+              error,
+              type: 'ydb_getcredentials_failed',
+              message: 'getCredentialsFromEnv failed, trying getSACredentialsFromJson',
+            });
+            // Используем getSACredentialsFromJson напрямую
+            const saCredentials = getSACredentialsFromJson(serviceAccountKeyFile);
+            // Обертываем в объект с нужными методами
+            credentials = {
+              getAuthMetadata: async () => {
+                const creds = await saCredentials.getAuthMetadata();
+                return creds;
+              },
+            } as any;
+            logger.info({
+              type: 'ydb_credentials_loaded',
+              method: 'getSACredentialsFromJson_fallback',
+              hasServiceAccountFile: true,
+              path: serviceAccountKeyFile,
+            });
+          } else {
+            throw error;
+          }
+        }
         logger.info({
           type: 'ydb_credentials_loaded',
           method: 'getCredentialsFromEnv',
