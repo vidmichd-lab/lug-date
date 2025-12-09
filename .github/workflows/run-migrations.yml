@@ -113,6 +113,40 @@ jobs:
 
           echo "✅ Service Account key file exists"
 
+          # Извлекаем Service Account ID из ключа
+          if command -v jq &> /dev/null; then
+            SERVICE_ACCOUNT_ID=$(jq -r '.service_account_id' "$YC_SERVICE_ACCOUNT_KEY_FILE" 2>/dev/null || echo "unknown")
+            echo "   Service Account ID: $SERVICE_ACCOUNT_ID"
+          fi
+
+          # Выводим полную информацию для диагностики
+          echo ""
+          echo "📊 Connection Details:"
+          echo "  Endpoint: $YDB_ENDPOINT"
+          echo "  Database Path: $YDB_DATABASE"
+          if [[ "$YDB_ENDPOINT" == *"?database="* ]]; then
+            echo "  ⚠️  WARNING: Endpoint already contains ?database= parameter"
+            echo "  Full endpoint: $YDB_ENDPOINT"
+            echo "  This might cause issues if YDB_DATABASE is also set"
+          else
+            # Формируем connectionString как в коде
+            if [[ "$YDB_ENDPOINT" == */ ]]; then
+              SEPARATOR="?"
+            else
+              SEPARATOR="/?"
+            fi
+            EXPECTED_CS="${YDB_ENDPOINT}${SEPARATOR}database=$(echo "$YDB_DATABASE" | jq -sRr @uri 2>/dev/null || echo "$YDB_DATABASE")"
+            echo "  Expected connectionString: ${EXPECTED_CS}"
+          fi
+          echo ""
+          echo "💡 If you see 'Database not found' error:"
+          echo "   1. Verify database exists: https://console.cloud.yandex.ru/folders/$FOLDER_ID/ydb"
+          echo "   2. Check database path in console matches: $YDB_DATABASE"
+          echo "   3. Ensure Service Account '$SERVICE_ACCOUNT_ID' has 'YDB Editor' role"
+          echo "   4. Wait 1-2 minutes after assigning roles (they apply with delay)"
+          echo ""
+
+          echo ""
           echo "🚀 Running migrations..."
           npm run migrate
 
