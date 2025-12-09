@@ -243,24 +243,35 @@ class YDBClient {
 
       // Build connection string
       // Format: grpcs://endpoint:port?database=/path/to/database
-      // Note: Yandex Cloud CLI returns endpoint with ?database= already included
-      let connectionString: string;
-      if (
-        config.database.endpoint.includes('?database=') ||
-        config.database.endpoint.includes('/?database=')
-      ) {
-        // Endpoint already contains database path
-        connectionString = config.database.endpoint;
-      } else {
-        // Build connection string from endpoint and database
-        // Ensure database path starts with /
-        const dbPath = config.database.database.startsWith('/')
-          ? config.database.database
-          : `/${config.database.database}`;
-        // Use /?database= format (with slash) as shown in Yandex Cloud CLI output
-        const separator = config.database.endpoint.endsWith('/') ? '?' : '/?';
-        connectionString = `${config.database.endpoint}${separator}database=${encodeURIComponent(dbPath)}`;
+      // Note: YDB_DATABASE has priority over database path in endpoint
+      // This ensures we always use the correct database path from YDB_DATABASE env var
+
+      // Extract base endpoint (without database parameter)
+      let baseEndpoint = config.database.endpoint;
+      if (baseEndpoint.includes('?database=')) {
+        baseEndpoint = baseEndpoint.split('?database=')[0];
+      } else if (baseEndpoint.includes('/?database=')) {
+        baseEndpoint = baseEndpoint.split('/?database=')[0];
       }
+
+      // Always use YDB_DATABASE if provided (it has priority)
+      // Ensure database path starts with /
+      const dbPath = config.database.database.startsWith('/')
+        ? config.database.database
+        : `/${config.database.database}`;
+
+      // Build connection string with database path from YDB_DATABASE
+      // Use /?database= format (with slash) as shown in Yandex Cloud CLI output
+      const separator = baseEndpoint.endsWith('/') ? '?' : '/?';
+      const connectionString = `${baseEndpoint}${separator}database=${encodeURIComponent(dbPath)}`;
+
+      logger.debug({
+        type: 'ydb_connection_string_built',
+        originalEndpoint: config.database.endpoint,
+        baseEndpoint,
+        databasePath: dbPath,
+        connectionString: connectionString.replace(/\?database=.*/, '?database=***'),
+      });
 
       logger.info({
         type: 'ydb_driver_config',
