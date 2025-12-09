@@ -102,10 +102,12 @@ jobs:
           echo "  1. Check if database exists in Yandex Cloud Console:"
           echo "     https://console.cloud.yandex.ru/folders/$FOLDER_ID/ydb"
           echo "  2. Verify YDB_DATABASE secret matches the database path in console"
-          echo "     Expected format: /ru-central1/<folder-id>/<database-id>"
-          echo "     Note: Use FOLDER ID (not Cloud ID) in the path!"
+          echo "     Expected format: /ru-central1/<cloud-id>/<database-id>"
+          echo "     Note: Path uses Cloud ID (not Folder ID)"
           echo "  3. Ensure Service Account has 'YDB Editor' role on the database"
           echo "  4. Check Service Account key is valid and not expired"
+          echo "  5. Verify YDB_ENDPOINT is: grpcs://ydb.serverless.yandexcloud.net:2135"
+          echo "     (without ?database= parameter)"
 
           # Проверяем, что файл создан
           if [ ! -f "$YC_SERVICE_ACCOUNT_KEY_FILE" ]; then
@@ -144,10 +146,12 @@ jobs:
           echo "💡 If you see 'Database not found' error:"
           echo "   1. Verify database exists: https://console.cloud.yandex.ru/folders/$FOLDER_ID/ydb"
           echo "   2. Check database path in console matches: $YDB_DATABASE"
-          echo "      Expected format: /ru-central1/<folder-id>/<database-id>"
-          echo "      Note: Use FOLDER ID (not Cloud ID) in the path!"
+          echo "      Expected format: /ru-central1/<cloud-id>/<database-id>"
+          echo "      Note: Path uses Cloud ID (not Folder ID)"
           echo "   3. Ensure Service Account '$SERVICE_ACCOUNT_ID' has 'YDB Editor' role"
           echo "   4. Wait 1-2 minutes after assigning roles (they apply with delay)"
+          echo "   5. Verify YDB_ENDPOINT is: grpcs://ydb.serverless.yandexcloud.net:2135"
+          echo "      (without ?database= parameter)"
           echo ""
 
           echo ""
