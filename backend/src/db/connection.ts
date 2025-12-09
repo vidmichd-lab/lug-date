@@ -3,7 +3,7 @@
  * Handles connection to Yandex Database (YDB) using official SDK
  */
 
-import { Driver, getCredentialsFromEnv, getSACredentialsFromJson, Logger } from 'ydb-sdk';
+import { Driver, getCredentialsFromEnv, Logger } from 'ydb-sdk';
 import { resolve } from 'path';
 import { existsSync } from 'fs';
 import { config } from '../config';
@@ -166,46 +166,27 @@ class YDBClient {
         // - Metadata service (when running in Yandex Cloud)
         // This is the recommended approach for YDB SDK 5.x
 
-        // Если есть файл Service Account, используем getSACredentialsFromJson напрямую
-        // Это избегает попыток использовать metadata service в GitHub Actions
+        // Используем getCredentialsFromEnv везде - это правильный способ для YDB SDK 5.x
+        // getCredentialsFromEnv автоматически обрабатывает:
+        // - YC_SERVICE_ACCOUNT_KEY_FILE (file path)
+        // - YC_SERVICE_ACCOUNT_KEY (JSON string)
+        // - YDB_TOKEN
+        // - Metadata service (когда запущено в Yandex Cloud)
+        // Отключаем metadata service для GitHub Actions
         if (serviceAccountKeyFile && existsSync(serviceAccountKeyFile)) {
-          try {
-            // Используем getSACredentialsFromJson напрямую - это правильный способ
-            // для явного использования файла service account
-            credentials = getSACredentialsFromJson(serviceAccountKeyFile);
-            logger.info({
-              type: 'ydb_credentials_loaded',
-              method: 'getSACredentialsFromJson',
-              hasServiceAccountFile: true,
-              path: serviceAccountKeyFile,
-            });
-          } catch (error) {
-            logger.warn({
-              error,
-              type: 'ydb_sa_file_load_failed',
-              message: 'Failed to load SA from file, trying getCredentialsFromEnv',
-            });
-            // Fallback: устанавливаем переменную и используем getCredentialsFromEnv
-            process.env.YC_SERVICE_ACCOUNT_KEY_FILE = serviceAccountKeyFile;
-            // Отключаем metadata service
-            delete process.env.METADATA_URL;
-            delete process.env.GCE_METADATA_HOST;
-            credentials = getCredentialsFromEnv();
-            logger.info({
-              type: 'ydb_credentials_loaded',
-              method: 'getCredentialsFromEnv_fallback',
-              hasServiceAccountFile: true,
-            });
-          }
-        } else {
-          // Если файла нет, используем getCredentialsFromEnv
-          credentials = getCredentialsFromEnv();
-          logger.info({
-            type: 'ydb_credentials_loaded',
-            method: 'getCredentialsFromEnv',
-            hasServiceAccountFile: false,
-          });
+          // Устанавливаем переменную для getCredentialsFromEnv
+          process.env.YC_SERVICE_ACCOUNT_KEY_FILE = serviceAccountKeyFile;
+          // Отключаем metadata service
+          delete process.env.METADATA_URL;
+          delete process.env.GCE_METADATA_HOST;
         }
+
+        credentials = getCredentialsFromEnv();
+        logger.info({
+          type: 'ydb_credentials_loaded',
+          method: 'getCredentialsFromEnv',
+          hasServiceAccountFile: !!serviceAccountKeyFile,
+        });
         logger.info({
           type: 'ydb_credentials_loaded',
           method: 'getCredentialsFromEnv',
