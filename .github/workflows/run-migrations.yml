@@ -51,9 +51,14 @@ jobs:
           echo "$YC_SERVICE_ACCOUNT_KEY" > /tmp/yc-sa-key.json
           chmod 600 /tmp/yc-sa-key.json
 
-          # Используем JSON строку напрямую (более надежно, чем файл)
+          # Используем YC_SERVICE_ACCOUNT_KEY (JSON строка) напрямую
+          # Это имеет приоритет над файлом и metadata service в getCredentialsFromEnv
           export YC_SERVICE_ACCOUNT_KEY="$YC_SERVICE_ACCOUNT_KEY"
+
+          # Также создаём файл как fallback
           export YC_SERVICE_ACCOUNT_KEY_FILE="/tmp/yc-sa-key.json"
+
+          echo "✅ Using YC_SERVICE_ACCOUNT_KEY (JSON string) - has priority over metadata service"
 
           # Явно отключаем metadata service (недоступен в GitHub Actions)
           # YDB SDK проверяет эти переменные перед обращением к metadata service
