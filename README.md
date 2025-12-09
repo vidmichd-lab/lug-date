@@ -13,6 +13,7 @@ Telegram Dating App - это современное приложение для 
 ### Технологический стек
 
 **Frontend:**
+
 - React 18 + TypeScript
 - Vite для сборки
 - React Router v6 для роутинга
@@ -21,6 +22,7 @@ Telegram Dating App - это современное приложение для 
 - Sentry для мониторинга ошибок
 
 **Backend:**
+
 - Node.js + Express + TypeScript
 - Yandex Managed Service for YDB (база данных)
 - Yandex Object Storage (файлы)
@@ -29,14 +31,17 @@ Telegram Dating App - это современное приложение для 
 - Sentry для мониторинга
 
 **Bot:**
+
 - Telegraf для Telegram Bot API
 
 **Admin:**
+
 - React 18 + TypeScript
 - Recharts для графиков
 - TanStack Query для данных
 
 **Infrastructure:**
+
 - Yandex Cloud Functions (serverless)
 - Yandex CDN для статики
 - Docker для локальной разработки
@@ -49,25 +54,25 @@ graph TB
         A[Telegram WebView] --> B[Frontend App]
         C[Telegram Bot] --> D[Bot Service]
     end
-    
+
     subgraph "Application Layer"
         B --> E[API Gateway]
         E --> F[Backend API]
         D --> F
         G[Admin Panel] --> F
     end
-    
+
     subgraph "Data Layer"
         F --> H[YDB Database]
         F --> I[Object Storage]
         F --> J[Yandex Cloud Logging]
     end
-    
+
     subgraph "Monitoring"
         F --> K[Sentry]
         F --> L[Alerts]
     end
-    
+
     style A fill:#0088cc
     style B fill:#61dafb
     style F fill:#339933
@@ -111,6 +116,7 @@ NODE_ENV=development npm run dev:all
 ```
 
 Это запустит:
+
 - Frontend на `http://localhost:3000`
 - Backend на `http://localhost:4000`
 - Bot (если настроен)
@@ -182,11 +188,13 @@ lug/
 ### Соглашения именования файлов
 
 **Компоненты:**
+
 - PascalCase для компонентов: `UserProfile.tsx`
 - camelCase для утилит: `formatDate.ts`
 - kebab-case для CSS модулей: `user-profile.module.css`
 
 **Структура компонента:**
+
 ```
 ComponentName/
 ├── ComponentName.tsx          # Основной компонент
@@ -196,9 +204,11 @@ ComponentName/
 ```
 
 **Роуты:**
+
 - kebab-case: `user-profile.ts`, `photo-upload.ts`
 
 **Константы:**
+
 - UPPER_SNAKE_CASE: `MAX_FILE_SIZE`, `API_BASE_URL`
 
 ## 🎨 Работа с дизайн-системой
@@ -206,6 +216,7 @@ ComponentName/
 ### Как добавить новый компонент
 
 1. **Создать компонент вручную:**
+
    ```bash
    # Создать структуру
    mkdir -p frontend/src/components/NewComponent
@@ -244,15 +255,18 @@ npm run import:figma
 - **Breakpoints** (`breakpoints.ts`) - точки останова
 
 Использование:
+
 ```tsx
 import { colors, spacing } from '@/design-system/tokens';
 
-<div style={{ 
-  color: colors.primary, 
-  padding: spacing.md 
-}}>
+<div
+  style={{
+    color: colors.primary,
+    padding: spacing.md,
+  }}
+>
   Content
-</div>
+</div>;
 ```
 
 ## 📡 API документация
@@ -265,11 +279,13 @@ import { colors, spacing } from '@/design-system/tokens';
 ### Endpoints
 
 #### Health Check
+
 ```http
 GET /health
 ```
 
 #### Admin API
+
 ```http
 GET /api/admin/analytics/overview
 GET /api/admin/analytics/users-chart
@@ -280,21 +296,56 @@ GET /api/admin/analytics/recent-matches
 ```
 
 #### Matches API
+
 ```http
 POST /api/v1/matches
 GET /api/v1/matches
 ```
 
 #### Photos API
+
 ```http
 POST /api/v1/photos
 ```
 
 Подробная документация: [docs/API.md](docs/API.md)
 
+## 🗄️ Миграции базы данных
+
+### Запуск миграций через GitHub Actions
+
+1. Откройте Actions: https://github.com/vidmichd-lab/lug-date/actions
+2. Выберите workflow "Run Database Migrations"
+3. Нажмите "Run workflow"
+
+### Альтернативные способы запуска миграций
+
+Если миграции не работают через GitHub Actions, используйте альтернативные способы:
+
+**Локальный запуск:**
+
+```bash
+./scripts/run-migrations-locally.sh
+```
+
+**Проверка подключения:**
+
+```bash
+./scripts/check-ydb-connection.sh
+```
+
+**Создание базы данных:**
+
+```bash
+./scripts/create-ydb-database.sh
+```
+
+**Подробная документация:** [docs/MIGRATION_ALTERNATIVES.md](docs/MIGRATION_ALTERNATIVES.md)
+
 ### Примеры запросов
 
 **Создание матча:**
+
 ```bash
 curl -X POST http://localhost:4000/api/v1/matches \
   -H "Content-Type: application/json" \
@@ -306,6 +357,7 @@ curl -X POST http://localhost:4000/api/v1/matches \
 ```
 
 **Загрузка фото:**
+
 ```bash
 curl -X POST http://localhost:4000/api/v1/photos \
   -F "photo=@/path/to/image.jpg" \
@@ -355,6 +407,7 @@ npm run deploy:prod
 ### Rollback при ошибках
 
 **Yandex Cloud Functions:**
+
 ```bash
 # Откатить к предыдущей версии
 yc serverless function version set \
@@ -363,6 +416,7 @@ yc serverless function version set \
 ```
 
 **Через Yandex Cloud Console:**
+
 1. Перейти в Cloud Functions
 2. Выбрать функцию
 3. Версии → Выбрать предыдущую версию
@@ -373,6 +427,7 @@ yc serverless function version set \
 ### Проблема: Не запускается frontend
 
 **Решение:**
+
 ```bash
 # Проверить порт
 lsof -i :3000
@@ -385,6 +440,7 @@ npm install
 ### Проблема: Backend не подключается к БД
 
 **Решение:**
+
 1. Проверить переменные окружения:
    ```bash
    echo $YDB_ENDPOINT_DEV
@@ -396,6 +452,7 @@ npm install
 ### Проблема: Ошибки при импорте из Figma
 
 **Решение:**
+
 ```bash
 # Проверить подключение к Figma
 npm run test:figma
@@ -410,6 +467,7 @@ echo $FIGMA_FILE_ID
 ### Проблема: Изображения не оптимизируются
 
 **Решение:**
+
 1. Убедиться, что Sharp установлен:
    ```bash
    npm list sharp --workspace=backend
@@ -420,6 +478,7 @@ echo $FIGMA_FILE_ID
 ### Проблема: Sentry не отправляет ошибки
 
 **Решение:**
+
 1. Проверить DSN:
    ```bash
    echo $SENTRY_DSN

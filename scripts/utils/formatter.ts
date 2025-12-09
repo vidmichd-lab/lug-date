@@ -23,4 +23,3 @@ export async function formatFiles(directory: string) {
     console.warn('⚠️  Обнаружены TypeScript ошибки, проверьте вручную');
   }
 }
-
