@@ -82,6 +82,19 @@ jobs:
           echo "Endpoint: $YDB_ENDPOINT"
           echo "Database: $YDB_DATABASE"
           echo "Service Account Key File: $YC_SERVICE_ACCOUNT_KEY_FILE"
+          echo ""
+          echo "📋 Database path format check:"
+          if [[ "$YDB_DATABASE" =~ ^/ru-central1/ ]]; then
+            echo "  ✅ Database path format is correct (starts with /ru-central1/)"
+          else
+            echo "  ⚠️  WARNING: Database path should start with /ru-central1/"
+            echo "  Current path: $YDB_DATABASE"
+          fi
+          echo ""
+          echo "💡 If you see 'Database not found' error:"
+          echo "  1. Check if database exists in Yandex Cloud Console"
+          echo "  2. Verify YDB_DATABASE secret is correct"
+          echo "  3. Ensure Service Account has 'YDB Editor' role on the database"
 
           # Проверяем, что файл создан
           if [ ! -f "$YC_SERVICE_ACCOUNT_KEY_FILE" ]; then
