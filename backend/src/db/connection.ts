@@ -3,7 +3,14 @@
  * Handles connection to Yandex Database (YDB) using official SDK
  */
 
-import { Driver, getCredentialsFromEnv, Logger } from 'ydb-sdk';
+import {
+  Driver,
+  getCredentialsFromEnv,
+  getSACredentialsFromJson,
+  Logger,
+  IAuthService,
+  IamAuthService,
+} from 'ydb-sdk';
 import { resolve } from 'path';
 import { existsSync } from 'fs';
 import { config } from '../config';
@@ -166,36 +173,46 @@ class YDBClient {
         // - Metadata service (when running in Yandex Cloud)
         // This is the recommended approach for YDB SDK 5.x
 
-        // Используем getCredentialsFromEnv, но настраиваем переменные так,
-        // чтобы он использовал service account и не пытался использовать metadata service
+        // Используем getSACredentialsFromJson с IamAuthService, если есть файл service account
+        // Это полностью избегает попыток использовать metadata service
         if (serviceAccountKeyFile && existsSync(serviceAccountKeyFile)) {
-          // Устанавливаем переменную для getCredentialsFromEnv
-          process.env.YC_SERVICE_ACCOUNT_KEY_FILE = serviceAccountKeyFile;
+          try {
+            // Используем getSACredentialsFromJson напрямую
+            const iamCredentials = getSACredentialsFromJson(serviceAccountKeyFile);
+            // Оборачиваем в IamAuthService, который реализует IAuthService
+            credentials = new IamAuthService(iamCredentials);
+            logger.info({
+              type: 'ydb_credentials_loaded',
+              method: 'getSACredentialsFromJson_with_IamAuthService',
+              hasServiceAccountFile: true,
+              path: serviceAccountKeyFile,
+            });
+          } catch (error) {
+            logger.warn({
+              error,
+              type: 'ydb_sa_file_load_failed',
+              message: 'Failed to load SA from file, trying getCredentialsFromEnv',
+            });
+            // Fallback: используем getCredentialsFromEnv
+            process.env.YC_SERVICE_ACCOUNT_KEY_FILE = serviceAccountKeyFile;
+            process.env.YDB_METADATA_CREDENTIALS = '0';
+            credentials = getCredentialsFromEnv();
+            logger.info({
+              type: 'ydb_credentials_loaded',
+              method: 'getCredentialsFromEnv_fallback',
+              hasServiceAccountFile: true,
+            });
+          }
+        } else {
+          // Если файла нет, используем getCredentialsFromEnv
+          process.env.YDB_METADATA_CREDENTIALS = '0';
+          credentials = getCredentialsFromEnv();
+          logger.info({
+            type: 'ydb_credentials_loaded',
+            method: 'getCredentialsFromEnv',
+            hasServiceAccountFile: false,
+          });
         }
-
-        // Если есть YC_SERVICE_ACCOUNT_KEY (JSON строка), используем её
-        // Это имеет приоритет над файлом и metadata service
-        if (process.env.YC_SERVICE_ACCOUNT_KEY) {
-          // YC_SERVICE_ACCOUNT_KEY уже установлен, getCredentialsFromEnv будет использовать его
-          logger.debug({ type: 'ydb_using_service_account_key_env' });
-        }
-
-        // Явно отключаем metadata service через переменные окружения
-        // YDB SDK проверяет эти переменные перед обращением к metadata service
-        process.env.YDB_METADATA_CREDENTIALS = '0';
-        process.env.METADATA_URL = '';
-        process.env.GCE_METADATA_HOST = '';
-        // Также удаляем переменные, если они были установлены
-        delete process.env.METADATA_URL;
-        delete process.env.GCE_METADATA_HOST;
-
-        // Устанавливаем флаги для отключения metadata service
-        process.env.YDB_DISABLE_METADATA = 'true';
-        process.env.NO_METADATA = '1';
-
-        // Используем getCredentialsFromEnv - он правильно обработает service account
-        // и вернет IAuthService с методом getAuthMetadata
-        credentials = getCredentialsFromEnv();
         logger.info({
           type: 'ydb_credentials_loaded',
           method: 'getCredentialsFromEnv',
