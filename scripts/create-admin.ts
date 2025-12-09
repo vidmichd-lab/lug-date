@@ -21,6 +21,9 @@ async function createAdmin() {
   }
 
   try {
+    // Skip driver ready check to avoid hanging
+    process.env.YDB_SKIP_READY_CHECK = 'true';
+
     // Initialize YDB connection
     await initYDBForMigrations();
 

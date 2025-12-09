@@ -7,6 +7,9 @@ on:
     paths:
       - 'backend/src/db/migrations/**'
       - '.github/workflows/run-migrations.yml'
+  schedule:
+    # Запуск каждый день в 3:00 UTC (6:00 МСК) для проверки миграций
+    - cron: '0 3 * * *'
 
 env:
   NODE_VERSION: '20'
