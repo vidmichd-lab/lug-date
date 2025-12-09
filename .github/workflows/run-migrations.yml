@@ -58,6 +58,12 @@ jobs:
           export YC_SERVICE_ACCOUNT_KEY_FILE="/tmp/yc-sa-key.json"
           unset YC_SERVICE_ACCOUNT_KEY  # Убираем из env, чтобы SDK использовал файл
 
+          # Явно отключаем metadata service (недоступен в GitHub Actions)
+          unset METADATA_URL
+          unset GCE_METADATA_HOST
+          export METADATA_URL=""
+          export GCE_METADATA_HOST=""
+
           # Проверяем переменные окружения
           if [ -z "$YDB_ENDPOINT" ] || [ -z "$YDB_DATABASE" ]; then
             echo "❌ ERROR: YDB_ENDPOINT or YDB_DATABASE is not set"
@@ -94,6 +100,12 @@ jobs:
           chmod 600 /tmp/yc-sa-key.json
           export YC_SERVICE_ACCOUNT_KEY_FILE="/tmp/yc-sa-key.json"
           unset YC_SERVICE_ACCOUNT_KEY  # Убираем из env, чтобы SDK использовал файл
+
+          # Явно отключаем metadata service (недоступен в GitHub Actions)
+          unset METADATA_URL
+          unset GCE_METADATA_HOST
+          export METADATA_URL=""
+          export GCE_METADATA_HOST=""
 
           echo "📋 Checking migration status..."
           npm run migrate:status

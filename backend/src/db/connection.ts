@@ -166,22 +166,32 @@ class YDBClient {
         // - Metadata service (when running in Yandex Cloud)
         // This is the recommended approach for YDB SDK 5.x
 
-        // Используем getCredentialsFromEnv везде - это правильный способ для YDB SDK 5.x
-        // getCredentialsFromEnv автоматически обрабатывает:
-        // - YC_SERVICE_ACCOUNT_KEY_FILE (file path)
-        // - YC_SERVICE_ACCOUNT_KEY (JSON string)
-        // - YDB_TOKEN
-        // - Metadata service (когда запущено в Yandex Cloud)
-        // Отключаем metadata service для GitHub Actions
+        // Используем getCredentialsFromEnv, но явно отключаем metadata service
+        // Metadata service недоступен в GitHub Actions и вызывает ошибки
         if (serviceAccountKeyFile && existsSync(serviceAccountKeyFile)) {
           // Устанавливаем переменную для getCredentialsFromEnv
           process.env.YC_SERVICE_ACCOUNT_KEY_FILE = serviceAccountKeyFile;
-          // Отключаем metadata service
-          delete process.env.METADATA_URL;
-          delete process.env.GCE_METADATA_HOST;
         }
 
+        // Явно отключаем metadata service через переменные окружения
+        // Это предотвращает попытки SDK использовать metadata service
+        process.env.METADATA_URL = '';
+        process.env.GCE_METADATA_HOST = '';
+        // Также удаляем переменные, если они были установлены
+        delete process.env.METADATA_URL;
+        delete process.env.GCE_METADATA_HOST;
+
+        // Устанавливаем флаг, чтобы SDK не пытался использовать metadata service
+        // YDB SDK проверяет эти переменные перед обращением к metadata service
+        process.env.YDB_DISABLE_METADATA = 'true';
+
         credentials = getCredentialsFromEnv();
+        logger.info({
+          type: 'ydb_credentials_loaded',
+          method: 'getCredentialsFromEnv',
+          hasServiceAccountFile: !!serviceAccountKeyFile,
+          metadataServiceDisabled: true,
+        });
         logger.info({
           type: 'ydb_credentials_loaded',
           method: 'getCredentialsFromEnv',
