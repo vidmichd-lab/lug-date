@@ -174,16 +174,17 @@ class YDBClient {
         }
 
         // Явно отключаем metadata service через переменные окружения
-        // Это предотвращает попытки SDK использовать metadata service
+        // YDB SDK проверяет YDB_METADATA_CREDENTIALS перед обращением к metadata service
+        process.env.YDB_METADATA_CREDENTIALS = '0';
         process.env.METADATA_URL = '';
         process.env.GCE_METADATA_HOST = '';
         // Также удаляем переменные, если они были установлены
         delete process.env.METADATA_URL;
         delete process.env.GCE_METADATA_HOST;
 
-        // Устанавливаем флаг, чтобы SDK не пытался использовать metadata service
-        // YDB SDK проверяет эти переменные перед обращением к metadata service
+        // Устанавливаем флаги для отключения metadata service
         process.env.YDB_DISABLE_METADATA = 'true';
+        process.env.NO_METADATA = '1';
 
         credentials = getCredentialsFromEnv();
         logger.info({
