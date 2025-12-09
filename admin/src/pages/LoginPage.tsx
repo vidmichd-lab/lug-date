@@ -11,7 +11,7 @@ const getApiUrl = (): string => {
 };
 
 export const LoginPage = ({ onLogin }: { onLogin: (token: string) => void }) => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -26,7 +26,7 @@ export const LoginPage = ({ onLogin }: { onLogin: (token: string) => void }) => 
       console.log('🔐 Attempting login to:', `${API_BASE_URL}/api/admin/auth/login`);
 
       const response = await axios.post(`${API_BASE_URL}/api/admin/auth/login`, {
-        username,
+        email,
         password,
       });
 
@@ -35,13 +35,13 @@ export const LoginPage = ({ onLogin }: { onLogin: (token: string) => void }) => 
         hasData: !!response.data,
         hasSuccess: response.data?.success,
         hasDataField: !!response.data?.data,
-        hasToken: !!response.data?.data?.token,
+        hasAccessToken: !!response.data?.data?.accessToken,
         responseKeys: response.data ? Object.keys(response.data) : [],
         dataKeys: response.data?.data ? Object.keys(response.data.data) : [],
       });
 
-      if (response.data.success && response.data.data?.token) {
-        const token = response.data.data.token;
+      if (response.data.success && response.data.data?.accessToken) {
+        const token = response.data.data.accessToken;
         console.log('✅ Login successful, token received:', {
           tokenLength: token.length,
           tokenPrefix: token.substring(0, 20) + '...',
@@ -85,14 +85,14 @@ export const LoginPage = ({ onLogin }: { onLogin: (token: string) => void }) => 
         <h1 className={styles.title}>Admin Panel Login</h1>
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.inputGroup}>
-            <label htmlFor="username">Username</label>
+            <label htmlFor="email">Email</label>
             <input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
-              autoComplete="username"
+              autoComplete="email"
             />
           </div>
           <div className={styles.inputGroup}>
