@@ -534,12 +534,10 @@ class YDBClient {
       });
 
       // Create YDB driver configuration
-      // Try using separate endpoint and database parameters instead of connectionString
-      // This format is more explicit and may work better with YDB SDK
+      // Use connectionString format (both formats should work, but connectionString is more explicit)
       // Note: Driver constructor accepts IDriverSettings interface
       const driverConfig = {
-        endpoint: baseEndpoint, // Use base endpoint without database parameter
-        database: dbPath, // Use database path separately
+        connectionString,
         authService: credentials,
         logger: {
           error: (message: string) => logger.error({ message, type: 'ydb_sdk_error' }),
@@ -555,24 +553,24 @@ class YDBClient {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           location: 'connection.ts:550',
-          message: 'Driver config with separate endpoint and database',
+          message: 'Driver config with connectionString',
           data: {
-            endpoint: baseEndpoint,
-            database: dbPath,
+            connectionString: connectionString.substring(0, 150),
+            connectionStringLength: connectionString.length,
             hasCredentials: !!credentials,
-            usingConnectionString: false,
+            usingConnectionString: true,
           },
           timestamp: Date.now(),
           sessionId: 'debug-session',
           runId: 'run1',
-          hypothesisId: 'O',
+          hypothesisId: 'P',
         }),
       }).catch(() => {});
-      console.log('[DEBUG] Driver config with separate endpoint and database', {
-        endpoint: baseEndpoint,
-        database: dbPath,
+      console.log('[DEBUG] Driver config with connectionString', {
+        connectionString: connectionString.substring(0, 150),
+        connectionStringLength: connectionString.length,
         hasCredentials: !!credentials,
-        usingConnectionString: false,
+        usingConnectionString: true,
       });
       // #endregion
 
@@ -583,24 +581,24 @@ class YDBClient {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           location: 'connection.ts:579',
-          message: 'Creating Driver instance with separate endpoint and database',
+          message: 'Creating Driver instance with connectionString',
           data: {
             hasCredentials: !!credentials,
-            endpoint: baseEndpoint,
-            database: dbPath,
-            usingConnectionString: false,
+            connectionString: connectionString.substring(0, 150),
+            connectionStringLength: connectionString.length,
+            usingConnectionString: true,
           },
           timestamp: Date.now(),
           sessionId: 'debug-session',
           runId: 'run1',
-          hypothesisId: 'O',
+          hypothesisId: 'P',
         }),
       }).catch(() => {});
-      console.log('[DEBUG] Creating Driver instance with separate endpoint and database', {
+      console.log('[DEBUG] Creating Driver instance with connectionString', {
         hasCredentials: !!credentials,
-        endpoint: baseEndpoint,
-        database: dbPath,
-        usingConnectionString: false,
+        connectionString: connectionString.substring(0, 150),
+        connectionStringLength: connectionString.length,
+        usingConnectionString: true,
       });
       // #endregion
       this.driver = new Driver(driverConfig);
