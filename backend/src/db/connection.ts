@@ -537,7 +537,7 @@ class YDBClient {
       // For ydb-sdk 5.11.1, try using connectionString format: grpcs://endpoint:port?database=/path
       // This is the documented format for the old SDK
       // Build connection string in the format expected by ydb-sdk 5.11.1
-      const separator = baseEndpoint.endsWith('/') ? '?' : '?';
+      // Reuse the separator already calculated above
       const connectionStringForDriver = `${baseEndpoint}${separator}database=${encodeURIComponent(dbPath)}`;
 
       // #region agent log
