@@ -424,7 +424,8 @@ class YDBClient {
       // This ensures we always use the correct database path from YDB_DATABASE env var
 
       // Extract base endpoint (without database parameter)
-      let baseEndpoint = config.database.endpoint;
+      // Trim to remove any whitespace/newlines from env var
+      let baseEndpoint = config.database.endpoint.trim();
       if (baseEndpoint.includes('?database=')) {
         baseEndpoint = baseEndpoint.split('?database=')[0];
       } else if (baseEndpoint.includes('/?database=')) {
@@ -432,15 +433,77 @@ class YDBClient {
       }
 
       // Always use YDB_DATABASE if provided (it has priority)
-      // Ensure database path starts with /
-      const dbPath = config.database.database.startsWith('/')
-        ? config.database.database
-        : `/${config.database.database}`;
+      // Ensure database path starts with / and trim any whitespace/newlines
+      const dbPath = config.database.database.trim().startsWith('/')
+        ? config.database.database.trim()
+        : `/${config.database.database.trim()}`;
+
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'connection.ts:437',
+          message: 'Database path after trim',
+          data: {
+            originalDatabase: config.database.database,
+            trimmedDatabase: config.database.database.trim(),
+            dbPath,
+            dbPathLength: dbPath.length,
+            hasNewline: dbPath.includes('\n'),
+            hasCarriageReturn: dbPath.includes('\r'),
+            dbPathBytes: Array.from(dbPath).map((c) => c.charCodeAt(0)),
+          },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'N',
+        }),
+      }).catch(() => {});
+      console.log('[DEBUG] Database path after trim', {
+        originalDatabase: config.database.database,
+        trimmedDatabase: config.database.database.trim(),
+        dbPath,
+        dbPathLength: dbPath.length,
+        hasNewline: dbPath.includes('\n'),
+        hasCarriageReturn: dbPath.includes('\r'),
+      });
+      // #endregion
 
       // Build connection string with database path from YDB_DATABASE
       // Use /?database= format (with slash) as shown in Yandex Cloud CLI output
       const separator = baseEndpoint.endsWith('/') ? '?' : '/?';
       const connectionString = `${baseEndpoint}${separator}database=${encodeURIComponent(dbPath)}`;
+
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'connection.ts:463',
+          message: 'Connection string built',
+          data: {
+            baseEndpoint,
+            separator,
+            dbPath,
+            encodedDbPath: encodeURIComponent(dbPath),
+            connectionString: connectionString.substring(0, 200),
+            connectionStringLength: connectionString.length,
+          },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'N',
+        }),
+      }).catch(() => {});
+      console.log('[DEBUG] Connection string built', {
+        baseEndpoint,
+        separator,
+        dbPath,
+        encodedDbPath: encodeURIComponent(dbPath),
+        connectionString: connectionString.substring(0, 200),
+      });
+      // #endregion
 
       logger.debug({
         type: 'ydb_connection_string_built',

@@ -9,7 +9,7 @@ import { existsSync } from 'fs';
 function findEnvFile(): string | null {
   let currentDir = process.cwd();
   const maxDepth = 5;
-  
+
   for (let i = 0; i < maxDepth; i++) {
     const envPath = resolve(currentDir, '.env');
     if (existsSync(envPath)) {
@@ -21,7 +21,7 @@ function findEnvFile(): string | null {
     }
     currentDir = parentDir;
   }
-  
+
   return null;
 }
 
@@ -64,12 +64,14 @@ function getConfig(): Config {
     database: {
       // Production uses production database
       // Development uses test database
-      endpoint: isProduction
+      endpoint: (isProduction
         ? process.env.YDB_ENDPOINT_PROD || process.env.YDB_ENDPOINT || ''
-        : process.env.YDB_ENDPOINT_DEV || process.env.YDB_ENDPOINT || '',
-      database: isProduction
+        : process.env.YDB_ENDPOINT_DEV || process.env.YDB_ENDPOINT || ''
+      ).trim(),
+      database: (isProduction
         ? process.env.YDB_DATABASE_PROD || process.env.YDB_DATABASE || ''
-        : process.env.YDB_DATABASE_DEV || process.env.YDB_DATABASE || '',
+        : process.env.YDB_DATABASE_DEV || process.env.YDB_DATABASE || ''
+      ).trim(),
       token: isProduction
         ? process.env.YDB_TOKEN_PROD || process.env.YDB_TOKEN
         : process.env.YDB_TOKEN_DEV || process.env.YDB_TOKEN,
@@ -93,4 +95,3 @@ function getConfig(): Config {
 }
 
 export const config = getConfig();
-
