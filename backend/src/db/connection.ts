@@ -479,6 +479,7 @@ class YDBClient {
 
       // Build connection string with database path from YDB_DATABASE
       // Use /?database= format (with slash) as shown in Yandex Cloud CLI output
+      // Note: dbPath is already trimmed to remove any whitespace/newlines
       const separator = baseEndpoint.endsWith('/') ? '?' : '/?';
       const connectionString = `${baseEndpoint}${separator}database=${encodeURIComponent(dbPath)}`;
 
