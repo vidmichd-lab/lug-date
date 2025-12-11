@@ -6,6 +6,8 @@ on:
     branches: [main]
     paths:
       - 'backend/src/db/migrations/**'
+      - 'backend/src/db/connection.ts'
+      - 'backend/src/config.ts'
       - '.github/workflows/run-migrations.yml'
 
 env:
