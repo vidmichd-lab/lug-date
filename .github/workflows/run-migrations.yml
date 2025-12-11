@@ -72,6 +72,11 @@ jobs:
           export NO_PROXY="*"
           export NO_METADATA="1"
 
+          # Skip driver.ready() check in CI - it can hang in GitHub Actions
+          # The driver will establish connection on first query instead
+          export YDB_SKIP_READY_CHECK="true"
+          echo "✅ Skipping driver.ready() check (YDB_SKIP_READY_CHECK=true) - connection will be established on first query"
+
           # Проверяем переменные окружения
           if [ -z "$YDB_ENDPOINT" ] || [ -z "$YDB_DATABASE" ]; then
             echo "❌ ERROR: YDB_ENDPOINT or YDB_DATABASE is not set"
@@ -181,6 +186,9 @@ jobs:
           export NO_METADATA="1"
           unset METADATA_URL
           unset GCE_METADATA_HOST
+
+          # Skip driver.ready() check in CI - it can hang in GitHub Actions
+          export YDB_SKIP_READY_CHECK="true"
 
           echo "📋 Checking migration status..."
           npm run migrate:status

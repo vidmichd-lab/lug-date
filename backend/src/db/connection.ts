@@ -32,6 +32,30 @@ class YDBClient {
    * See: https://github.com/ydb-platform/ydb-nodejs-sdk
    */
   async connect(): Promise<void> {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'connection.ts:34',
+        message: 'connect() called',
+        data: {
+          isConnecting: this.isConnecting,
+          isConnected: this.isConnected,
+          hasDriver: !!this.driver,
+        },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'G',
+      }),
+    }).catch(() => {});
+    console.log('[DEBUG] YDB connect() called', {
+      isConnecting: this.isConnecting,
+      isConnected: this.isConnected,
+      hasDriver: !!this.driver,
+    });
+    // #endregion
     // Prevent multiple simultaneous connection attempts
     if (this.isConnecting) {
       logger.debug({ type: 'ydb_connection_already_in_progress' });
@@ -45,6 +69,32 @@ class YDBClient {
 
     this.isConnecting = true;
     try {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'connection.ts:48',
+          message: 'Before config check',
+          data: {
+            hasEndpoint: !!config.database.endpoint,
+            hasDatabase: !!config.database.database,
+            endpoint: config.database.endpoint?.substring(0, 50),
+            database: config.database.database?.substring(0, 50),
+          },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'H',
+        }),
+      }).catch(() => {});
+      console.log('[DEBUG] Before config check', {
+        hasEndpoint: !!config.database.endpoint,
+        hasDatabase: !!config.database.database,
+        endpoint: config.database.endpoint?.substring(0, 50),
+        database: config.database.database?.substring(0, 50),
+      });
+      // #endregion
       if (!config.database.endpoint || !config.database.database) {
         throw new Error('YDB endpoint and database are required');
       }
@@ -173,14 +223,75 @@ class YDBClient {
         // - Metadata service (when running in Yandex Cloud)
         // This is the recommended approach for YDB SDK 5.x
 
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            location: 'connection.ts:178',
+            message: 'Before credentials loading',
+            data: {
+              hasServiceAccountKeyFile: !!serviceAccountKeyFile,
+              serviceAccountKeyFile: serviceAccountKeyFile,
+              fileExists: serviceAccountKeyFile ? existsSync(serviceAccountKeyFile) : false,
+              hasServiceAccountKey: !!process.env.YC_SERVICE_ACCOUNT_KEY,
+              hasToken: !!process.env.YDB_TOKEN,
+            },
+            timestamp: Date.now(),
+            sessionId: 'debug-session',
+            runId: 'run1',
+            hypothesisId: 'I',
+          }),
+        }).catch(() => {});
+        console.log('[DEBUG] Before credentials loading', {
+          hasServiceAccountKeyFile: !!serviceAccountKeyFile,
+          serviceAccountKeyFile: serviceAccountKeyFile,
+          fileExists: serviceAccountKeyFile ? existsSync(serviceAccountKeyFile) : false,
+          hasServiceAccountKey: !!process.env.YC_SERVICE_ACCOUNT_KEY,
+          hasToken: !!process.env.YDB_TOKEN,
+        });
+        // #endregion
         // Используем getSACredentialsFromJson с IamAuthService, если есть файл service account
         // Это полностью избегает попыток использовать metadata service
         if (serviceAccountKeyFile && existsSync(serviceAccountKeyFile)) {
           try {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                location: 'connection.ts:181',
+                message: 'Loading credentials from file',
+                data: { file: serviceAccountKeyFile },
+                timestamp: Date.now(),
+                sessionId: 'debug-session',
+                runId: 'run1',
+                hypothesisId: 'I',
+              }),
+            }).catch(() => {});
+            // #endregion
             // Используем getSACredentialsFromJson напрямую
             const iamCredentials = getSACredentialsFromJson(serviceAccountKeyFile);
             // Оборачиваем в IamAuthService, который реализует IAuthService
             credentials = new IamAuthService(iamCredentials);
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                location: 'connection.ts:185',
+                message: 'Credentials loaded from file successfully',
+                data: { hasCredentials: !!credentials },
+                timestamp: Date.now(),
+                sessionId: 'debug-session',
+                runId: 'run1',
+                hypothesisId: 'I',
+              }),
+            }).catch(() => {});
+            console.log('[DEBUG] Credentials loaded from file successfully', {
+              hasCredentials: !!credentials,
+            });
+            // #endregion
             logger.info({
               type: 'ydb_credentials_loaded',
               method: 'getSACredentialsFromJson_with_IamAuthService',
@@ -188,6 +299,21 @@ class YDBClient {
               path: serviceAccountKeyFile,
             });
           } catch (error) {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                location: 'connection.ts:191',
+                message: 'Failed to load from file, using fallback',
+                data: { errorMessage: error instanceof Error ? error.message : String(error) },
+                timestamp: Date.now(),
+                sessionId: 'debug-session',
+                runId: 'run1',
+                hypothesisId: 'I',
+              }),
+            }).catch(() => {});
+            // #endregion
             logger.warn({
               error,
               type: 'ydb_sa_file_load_failed',
@@ -197,6 +323,24 @@ class YDBClient {
             process.env.YC_SERVICE_ACCOUNT_KEY_FILE = serviceAccountKeyFile;
             process.env.YDB_METADATA_CREDENTIALS = '0';
             credentials = getCredentialsFromEnv();
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                location: 'connection.ts:199',
+                message: 'Credentials loaded via fallback',
+                data: { hasCredentials: !!credentials },
+                timestamp: Date.now(),
+                sessionId: 'debug-session',
+                runId: 'run1',
+                hypothesisId: 'I',
+              }),
+            }).catch(() => {});
+            console.log('[DEBUG] Credentials loaded via fallback', {
+              hasCredentials: !!credentials,
+            });
+            // #endregion
             logger.info({
               type: 'ydb_credentials_loaded',
               method: 'getCredentialsFromEnv_fallback',
@@ -204,9 +348,42 @@ class YDBClient {
             });
           }
         } else {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              location: 'connection.ts:207',
+              message: 'No service account file, using getCredentialsFromEnv',
+              data: { timestamp: Date.now() },
+              timestamp: Date.now(),
+              sessionId: 'debug-session',
+              runId: 'run1',
+              hypothesisId: 'I',
+            }),
+          }).catch(() => {});
+          // #endregion
           // Если файла нет, используем getCredentialsFromEnv
           process.env.YDB_METADATA_CREDENTIALS = '0';
           credentials = getCredentialsFromEnv();
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              location: 'connection.ts:210',
+              message: 'Credentials loaded via getCredentialsFromEnv',
+              data: { hasCredentials: !!credentials },
+              timestamp: Date.now(),
+              sessionId: 'debug-session',
+              runId: 'run1',
+              hypothesisId: 'I',
+            }),
+          }).catch(() => {});
+          console.log('[DEBUG] Credentials loaded via getCredentialsFromEnv', {
+            hasCredentials: !!credentials,
+          });
+          // #endregion
           logger.info({
             type: 'ydb_credentials_loaded',
             method: 'getCredentialsFromEnv',
@@ -296,7 +473,45 @@ class YDBClient {
       };
 
       logger.info({ type: 'ydb_driver_creating' });
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'connection.ts:299',
+          message: 'Creating Driver instance',
+          data: {
+            hasCredentials: !!credentials,
+            connectionString: connectionString.substring(0, 100),
+          },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'J',
+        }),
+      }).catch(() => {});
+      console.log('[DEBUG] Creating Driver instance', {
+        hasCredentials: !!credentials,
+        connectionString: connectionString.substring(0, 100),
+      });
+      // #endregion
       this.driver = new Driver(driverConfig);
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'connection.ts:301',
+          message: 'Driver instance created',
+          data: { hasDriver: !!this.driver },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'J',
+        }),
+      }).catch(() => {});
+      console.log('[DEBUG] Driver instance created', { hasDriver: !!this.driver });
+      // #endregion
 
       // Wait for driver to be ready with timeout
       // Note: driver.ready() may hang in some network conditions
@@ -310,19 +525,68 @@ class YDBClient {
           timeout,
           connectionString: connectionString.replace(/\?database=.*/, '?database=***'),
         });
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            location: 'connection.ts:314',
+            message: 'Before driver.ready() call',
+            data: { timeout, skipReadyCheck },
+            timestamp: Date.now(),
+            sessionId: 'debug-session',
+            runId: 'run1',
+            hypothesisId: 'J',
+          }),
+        }).catch(() => {});
+        console.log('[DEBUG] Before driver.ready() call', { timeout, skipReadyCheck });
+        // #endregion
 
         try {
           // Try to wait for driver to be ready with a short timeout
           logger.debug({ type: 'ydb_driver_ready_start', timeout });
 
-          const readyPromise = this.driver.ready(timeout);
+          // Use a more aggressive timeout wrapper since driver.ready() might not respect its timeout parameter
+          // Create timeout promise that will definitely reject
+          let timeoutId: NodeJS.Timeout | undefined;
           const timeoutPromise = new Promise<never>((_, reject) => {
-            setTimeout(() => {
+            timeoutId = setTimeout(() => {
               reject(new Error(`YDB driver initialization timeout after ${timeout}ms`));
-            }, timeout + 1000); // Add 1 second buffer
+            }, timeout);
           });
 
-          const isReady = await Promise.race([readyPromise, timeoutPromise]);
+          // Call driver.ready() with timeout parameter, but also wrap in Promise.race for safety
+          // This ensures we have a hard timeout even if driver.ready() doesn't respect its parameter
+          const readyPromise = this.driver.ready(timeout).catch((error) => {
+            // If ready() rejects, propagate the error
+            if (timeoutId) {
+              clearTimeout(timeoutId);
+            }
+            throw error;
+          });
+
+          const isReady = await Promise.race([readyPromise, timeoutPromise]).finally(() => {
+            // Clean up timeout
+            if (timeoutId) {
+              clearTimeout(timeoutId);
+            }
+          });
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              location: 'connection.ts:327',
+              message: 'After driver.ready() call',
+              data: { isReady },
+              timestamp: Date.now(),
+              sessionId: 'debug-session',
+              runId: 'run1',
+              hypothesisId: 'J',
+            }),
+          }).catch(() => {});
+          console.log('[DEBUG] After driver.ready() call', { isReady });
+          // #endregion
 
           if (!isReady) {
             logger.warn({
@@ -335,6 +599,24 @@ class YDBClient {
             logger.info({ type: 'ydb_driver_ready', timeout, isReady });
           }
         } catch (error) {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              location: 'connection.ts:338',
+              message: 'driver.ready() error caught',
+              data: { errorMessage: error instanceof Error ? error.message : String(error) },
+              timestamp: Date.now(),
+              sessionId: 'debug-session',
+              runId: 'run1',
+              hypothesisId: 'J',
+            }),
+          }).catch(() => {});
+          console.error('[DEBUG] driver.ready() error caught', {
+            errorMessage: error instanceof Error ? error.message : String(error),
+          });
+          // #endregion
           // If ready() check fails, log warning but continue
           // The driver will establish connection on first query
           logger.warn({

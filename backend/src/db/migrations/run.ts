@@ -8,23 +8,180 @@ import { runMigrations } from './index';
 import { logger } from '../../logger';
 
 async function main() {
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      location: 'run.ts:11',
+      message: 'Migration script started',
+      data: {
+        pid: process.pid,
+        cwd: process.cwd(),
+        nodeEnv: process.env.NODE_ENV,
+        hasYdbEndpoint: !!process.env.YDB_ENDPOINT,
+        hasYdbDatabase: !!process.env.YDB_DATABASE,
+        hasServiceAccountKey: !!process.env.YC_SERVICE_ACCOUNT_KEY,
+        hasServiceAccountKeyFile: !!process.env.YC_SERVICE_ACCOUNT_KEY_FILE,
+      },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'run1',
+      hypothesisId: 'A',
+    }),
+  }).catch(() => {});
+  console.log('[DEBUG] Migration script started', {
+    pid: process.pid,
+    cwd: process.cwd(),
+    nodeEnv: process.env.NODE_ENV,
+    hasYdbEndpoint: !!process.env.YDB_ENDPOINT,
+    hasYdbDatabase: !!process.env.YDB_DATABASE,
+    hasServiceAccountKey: !!process.env.YC_SERVICE_ACCOUNT_KEY,
+    hasServiceAccountKeyFile: !!process.env.YC_SERVICE_ACCOUNT_KEY_FILE,
+  });
+  // #endregion
   try {
     logger.info({ type: 'migration_start', message: 'Initializing YDB connection...' });
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'run.ts:13',
+        message: 'Before initYDBForMigrations',
+        data: { timestamp: Date.now() },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'B',
+      }),
+    }).catch(() => {});
+    console.log('[DEBUG] Before initYDBForMigrations');
+    // #endregion
     await initYDBForMigrations();
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'run.ts:16',
+        message: 'After initYDBForMigrations',
+        data: { connectionStatus: ydbClient.getConnectionStatus() },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'B',
+      }),
+    }).catch(() => {});
+    console.log('[DEBUG] After initYDBForMigrations', {
+      connectionStatus: ydbClient.getConnectionStatus(),
+    });
+    // #endregion
 
     // Verify connection is actually established
     if (!ydbClient.getConnectionStatus()) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'run.ts:19',
+          message: 'Connection status check failed',
+          data: { connectionStatus: ydbClient.getConnectionStatus() },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'C',
+        }),
+      }).catch(() => {});
+      console.error('[DEBUG] Connection status check failed', {
+        connectionStatus: ydbClient.getConnectionStatus(),
+      });
+      // #endregion
       throw new Error('YDB connection failed. Check your credentials and network connection.');
     }
 
     logger.info({ type: 'migration_ydb_connected', message: 'YDB connected successfully' });
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'run.ts:24',
+        message: 'Before runMigrations',
+        data: { timestamp: Date.now() },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'D',
+      }),
+    }).catch(() => {});
+    console.log('[DEBUG] Before runMigrations');
+    // #endregion
 
     logger.info({ type: 'migration_running', message: 'Running migrations...' });
     await runMigrations();
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'run.ts:27',
+        message: 'After runMigrations',
+        data: { timestamp: Date.now() },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'D',
+      }),
+    }).catch(() => {});
+    console.log('[DEBUG] After runMigrations');
+    // #endregion
 
     logger.info({ type: 'migration_completed', message: 'Migrations completed successfully' });
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'run.ts:30',
+        message: 'Migration completed successfully',
+        data: { exitCode: 0 },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'E',
+      }),
+    }).catch(() => {});
+    // #endregion
     process.exit(0);
   } catch (error) {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'run.ts:28',
+        message: 'Migration error caught',
+        data: {
+          errorMessage: error instanceof Error ? error.message : String(error),
+          errorName: error instanceof Error ? error.name : undefined,
+          errorCode: error instanceof Error && 'code' in error ? (error as any).code : undefined,
+          hasStack: !!(error instanceof Error && error.stack),
+        },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'F',
+      }),
+    }).catch(() => {});
+    console.error('[DEBUG] Migration error caught', {
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorName: error instanceof Error ? error.name : undefined,
+      errorCode: error instanceof Error && 'code' in error ? (error as any).code : undefined,
+      hasStack: !!(error instanceof Error && error.stack),
+    });
+    // #endregion
     // Log full error details
     const errorDetails = {
       message: error instanceof Error ? error.message : String(error),

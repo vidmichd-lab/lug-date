@@ -302,14 +302,94 @@ const migrations: Migration[] = [
 export async function runMigrations(options?: { skipLock?: boolean }): Promise<void> {
   const processId = `${process.pid}-${Date.now()}`;
   let lockAcquired = false;
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      location: 'index.ts:302',
+      message: 'runMigrations started',
+      data: { processId, skipLock: options?.skipLock },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'run1',
+      hypothesisId: 'K',
+    }),
+  }).catch(() => {});
+  console.log('[DEBUG] runMigrations started', { processId, skipLock: options?.skipLock });
+  // #endregion
 
   try {
     // Ensure migrations table exists
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'index.ts:308',
+        message: 'Before ensureMigrationsTable',
+        data: { timestamp: Date.now() },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'K',
+      }),
+    }).catch(() => {});
+    console.log('[DEBUG] Before ensureMigrationsTable');
+    // #endregion
     await ensureMigrationsTable();
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'index.ts:310',
+        message: 'After ensureMigrationsTable',
+        data: { timestamp: Date.now() },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'K',
+      }),
+    }).catch(() => {});
+    console.log('[DEBUG] After ensureMigrationsTable');
+    // #endregion
 
     // Acquire lock (unless skipped for testing)
     if (!options?.skipLock) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'index.ts:313',
+          message: 'Before acquireLock',
+          data: { processId },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'K',
+        }),
+      }).catch(() => {});
+      console.log('[DEBUG] Before acquireLock', { processId });
+      // #endregion
       lockAcquired = await acquireLock(processId);
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'index.ts:315',
+          message: 'After acquireLock',
+          data: { lockAcquired },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'K',
+        }),
+      }).catch(() => {});
+      console.log('[DEBUG] After acquireLock', { lockAcquired });
+      // #endregion
       if (!lockAcquired) {
         throw new Error(
           'Migration lock is already held by another process. Please wait for the current migration to complete or manually release the lock if it is stuck.'
@@ -318,10 +398,64 @@ export async function runMigrations(options?: { skipLock?: boolean }): Promise<v
     }
 
     // Get executed migrations
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'index.ts:323',
+        message: 'Before getExecutedMigrations',
+        data: { timestamp: Date.now() },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'L',
+      }),
+    }).catch(() => {});
+    console.log('[DEBUG] Before getExecutedMigrations');
+    // #endregion
     const executed = await getExecutedMigrations();
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'index.ts:325',
+        message: 'After getExecutedMigrations',
+        data: { executedCount: executed.length, executedIds: executed },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'L',
+      }),
+    }).catch(() => {});
+    console.log('[DEBUG] After getExecutedMigrations', {
+      executedCount: executed.length,
+      executedIds: executed,
+    });
+    // #endregion
 
     // Filter pending migrations
     const pending = migrations.filter((m) => !executed.includes(m.id));
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'index.ts:328',
+        message: 'Pending migrations calculated',
+        data: { pendingCount: pending.length, pendingIds: pending.map((m) => m.id) },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'L',
+      }),
+    }).catch(() => {});
+    console.log('[DEBUG] Pending migrations calculated', {
+      pendingCount: pending.length,
+      pendingIds: pending.map((m) => m.id),
+    });
+    // #endregion
 
     if (pending.length === 0) {
       logger.info({ type: 'migrations_up_to_date' });
@@ -338,6 +472,25 @@ export async function runMigrations(options?: { skipLock?: boolean }): Promise<v
     // Execute pending migrations
     for (const migration of pending) {
       try {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            location: 'index.ts:343',
+            message: 'Before migration.up()',
+            data: { migrationId: migration.id, migrationName: migration.name },
+            timestamp: Date.now(),
+            sessionId: 'debug-session',
+            runId: 'run1',
+            hypothesisId: 'M',
+          }),
+        }).catch(() => {});
+        console.log('[DEBUG] Before migration.up()', {
+          migrationId: migration.id,
+          migrationName: migration.name,
+        });
+        // #endregion
         logger.info({
           type: 'migration_executing',
           id: migration.id,
@@ -345,13 +498,69 @@ export async function runMigrations(options?: { skipLock?: boolean }): Promise<v
         });
 
         await migration.up();
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            location: 'index.ts:350',
+            message: 'After migration.up(), before markMigrationExecuted',
+            data: { migrationId: migration.id },
+            timestamp: Date.now(),
+            sessionId: 'debug-session',
+            runId: 'run1',
+            hypothesisId: 'M',
+          }),
+        }).catch(() => {});
+        console.log('[DEBUG] After migration.up(), before markMigrationExecuted', {
+          migrationId: migration.id,
+        });
+        // #endregion
         await markMigrationExecuted(migration.id, migration.name);
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            location: 'index.ts:352',
+            message: 'After markMigrationExecuted',
+            data: { migrationId: migration.id },
+            timestamp: Date.now(),
+            sessionId: 'debug-session',
+            runId: 'run1',
+            hypothesisId: 'M',
+          }),
+        }).catch(() => {});
+        console.log('[DEBUG] After markMigrationExecuted', { migrationId: migration.id });
+        // #endregion
 
         logger.info({
           type: 'migration_success',
           id: migration.id,
         });
       } catch (error) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            location: 'index.ts:360',
+            message: 'Migration execution error',
+            data: {
+              migrationId: migration.id,
+              errorMessage: error instanceof Error ? error.message : String(error),
+            },
+            timestamp: Date.now(),
+            sessionId: 'debug-session',
+            runId: 'run1',
+            hypothesisId: 'M',
+          }),
+        }).catch(() => {});
+        console.error('[DEBUG] Migration execution error', {
+          migrationId: migration.id,
+          errorMessage: error instanceof Error ? error.message : String(error),
+        });
+        // #endregion
         logger.error({
           error,
           type: 'migration_failed',
