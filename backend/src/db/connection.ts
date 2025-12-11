@@ -534,10 +534,12 @@ class YDBClient {
       });
 
       // Create YDB driver configuration
-      // Use connectionString format
+      // Try using separate endpoint and database parameters instead of connectionString
+      // This format is more explicit and may work better with YDB SDK
       // Note: Driver constructor accepts IDriverSettings interface
       const driverConfig = {
-        connectionString,
+        endpoint: baseEndpoint, // Use base endpoint without database parameter
+        database: dbPath, // Use database path separately
         authService: credentials,
         logger: {
           error: (message: string) => logger.error({ message, type: 'ydb_sdk_error' }),
@@ -547,27 +549,58 @@ class YDBClient {
         } as Logger,
       };
 
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'connection.ts:550',
+          message: 'Driver config with separate endpoint and database',
+          data: {
+            endpoint: baseEndpoint,
+            database: dbPath,
+            hasCredentials: !!credentials,
+            usingConnectionString: false,
+          },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'O',
+        }),
+      }).catch(() => {});
+      console.log('[DEBUG] Driver config with separate endpoint and database', {
+        endpoint: baseEndpoint,
+        database: dbPath,
+        hasCredentials: !!credentials,
+        usingConnectionString: false,
+      });
+      // #endregion
+
       logger.info({ type: 'ydb_driver_creating' });
       // #region agent log
       fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          location: 'connection.ts:299',
-          message: 'Creating Driver instance',
+          location: 'connection.ts:579',
+          message: 'Creating Driver instance with separate endpoint and database',
           data: {
             hasCredentials: !!credentials,
-            connectionString: connectionString.substring(0, 100),
+            endpoint: baseEndpoint,
+            database: dbPath,
+            usingConnectionString: false,
           },
           timestamp: Date.now(),
           sessionId: 'debug-session',
           runId: 'run1',
-          hypothesisId: 'J',
+          hypothesisId: 'O',
         }),
       }).catch(() => {});
-      console.log('[DEBUG] Creating Driver instance', {
+      console.log('[DEBUG] Creating Driver instance with separate endpoint and database', {
         hasCredentials: !!credentials,
-        connectionString: connectionString.substring(0, 100),
+        endpoint: baseEndpoint,
+        database: dbPath,
+        usingConnectionString: false,
       });
       // #endregion
       this.driver = new Driver(driverConfig);
