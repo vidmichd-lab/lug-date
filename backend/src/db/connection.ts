@@ -534,18 +534,11 @@ class YDBClient {
       });
 
       // Create YDB driver configuration
-      // Use connectionString format (both formats should work, but connectionString is more explicit)
-      // Note: Driver constructor accepts IDriverSettings interface
-      const driverConfig = {
-        connectionString,
-        authService: credentials,
-        logger: {
-          error: (message: string) => logger.error({ message, type: 'ydb_sdk_error' }),
-          warn: (message: string) => logger.warn({ message, type: 'ydb_sdk_warn' }),
-          info: (message: string) => logger.info({ message, type: 'ydb_sdk_info' }),
-          debug: (message: string) => logger.debug({ message, type: 'ydb_sdk_debug' }),
-        } as Logger,
-      };
+      // For ydb-sdk 5.11.1, try using connectionString format: grpcs://endpoint:port?database=/path
+      // This is the documented format for the old SDK
+      // Build connection string in the format expected by ydb-sdk 5.11.1
+      const separator = baseEndpoint.endsWith('/') ? '?' : '?';
+      const connectionStringForDriver = `${baseEndpoint}${separator}database=${encodeURIComponent(dbPath)}`;
 
       // #region agent log
       fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
@@ -553,10 +546,12 @@ class YDBClient {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           location: 'connection.ts:550',
-          message: 'Driver config with connectionString',
+          message: 'Driver config with connectionString format',
           data: {
-            connectionString: connectionString.substring(0, 150),
-            connectionStringLength: connectionString.length,
+            connectionString: connectionStringForDriver.substring(0, 200),
+            connectionStringLength: connectionStringForDriver.length,
+            baseEndpoint,
+            dbPath,
             hasCredentials: !!credentials,
             usingConnectionString: true,
           },
@@ -566,9 +561,11 @@ class YDBClient {
           hypothesisId: 'P',
         }),
       }).catch(() => {});
-      console.log('[DEBUG] Driver config with connectionString', {
-        connectionString: connectionString.substring(0, 150),
-        connectionStringLength: connectionString.length,
+      console.log('[DEBUG] Driver config with connectionString format', {
+        connectionString: connectionStringForDriver.substring(0, 200),
+        connectionStringLength: connectionStringForDriver.length,
+        baseEndpoint,
+        dbPath,
         hasCredentials: !!credentials,
         usingConnectionString: true,
       });
@@ -584,8 +581,7 @@ class YDBClient {
           message: 'Creating Driver instance with connectionString',
           data: {
             hasCredentials: !!credentials,
-            connectionString: connectionString.substring(0, 150),
-            connectionStringLength: connectionString.length,
+            connectionString: connectionStringForDriver.substring(0, 200),
             usingConnectionString: true,
           },
           timestamp: Date.now(),
@@ -596,12 +592,23 @@ class YDBClient {
       }).catch(() => {});
       console.log('[DEBUG] Creating Driver instance with connectionString', {
         hasCredentials: !!credentials,
-        connectionString: connectionString.substring(0, 150),
-        connectionStringLength: connectionString.length,
+        connectionString: connectionStringForDriver.substring(0, 200),
         usingConnectionString: true,
       });
       // #endregion
-      this.driver = new Driver(driverConfig);
+
+      // Try using connectionString as single parameter (ydb-sdk 5.11.1 supports this)
+      // If connectionString is provided, authService should be passed separately
+      this.driver = new Driver({
+        connectionString: connectionStringForDriver,
+        authService: credentials,
+        logger: {
+          error: (message: string) => logger.error({ message, type: 'ydb_sdk_error' }),
+          warn: (message: string) => logger.warn({ message, type: 'ydb_sdk_warn' }),
+          info: (message: string) => logger.info({ message, type: 'ydb_sdk_info' }),
+          debug: (message: string) => logger.debug({ message, type: 'ydb_sdk_debug' }),
+        } as Logger,
+      });
       // #region agent log
       fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
         method: 'POST',
