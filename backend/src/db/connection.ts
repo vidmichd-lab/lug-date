@@ -462,11 +462,18 @@ class YDBClient {
       }).catch(() => {});
       console.log('[DEBUG] Database path after trim', {
         originalDatabase: config.database.database,
+        originalLength: config.database.database.length,
         trimmedDatabase: config.database.database.trim(),
+        trimmedLength: config.database.database.trim().length,
         dbPath,
         dbPathLength: dbPath.length,
         hasNewline: dbPath.includes('\n'),
         hasCarriageReturn: dbPath.includes('\r'),
+        dbPathHex: Buffer.from(dbPath).toString('hex'),
+        dbPathLastChars: dbPath.slice(-20),
+        expectedPath: '/ru-central1/b1g6a1tnrohoeas9v0k6/etnbi9hemleeobirfbrv',
+        expectedLength: 54,
+        matchesExpected: dbPath === '/ru-central1/b1g6a1tnrohoeas9v0k6/etnbi9hemleeobirfbrv',
       });
       // #endregion
 
@@ -500,8 +507,12 @@ class YDBClient {
         baseEndpoint,
         separator,
         dbPath,
+        dbPathLength: dbPath.length,
         encodedDbPath: encodeURIComponent(dbPath),
+        encodedLength: encodeURIComponent(dbPath).length,
         connectionString: connectionString.substring(0, 200),
+        connectionStringLength: connectionString.length,
+        connectionStringFull: connectionString, // Full string for debugging
       });
       // #endregion
 
