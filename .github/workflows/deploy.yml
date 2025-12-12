@@ -342,6 +342,7 @@ jobs:
           ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET || secrets.ADMIN_TOKEN }}
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
 
@@ -383,7 +384,8 @@ jobs:
               --environment ADMIN_ORIGINS=${{ secrets.ADMIN_ORIGINS }} \
               --environment ADMIN_USERNAME="${ADMIN_USERNAME}" \
               --environment ADMIN_PASSWORD="${ADMIN_PASSWORD}" \
-              --environment ADMIN_TOKEN="${ADMIN_TOKEN}"
+              --environment ADMIN_TOKEN="${ADMIN_TOKEN}" \
+              --environment JWT_SECRET="${ADMIN_TOKEN}"
           elif [ -n "${YC_FOLDER_ID}" ]; then
             yc serverless container revision deploy \
               --container-name=lug-date-backend \
@@ -408,7 +410,8 @@ jobs:
               --environment ADMIN_ORIGINS=${{ secrets.ADMIN_ORIGINS }} \
               --environment ADMIN_USERNAME="${ADMIN_USERNAME}" \
               --environment ADMIN_PASSWORD="${ADMIN_PASSWORD}" \
-              --environment ADMIN_TOKEN="${ADMIN_TOKEN}"
+              --environment ADMIN_TOKEN="${ADMIN_TOKEN}" \
+              --environment JWT_SECRET="${ADMIN_TOKEN}"
           else
             echo "Error: Either YC_CONTAINER_ID or YC_FOLDER_ID must be set"
             exit 1
