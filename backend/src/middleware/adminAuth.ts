@@ -43,7 +43,10 @@ export const adminAuthMiddleware = (req: Request, res: Response, next: NextFunct
       type: 'admin_auth_failed',
       reason: 'no_token',
       path: req.path,
+      originalUrl: req.originalUrl,
+      url: req.url,
       origin: req.headers.origin || 'not set',
+      method: req.method,
     });
 
     return res.status(401).json({
@@ -58,14 +61,29 @@ export const adminAuthMiddleware = (req: Request, res: Response, next: NextFunct
   const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
   // Verify token
-  const payload = verifyAccessToken(token);
+  let payload: ReturnType<typeof verifyAccessToken> = null;
+  try {
+    payload = verifyAccessToken(token);
+  } catch (error) {
+    logger.error({
+      type: 'admin_auth_verification_error',
+      error: error instanceof Error ? error.message : String(error),
+      path: req.path,
+      origin: req.headers.origin || 'not set',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+  }
 
   if (!payload) {
     logger.warn({
       type: 'admin_auth_failed',
       reason: 'invalid_token',
       path: req.path,
+      originalUrl: req.originalUrl,
+      url: req.url,
       origin: req.headers.origin || 'not set',
+      tokenLength: token.length,
+      tokenPrefix: token.substring(0, 20) + '...',
     });
 
     return res.status(401).json({
