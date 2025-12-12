@@ -1,7 +1,46 @@
 import { Telegraf, Context } from 'telegraf';
 import { config } from './config';
+import { appendFileSync } from 'fs';
+
+// #region agent log
+const logPath = '/Users/vidmich/Desktop/cursor/lug/.cursor/debug.log';
+try {
+  appendFileSync(
+    logPath,
+    JSON.stringify({
+      location: 'bot/index.ts:4',
+      message: 'Bot initialization started',
+      data: { nodeEnv: config.nodeEnv, hasBotToken: !!config.botToken },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'run1',
+      hypothesisId: 'I',
+    }) + '\n'
+  );
+} catch {
+  // Ignore logging errors
+}
+// #endregion
 
 if (!config.botToken) {
+  // #region agent log
+  try {
+    appendFileSync(
+      logPath,
+      JSON.stringify({
+        location: 'bot/index.ts:15',
+        message: 'Bot token missing',
+        data: { nodeEnv: config.nodeEnv },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'I',
+      }) + '\n'
+    );
+  } catch {
+    // Ignore logging errors
+  }
+  // #endregion
   throw new Error(
     `TELEGRAM_BOT_TOKEN is not set for ${config.nodeEnv} environment. ` +
       `Please set TELEGRAM_BOT_TOKEN_${config.nodeEnv === 'production' ? 'PROD' : 'DEV'} or TELEGRAM_BOT_TOKEN`
@@ -9,6 +48,25 @@ if (!config.botToken) {
 }
 
 const bot = new Telegraf(config.botToken);
+
+// #region agent log
+try {
+  appendFileSync(
+    logPath,
+    JSON.stringify({
+      location: 'bot/index.ts:30',
+      message: 'Bot instance created',
+      data: { hasBot: !!bot },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'run1',
+      hypothesisId: 'I',
+    }) + '\n'
+  );
+} catch {
+  // Ignore logging errors
+}
+// #endregion
 
 // Log all incoming updates for debugging
 bot.use((ctx, next) => {
@@ -101,18 +159,92 @@ bot.catch((err, ctx) => {
 });
 
 // Launch bot (uses polling by default in development)
+// #region agent log
+try {
+  appendFileSync(
+    logPath,
+    JSON.stringify({
+      location: 'bot/index.ts:156',
+      message: 'Before bot.launch()',
+      data: { nodeEnv: config.nodeEnv, hasBot: !!bot },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'run1',
+      hypothesisId: 'I',
+    }) + '\n'
+  );
+} catch {
+  // Ignore logging errors
+}
+// #endregion
+
 bot
   .launch()
   .then(async () => {
+    // #region agent log
+    try {
+      appendFileSync(
+        logPath,
+        JSON.stringify({
+          location: 'bot/index.ts:175',
+          message: 'Bot launched successfully',
+          data: { nodeEnv: config.nodeEnv },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'I',
+        }) + '\n'
+      );
+    } catch {
+      // Ignore logging errors
+    }
+    // #endregion
+
     console.log(`✅ Bot started in ${config.nodeEnv} mode`);
     // Get bot info
     bot.telegram
       .getMe()
       .then((botInfo) => {
         console.log(`Bot username: @${botInfo.username}`);
+        // #region agent log
+        try {
+          appendFileSync(
+            logPath,
+            JSON.stringify({
+              location: 'bot/index.ts:118',
+              message: 'Bot info retrieved',
+              data: { username: botInfo.username },
+              timestamp: Date.now(),
+              sessionId: 'debug-session',
+              runId: 'run1',
+              hypothesisId: 'I',
+            }) + '\n'
+          );
+        } catch {
+          // Ignore logging errors
+        }
+        // #endregion
       })
       .catch((err) => {
         console.warn('Could not get bot info:', err.message);
+        // #region agent log
+        try {
+          appendFileSync(
+            logPath,
+            JSON.stringify({
+              location: 'bot/index.ts:133',
+              message: 'Bot info failed',
+              data: { errorMessage: err.message },
+              timestamp: Date.now(),
+              sessionId: 'debug-session',
+              runId: 'run1',
+              hypothesisId: 'I',
+            }) + '\n'
+          );
+        } catch {
+          // Ignore logging errors
+        }
+        // #endregion
       });
 
     // Start queue consumer for match notifications
@@ -128,6 +260,27 @@ bot
     }
   })
   .catch((error) => {
+    // #region agent log
+    try {
+      appendFileSync(
+        logPath,
+        JSON.stringify({
+          location: 'bot/index.ts:231',
+          message: 'Bot launch failed',
+          data: {
+            errorMessage: error instanceof Error ? error.message : String(error),
+            errorName: error instanceof Error ? error.name : 'Unknown',
+          },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'I',
+        }) + '\n'
+      );
+    } catch {
+      // Ignore logging errors
+    }
+    // #endregion
     console.error('❌ Failed to start bot:', error);
     process.exit(1);
   });

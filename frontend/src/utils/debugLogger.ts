@@ -4,7 +4,6 @@
  */
 
 const LOG_SERVER = 'http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac';
-const LOG_FILE = '/Users/vidmich/Desktop/cursor/lug/.cursor/debug.log';
 
 interface LogEntry {
   location: string;

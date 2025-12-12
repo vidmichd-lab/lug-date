@@ -302,17 +302,17 @@ export class UserRepository {
         setClause.push(`age = $${paramIndex++}`);
         params.push(updates.age);
       }
-      if (updates.city !== undefined) {
+      if ((updates as any).city !== undefined) {
         setClause.push(`city = $${paramIndex++}`);
-        params.push(updates.city);
+        params.push((updates as any).city);
       }
-      if (updates.gender !== undefined) {
+      if ((updates as any).gender !== undefined) {
         setClause.push(`gender = $${paramIndex++}`);
-        params.push(updates.gender);
+        params.push((updates as any).gender);
       }
-      if (updates.interests !== undefined) {
+      if ((updates as any).interests !== undefined) {
         setClause.push(`interests = $${paramIndex++}`);
-        params.push(updates.interests);
+        params.push(JSON.stringify((updates as any).interests));
       }
 
       setClause.push(`updated_at = $${paramIndex++}`);

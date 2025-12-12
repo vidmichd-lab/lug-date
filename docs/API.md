@@ -502,4 +502,3 @@ API использует версионирование через URL:
 - Первый релиз API
 - Endpoints для матчей и фото
 - Admin analytics endpoints
-

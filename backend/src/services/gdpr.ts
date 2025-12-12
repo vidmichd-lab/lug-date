@@ -72,7 +72,7 @@ export async function exportUserData(userId: string): Promise<UserDataExport> {
         telegramId: String(user.telegramId),
         name: user.firstName + (user.lastName ? ` ${user.lastName}` : ''),
         age: user.age || undefined,
-        city: user.city,
+        city: (user as any).city || undefined,
         bio: user.bio || undefined,
         photos: user.photoUrl ? [user.photoUrl] : [],
         createdAt: user.createdAt.toISOString(),
@@ -203,11 +203,15 @@ export async function anonymizeUserData(userId: string): Promise<void> {
     await userRepository.updateUser(userId, {
       firstName: 'Deleted',
       lastName: 'User',
-      bio: null,
-      photoUrl: null,
-      age: null,
-      city: null,
-    });
+      bio: undefined,
+      photoUrl: undefined,
+      age: undefined,
+    } as any);
+
+    // Anonymize additional fields
+    await userRepository.updateUser(userId, {
+      city: undefined,
+    } as any);
 
     logger.info({ type: 'gdpr_data_anonymization_completed', userId });
   } catch (error) {

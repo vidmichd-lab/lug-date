@@ -207,7 +207,7 @@ export const adminUsersTableSQL = generateCreateTableSQL(
   'admin_users',
   [
     { name: 'id', type: 'VARCHAR(255)', primaryKey: true },
-    { name: 'username', type: 'VARCHAR(255)', nullable: false, unique: true },
+    { name: 'username', type: 'VARCHAR(255)', nullable: false },
     { name: 'password_hash', type: 'VARCHAR(255)', nullable: false },
     { name: 'created_at', type: 'TIMESTAMP', nullable: false, default: 'CURRENT_TIMESTAMP' },
     { name: 'updated_at', type: 'TIMESTAMP', nullable: false, default: 'CURRENT_TIMESTAMP' },

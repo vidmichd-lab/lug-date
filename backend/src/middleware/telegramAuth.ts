@@ -43,11 +43,10 @@ export function telegramAuthMiddleware(req: Request, res: Response, next: NextFu
       // This will be used to create/retrieve user in database
       req.telegramUser = {
         id: 123456789, // Mock Telegram user ID
-        firstName: 'Dev',
-        lastName: 'User',
+        first_name: 'Dev',
+        last_name: 'User',
         username: 'dev_user',
-        languageCode: 'en',
-        isPremium: false,
+        language_code: 'en',
       };
 
       return next();

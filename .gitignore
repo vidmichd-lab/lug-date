@@ -72,16 +72,12 @@ yc-service-account-key.json
 *_FIX.md
 *_DEBUG.md
 *_DIAGNOSTICS.md
-*_COMPLETE.md
 *_READY.md
 *_SUCCESS.md
 *_DEPLOYED.md
-*_SETUP.md
 *_QUICKSTART.md
 *_INSTRUCTIONS.md
-*_SUMMARY.md
 *_REPORT.md
-*_MIGRATION*.md
 *_AUDIT*.md
 *_RESPONSE.md
 *_VULNERABILITIES*.md
@@ -124,4 +120,16 @@ yc-service-account-key.json
 *_NEXT_STEPS.md
 *_CLEANUP*.md
 *_PLAN.md
+*_INSTALL*.md
+*_INSTALLED.md
+*_RUN_*.md
+*_MIGRATION_FIX.md
+*_QUICK_FIX*.md
 TODO_FOR_USER.md
+
+# Keep important files (exceptions)
+!POSTGRES_SETUP.md
+!POSTGRES_MIGRATION_COMPLETE.md
+!QUICK_START_POSTGRES.md
+!SUMMARY_RU.md
+!SYSTEM_OVERVIEW.md

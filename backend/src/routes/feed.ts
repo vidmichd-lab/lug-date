@@ -12,6 +12,7 @@ import { eventRepository } from '../repositories/eventRepository';
 import { userRepository } from '../repositories/userRepository';
 import { likeRepository } from '../repositories/likeRepository';
 import { matchRepository } from '../repositories/matchRepository';
+import type { User } from '@dating-app/shared';
 
 const router = Router();
 
@@ -57,17 +58,18 @@ router.get(
           id: mockUserId,
           telegramId: telegramId,
           username: req.telegramUser.username || 'dev_user',
-          firstName: req.telegramUser.firstName || 'Dev',
-          lastName: req.telegramUser.lastName || 'User',
-          photoUrl: null,
-          bio: null,
-          age: null,
-          city: null,
-          gender: null,
-          interests: [],
+          firstName: req.telegramUser.first_name || 'Dev',
+          lastName: req.telegramUser.last_name || 'User',
+          photoUrl: undefined,
+          bio: undefined,
+          age: undefined,
           createdAt: new Date(),
           updatedAt: new Date(),
-        };
+        } as User & { city?: string | null; gender?: string | null; interests?: string[] };
+
+        (mockUser as any).city = null;
+        (mockUser as any).gender = null;
+        (mockUser as any).interests = [];
 
         await userRepository.upsertUser(mockUser);
         currentUser = await userRepository.getUserByTelegramId(telegramId);

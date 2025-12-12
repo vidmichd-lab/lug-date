@@ -348,8 +348,7 @@ jobs:
               --environment "NODE_ENV=production" \
               --environment "CONTAINER_MODE=true" \
               --environment "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" \
-              --environment "YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT }}" \
-              --environment "YDB_DATABASE=${{ secrets.YDB_DATABASE }}" \
+              --environment "DATABASE_URL=${{ secrets.DATABASE_URL }}" \
               --environment "YC_SERVICE_ACCOUNT_KEY_B64=${YC_SERVICE_ACCOUNT_KEY_B64}" \
               --environment "YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET }}" \
               --environment "YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY }}" \
@@ -375,8 +374,7 @@ jobs:
               --environment "NODE_ENV=production" \
               --environment "CONTAINER_MODE=true" \
               --environment "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" \
-              --environment "YDB_ENDPOINT=${{ secrets.YDB_ENDPOINT }}" \
-              --environment "YDB_DATABASE=${{ secrets.YDB_DATABASE }}" \
+              --environment "DATABASE_URL=${{ secrets.DATABASE_URL }}" \
               --environment "YC_SERVICE_ACCOUNT_KEY_B64=${YC_SERVICE_ACCOUNT_KEY_B64}" \
               --environment "YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET }}" \
               --environment "YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY }}" \
