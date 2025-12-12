@@ -1,12 +1,7 @@
 name: Deploy Frontend to Yandex Object Storage
 
 on:
-  push:
-    branches: [main, develop]
-    paths:
-      - 'frontend/**'
-      - '.github/workflows/deploy-frontend.yml'
-  workflow_dispatch: # Allow manual trigger
+  workflow_dispatch: # Только ручной запуск
 
 jobs:
   deploy:

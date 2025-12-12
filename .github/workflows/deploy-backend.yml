@@ -1,13 +1,7 @@
 name: Deploy Backend
 
 on:
-  push:
-    branches: [develop, main]
-    paths:
-      - 'backend/**'
-      - 'shared/**'
-      - '.github/workflows/deploy-backend.yml'
-  workflow_dispatch:
+  workflow_dispatch: # Только ручной запуск
 
 env:
   NODE_VERSION: '20'

@@ -1,13 +1,7 @@
 name: Deploy Admin Only
 
 on:
-  push:
-    branches: [develop, main]
-    paths:
-      - 'admin/**'
-      - 'shared/**'
-      - '.github/workflows/deploy-admin.yml'
-  workflow_dispatch:
+  workflow_dispatch: # Только ручной запуск
 
 env:
   NODE_VERSION: '20'

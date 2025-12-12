@@ -1,15 +1,7 @@
 name: Run Database Migrations
 
 on:
-  workflow_dispatch: # Ручной запуск через кнопку "Run workflow"
-  push:
-    branches: [main]
-    paths:
-      - 'backend/src/db/migrations/**'
-      - 'backend/src/db/postgresMigrations.ts'
-      - 'backend/src/db/postgresConnection.ts'
-      - 'backend/src/config.ts'
-      - '.github/workflows/run-migrations.yml'
+  workflow_dispatch: # Только ручной запуск через кнопку "Run workflow"
 
 env:
   NODE_VERSION: '20'

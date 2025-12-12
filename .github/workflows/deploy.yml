@@ -253,11 +253,22 @@ jobs:
           echo "✅ admin/dist directory exists"
 
       - name: Run database migrations
+        timeout-minutes: 10
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          export PATH=$PATH:$HOME/yandex-cloud/bin
-          export YC_SERVICE_ACCOUNT_KEY_FILE=/tmp/yc-sa-key.json
-          NODE_ENV=production DATABASE_URL=${{ secrets.DATABASE_URL }} npm run migrate:postgres
-        continue-on-error: true
+          if [ -z "$DATABASE_URL" ]; then
+            echo "❌ ERROR: DATABASE_URL is not set"
+            echo "Please set DATABASE_URL in GitHub Secrets"
+            exit 1
+          fi
+
+          echo "🔌 Connecting to PostgreSQL..."
+          echo "Database URL: ${DATABASE_URL:0:30}... (hidden for security)"
+          echo ""
+          echo "🚀 Running PostgreSQL migrations..."
+          NODE_ENV=production npm run migrate:postgres
+        continue-on-error: false
 
       - name: Login to Yandex Container Registry
         env:
