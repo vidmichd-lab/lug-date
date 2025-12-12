@@ -41,6 +41,28 @@ router.post('/login', validate({ body: loginSchema }), async (req: Request, res:
   try {
     const { email, password } = req.body;
 
+    // Ensure database connection is established
+    const { postgresClient } = await import('../db/postgresConnection');
+    if (!postgresClient.getConnectionStatus()) {
+      logger.warn({ type: 'admin_login_failed', reason: 'database_not_connected' });
+      try {
+        await postgresClient.connect();
+      } catch (dbError) {
+        logger.error({
+          error: dbError,
+          type: 'admin_login_failed',
+          reason: 'database_connection_error',
+        });
+        return res.status(500).json({
+          success: false,
+          error: {
+            message: 'Database connection failed',
+            code: 'DATABASE_ERROR',
+          },
+        });
+      }
+    }
+
     // Find admin by email
     const admin = await adminRepository.findByEmail(email);
     if (!admin) {
@@ -108,12 +130,25 @@ router.post('/login', validate({ body: loginSchema }), async (req: Request, res:
       },
     });
   } catch (error) {
-    logger.error({ error, type: 'admin_login_error' });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+
+    logger.error({
+      error,
+      type: 'admin_login_error',
+      message: errorMessage,
+      stack: errorStack,
+    });
+
+    // Return more detailed error in development, generic in production
+    const isDevelopment = process.env.NODE_ENV === 'development';
+
     return res.status(500).json({
       success: false,
       error: {
-        message: 'Internal server error',
+        message: isDevelopment ? errorMessage : 'Internal server error',
         code: 'INTERNAL_ERROR',
+        ...(isDevelopment && errorStack ? { stack: errorStack } : {}),
       },
     });
   }
