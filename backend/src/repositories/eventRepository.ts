@@ -3,7 +3,7 @@
  * Handles all database operations for events
  */
 
-import { ydbClient } from '../db/connection';
+import { postgresClient } from '../db/postgresConnection';
 import { logger } from '../logger';
 import type { Event } from '@dating-app/shared';
 
@@ -14,23 +14,23 @@ export class EventRepository {
   async createEvent(event: Event): Promise<Event> {
     try {
       const query = `
-        INSERT INTO events (id, title, description, category, imageUrl, location, date, createdAt, updatedAt)
-        VALUES ($id, $title, $description, $category, $imageUrl, $location, $date, $createdAt, $updatedAt);
+        INSERT INTO events (id, title, description, category, image_url, location, date, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
       `;
 
-      const params = {
-        id: event.id,
-        title: event.title,
-        description: event.description,
-        category: event.category,
-        imageUrl: event.imageUrl || null,
-        location: event.location || null,
-        date: event.date || null,
-        createdAt: event.createdAt,
-        updatedAt: event.updatedAt,
-      };
+      const params = [
+        event.id,
+        event.title,
+        event.description,
+        event.category,
+        event.imageUrl || null,
+        event.location || null,
+        event.date || null,
+        event.createdAt || new Date(),
+        event.updatedAt || new Date(),
+      ];
 
-      await ydbClient.executeQuery(query, params);
+      await postgresClient.executeQuery(query, params);
       logger.info({ type: 'event_created', eventId: event.id });
 
       return event;
@@ -46,10 +46,21 @@ export class EventRepository {
   async getEventById(eventId: string): Promise<Event | null> {
     try {
       const query = `
-        SELECT * FROM events WHERE id = $id;
+        SELECT 
+          id,
+          title,
+          description,
+          category,
+          image_url as "imageUrl",
+          location,
+          date,
+          created_at as "createdAt",
+          updated_at as "updatedAt"
+        FROM events 
+        WHERE id = $1;
       `;
 
-      const results = await ydbClient.executeQuery<Event>(query, { id: eventId });
+      const results = await postgresClient.executeQuery<any>(query, [eventId]);
 
       return results[0] || null;
     } catch (error) {
@@ -68,17 +79,23 @@ export class EventRepository {
   ): Promise<Event[]> {
     try {
       const query = `
-        SELECT * FROM events 
-        WHERE category = $category
-        ORDER BY createdAt DESC
-        LIMIT $limit OFFSET $offset;
+        SELECT 
+          id,
+          title,
+          description,
+          category,
+          image_url as "imageUrl",
+          location,
+          date,
+          created_at as "createdAt",
+          updated_at as "updatedAt"
+        FROM events 
+        WHERE category = $1
+        ORDER BY created_at DESC
+        LIMIT $2 OFFSET $3;
       `;
 
-      const results = await ydbClient.executeQuery<Event>(query, {
-        category,
-        limit,
-        offset,
-      });
+      const results = await postgresClient.executeQuery<any>(query, [category, limit, offset]);
 
       return results;
     } catch (error) {
@@ -93,15 +110,22 @@ export class EventRepository {
   async getEvents(limit: number = 20, offset: number = 0): Promise<Event[]> {
     try {
       const query = `
-        SELECT * FROM events 
-        ORDER BY createdAt DESC
-        LIMIT $limit OFFSET $offset;
+        SELECT 
+          id,
+          title,
+          description,
+          category,
+          image_url as "imageUrl",
+          location,
+          date,
+          created_at as "createdAt",
+          updated_at as "updatedAt"
+        FROM events 
+        ORDER BY created_at DESC
+        LIMIT $1 OFFSET $2;
       `;
 
-      const results = await ydbClient.executeQuery<Event>(query, {
-        limit,
-        offset,
-      });
+      const results = await postgresClient.executeQuery<any>(query, [limit, offset]);
 
       return results;
     } catch (error) {
@@ -116,15 +140,22 @@ export class EventRepository {
   async getAllEvents(limit: number = 50, offset: number = 0): Promise<Event[]> {
     try {
       const query = `
-        SELECT * FROM events 
-        ORDER BY createdAt DESC
-        LIMIT $limit OFFSET $offset;
+        SELECT 
+          id,
+          title,
+          description,
+          category,
+          image_url as "imageUrl",
+          location,
+          date,
+          created_at as "createdAt",
+          updated_at as "updatedAt"
+        FROM events 
+        ORDER BY created_at DESC
+        LIMIT $1 OFFSET $2;
       `;
 
-      const results = await ydbClient.executeQuery<Event>(query, {
-        limit,
-        offset,
-      });
+      const results = await postgresClient.executeQuery<any>(query, [limit, offset]);
 
       return results;
     } catch (error) {
@@ -138,13 +169,11 @@ export class EventRepository {
    */
   async getEventsCount(): Promise<number> {
     try {
-      const query = `
-        SELECT COUNT(*) as count FROM events;
-      `;
+      const query = `SELECT COUNT(*) as count FROM events;`;
 
-      const results = await ydbClient.executeQuery<{ count: number }>(query);
+      const results = await postgresClient.executeQuery<{ count: string }>(query);
 
-      return results[0]?.count || 0;
+      return parseInt(results[0]?.count || '0', 10);
     } catch (error) {
       logger.error({ error, type: 'events_count_failed' });
       throw error;
@@ -157,46 +186,49 @@ export class EventRepository {
   async updateEvent(eventId: string, updates: Partial<Event>): Promise<Event> {
     try {
       const setClause: string[] = [];
-      const params: Record<string, any> = { id: eventId };
+      const params: any[] = [];
+      let paramIndex = 1;
 
       if (updates.title !== undefined) {
-        setClause.push('title = $title');
-        params.title = updates.title;
+        setClause.push(`title = $${paramIndex++}`);
+        params.push(updates.title);
       }
       if (updates.description !== undefined) {
-        setClause.push('description = $description');
-        params.description = updates.description;
+        setClause.push(`description = $${paramIndex++}`);
+        params.push(updates.description);
       }
       if (updates.category !== undefined) {
-        setClause.push('category = $category');
-        params.category = updates.category;
+        setClause.push(`category = $${paramIndex++}`);
+        params.push(updates.category);
       }
       if (updates.imageUrl !== undefined) {
-        setClause.push('imageUrl = $imageUrl');
-        params.imageUrl = updates.imageUrl;
+        setClause.push(`image_url = $${paramIndex++}`);
+        params.push(updates.imageUrl);
       }
       if (updates.location !== undefined) {
-        setClause.push('location = $location');
-        params.location = updates.location;
+        setClause.push(`location = $${paramIndex++}`);
+        params.push(updates.location);
       }
       if (updates.date !== undefined) {
-        setClause.push('date = $date');
-        params.date = updates.date;
+        setClause.push(`date = $${paramIndex++}`);
+        params.push(updates.date);
       }
 
-      setClause.push('updatedAt = $updatedAt');
-      params.updatedAt = new Date();
+      setClause.push(`updated_at = $${paramIndex++}`);
+      params.push(new Date());
 
       if (setClause.length === 1) {
         // Only updatedAt, no need to update
-        return await this.getEventById(eventId) || ({} as Event);
+        return (await this.getEventById(eventId)) || ({} as Event);
       }
 
+      params.push(eventId); // For WHERE clause
+
       const query = `
-        UPDATE events SET ${setClause.join(', ')} WHERE id = $id;
+        UPDATE events SET ${setClause.join(', ')} WHERE id = $${paramIndex};
       `;
 
-      await ydbClient.executeQuery(query, params);
+      await postgresClient.executeQuery(query, params);
 
       // Fetch updated event
       const updatedEvent = await this.getEventById(eventId);
@@ -217,11 +249,9 @@ export class EventRepository {
    */
   async deleteEvent(eventId: string): Promise<boolean> {
     try {
-      const query = `
-        DELETE FROM events WHERE id = $id;
-      `;
+      const query = `DELETE FROM events WHERE id = $1;`;
 
-      await ydbClient.executeQuery(query, { id: eventId });
+      await postgresClient.executeQuery(query, [eventId]);
 
       logger.info({ type: 'event_deleted', eventId });
       return true;
@@ -240,24 +270,24 @@ export class EventRepository {
         return [];
       }
 
-      // YDB supports IN with parameterized values
-      // Build query with OR conditions for better compatibility
-      if (eventIds.length === 1) {
-        const query = `SELECT * FROM events WHERE id = $id0;`;
-        const results = await ydbClient.executeQuery<Event>(query, { id0: eventIds[0] });
-        return results;
-      }
+      // PostgreSQL supports IN with array
+      const placeholders = eventIds.map((_, index) => `$${index + 1}`).join(', ');
+      const query = `
+        SELECT 
+          id,
+          title,
+          description,
+          category,
+          image_url as "imageUrl",
+          location,
+          date,
+          created_at as "createdAt",
+          updated_at as "updatedAt"
+        FROM events 
+        WHERE id IN (${placeholders});
+      `;
 
-      // For multiple IDs, use OR conditions
-      const conditions = eventIds.map((_, index) => `id = $id${index}`).join(' OR ');
-      const query = `SELECT * FROM events WHERE ${conditions};`;
-
-      const params: Record<string, string> = {};
-      eventIds.forEach((id, index) => {
-        params[`id${index}`] = id;
-      });
-
-      const results = await ydbClient.executeQuery<Event>(query, params);
+      const results = await postgresClient.executeQuery<any>(query, eventIds);
 
       return results;
     } catch (error) {
@@ -269,4 +299,3 @@ export class EventRepository {
 
 // Export singleton instance
 export const eventRepository = new EventRepository();
-

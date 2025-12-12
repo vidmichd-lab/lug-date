@@ -3,7 +3,7 @@
  * Handles all database operations for likes and saved events
  */
 
-import { ydbClient } from '../db/connection';
+import { postgresClient } from '../db/postgresConnection';
 import { logger } from '../logger';
 import type { Like } from '@dating-app/shared';
 
@@ -14,19 +14,19 @@ export class LikeRepository {
   async createLike(like: Like): Promise<Like> {
     try {
       const query = `
-        INSERT INTO likes (id, fromUserId, toUserId, eventId, createdAt)
-        VALUES ($id, $fromUserId, $toUserId, $eventId, $createdAt);
+        INSERT INTO likes (id, from_user_id, to_user_id, event_id, created_at)
+        VALUES ($1, $2, $3, $4, $5);
       `;
 
-      const params = {
-        id: like.id,
-        fromUserId: like.fromUserId,
-        toUserId: like.toUserId,
-        eventId: like.eventId || null,
-        createdAt: like.createdAt,
-      };
+      const params = [
+        like.id,
+        like.fromUserId,
+        like.toUserId,
+        like.eventId || null,
+        like.createdAt || new Date(),
+      ];
 
-      await ydbClient.executeQuery(query, params);
+      await postgresClient.executeQuery(query, params);
       logger.info({ type: 'like_created', likeId: like.id });
 
       return like;
@@ -42,29 +42,29 @@ export class LikeRepository {
   async likeExists(fromUserId: string, toUserId: string, eventId?: string): Promise<boolean> {
     try {
       let query: string;
-      let params: Record<string, any>;
+      let params: any[];
 
       if (eventId) {
         query = `
           SELECT COUNT(*) as count FROM likes 
-          WHERE fromUserId = $fromUserId 
-            AND toUserId = $toUserId 
-            AND eventId = $eventId;
+          WHERE from_user_id = $1 
+            AND to_user_id = $2 
+            AND event_id = $3;
         `;
-        params = { fromUserId, toUserId, eventId };
+        params = [fromUserId, toUserId, eventId];
       } else {
         query = `
           SELECT COUNT(*) as count FROM likes 
-          WHERE fromUserId = $fromUserId 
-            AND toUserId = $toUserId 
-            AND eventId IS NULL;
+          WHERE from_user_id = $1 
+            AND to_user_id = $2 
+            AND event_id IS NULL;
         `;
-        params = { fromUserId, toUserId };
+        params = [fromUserId, toUserId];
       }
 
-      const results = await ydbClient.executeQuery<{ count: number }>(query, params);
+      const results = await postgresClient.executeQuery<{ count: string }>(query, params);
 
-      return (results[0]?.count || 0) > 0;
+      return parseInt(results[0]?.count || '0', 10) > 0;
     } catch (error) {
       logger.error({ error, type: 'like_exists_check_failed' });
       throw error;
@@ -72,8 +72,7 @@ export class LikeRepository {
   }
 
   /**
-   * Get saved events for user (likes where toUserId is null or eventId is not null)
-   * In our schema, saved events are likes where eventId is not null
+   * Get saved events for user (likes where eventId is not null)
    */
   async getSavedEventsByUserId(
     userId: string,
@@ -82,18 +81,20 @@ export class LikeRepository {
   ): Promise<Like[]> {
     try {
       const query = `
-        SELECT * FROM likes 
-        WHERE fromUserId = $userId 
-          AND eventId IS NOT NULL
-        ORDER BY createdAt DESC
-        LIMIT $limit OFFSET $offset;
+        SELECT 
+          id,
+          from_user_id as "fromUserId",
+          to_user_id as "toUserId",
+          event_id as "eventId",
+          created_at as "createdAt"
+        FROM likes 
+        WHERE from_user_id = $1 
+          AND event_id IS NOT NULL
+        ORDER BY created_at DESC
+        LIMIT $2 OFFSET $3;
       `;
 
-      const results = await ydbClient.executeQuery<Like>(query, {
-        userId,
-        limit,
-        offset,
-      });
+      const results = await postgresClient.executeQuery<any>(query, [userId, limit, offset]);
 
       return results;
     } catch (error) {
@@ -109,14 +110,11 @@ export class LikeRepository {
     try {
       const query = `
         DELETE FROM likes 
-        WHERE fromUserId = $userId 
-          AND eventId = $eventId;
+        WHERE from_user_id = $1 
+          AND event_id = $2;
       `;
 
-      await ydbClient.executeQuery(query, {
-        userId,
-        eventId,
-      });
+      await postgresClient.executeQuery(query, [userId, eventId]);
 
       logger.info({ type: 'saved_event_deleted', userId, eventId });
       return true;
@@ -132,16 +130,19 @@ export class LikeRepository {
   async getMutualLikes(userId1: string, userId2: string): Promise<Like[]> {
     try {
       const query = `
-        SELECT * FROM likes 
-        WHERE ((fromUserId = $userId1 AND toUserId = $userId2)
-           OR (fromUserId = $userId2 AND toUserId = $userId1))
-        ORDER BY createdAt DESC;
+        SELECT 
+          id,
+          from_user_id as "fromUserId",
+          to_user_id as "toUserId",
+          event_id as "eventId",
+          created_at as "createdAt"
+        FROM likes 
+        WHERE ((from_user_id = $1 AND to_user_id = $2)
+           OR (from_user_id = $2 AND to_user_id = $1))
+        ORDER BY created_at DESC;
       `;
 
-      const results = await ydbClient.executeQuery<Like>(query, {
-        userId1,
-        userId2,
-      });
+      const results = await postgresClient.executeQuery<any>(query, [userId1, userId2]);
 
       return results;
     } catch (error) {
@@ -156,12 +157,18 @@ export class LikeRepository {
   async getLikesByEventId(eventId: string): Promise<Like[]> {
     try {
       const query = `
-        SELECT * FROM likes 
-        WHERE eventId = $eventId
-        ORDER BY createdAt DESC;
+        SELECT 
+          id,
+          from_user_id as "fromUserId",
+          to_user_id as "toUserId",
+          event_id as "eventId",
+          created_at as "createdAt"
+        FROM likes 
+        WHERE event_id = $1
+        ORDER BY created_at DESC;
       `;
 
-      const results = await ydbClient.executeQuery<Like>(query, { eventId });
+      const results = await postgresClient.executeQuery<any>(query, [eventId]);
 
       return results;
     } catch (error) {
@@ -180,17 +187,19 @@ export class LikeRepository {
   ): Promise<Like[]> {
     try {
       const query = `
-        SELECT * FROM likes 
-        WHERE fromUserId = $userId
-        ORDER BY createdAt DESC
-        LIMIT $limit OFFSET $offset;
+        SELECT 
+          id,
+          from_user_id as "fromUserId",
+          to_user_id as "toUserId",
+          event_id as "eventId",
+          created_at as "createdAt"
+        FROM likes 
+        WHERE from_user_id = $1
+        ORDER BY created_at DESC
+        LIMIT $2 OFFSET $3;
       `;
 
-      const results = await ydbClient.executeQuery<Like>(query, {
-        userId,
-        limit,
-        offset,
-      });
+      const results = await postgresClient.executeQuery<any>(query, [userId, limit, offset]);
 
       return results;
     } catch (error) {
@@ -206,11 +215,17 @@ export class LikeRepository {
   async getAllLikes(): Promise<Like[]> {
     try {
       const query = `
-        SELECT * FROM likes 
-        ORDER BY createdAt DESC;
+        SELECT 
+          id,
+          from_user_id as "fromUserId",
+          to_user_id as "toUserId",
+          event_id as "eventId",
+          created_at as "createdAt"
+        FROM likes 
+        ORDER BY created_at DESC;
       `;
 
-      const results = await ydbClient.executeQuery<Like>(query);
+      const results = await postgresClient.executeQuery<any>(query);
       return results;
     } catch (error) {
       logger.error({ error, type: 'likes_get_all_failed' });

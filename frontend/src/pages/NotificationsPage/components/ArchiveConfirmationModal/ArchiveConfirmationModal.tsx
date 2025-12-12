@@ -44,4 +44,3 @@ export const ArchiveConfirmationModal: FC<ArchiveConfirmationModalProps> = ({
     </div>
   );
 };
-

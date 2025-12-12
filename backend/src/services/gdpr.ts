@@ -7,7 +7,7 @@ import { logger } from '../logger';
 import { userRepository } from '../repositories/userRepository';
 import { likeRepository } from '../repositories/likeRepository';
 import { matchRepository } from '../repositories/matchRepository';
-import { ydbClient } from '../db/connection';
+import { postgresClient } from '../db/postgresConnection';
 
 export interface UserDataExport {
   user: {
@@ -71,9 +71,9 @@ export async function exportUserData(userId: string): Promise<UserDataExport> {
         id: user.id,
         telegramId: String(user.telegramId),
         name: user.firstName + (user.lastName ? ` ${user.lastName}` : ''),
-        age: user.age,
-        city: undefined, // City not in User type
-        bio: user.bio,
+        age: user.age || undefined,
+        city: user.city,
+        bio: user.bio || undefined,
         photos: user.photoUrl ? [user.photoUrl] : [],
         createdAt: user.createdAt.toISOString(),
         updatedAt: user.updatedAt?.toISOString() || user.createdAt.toISOString(),
@@ -135,10 +135,8 @@ export async function deleteUserData(userId: string): Promise<void> {
     const userLikes = await likeRepository.getLikesByUserId(userId, 10000, 0);
     for (const like of userLikes) {
       try {
-        const deleteQuery = `
-          DELETE FROM likes WHERE id = $id;
-        `;
-        await ydbClient.executeQuery(deleteQuery, { id: like.id });
+        const deleteQuery = `DELETE FROM likes WHERE id = $1;`;
+        await postgresClient.executeQuery(deleteQuery, [like.id]);
       } catch (error) {
         logger.warn({ error, type: 'gdpr_like_delete_failed', likeId: like.id });
       }
@@ -149,10 +147,8 @@ export async function deleteUserData(userId: string): Promise<void> {
     const receivedLikes = allLikes.filter((like) => like.toUserId === userId);
     for (const like of receivedLikes) {
       try {
-        const deleteQuery = `
-          DELETE FROM likes WHERE id = $id;
-        `;
-        await ydbClient.executeQuery(deleteQuery, { id: like.id });
+        const deleteQuery = `DELETE FROM likes WHERE id = $1;`;
+        await postgresClient.executeQuery(deleteQuery, [like.id]);
       } catch (error) {
         logger.warn({ error, type: 'gdpr_received_like_delete_failed', likeId: like.id });
       }
@@ -162,10 +158,8 @@ export async function deleteUserData(userId: string): Promise<void> {
     const userMatches = await matchRepository.getMatchesByUserId(userId, 10000, 0);
     for (const match of userMatches) {
       try {
-        const deleteQuery = `
-          DELETE FROM matches WHERE id = $id;
-        `;
-        await ydbClient.executeQuery(deleteQuery, { id: match.id });
+        const deleteQuery = `DELETE FROM matches WHERE id = $1;`;
+        await postgresClient.executeQuery(deleteQuery, [match.id]);
       } catch (error) {
         logger.warn({ error, type: 'gdpr_match_delete_failed', matchId: match.id });
       }
@@ -173,10 +167,8 @@ export async function deleteUserData(userId: string): Promise<void> {
 
     // Delete user profile
     try {
-      const deleteUserQuery = `
-        DELETE FROM users WHERE id = $id;
-      `;
-      await ydbClient.executeQuery(deleteUserQuery, { id: userId });
+      const deleteUserQuery = `DELETE FROM users WHERE id = $1;`;
+      await postgresClient.executeQuery(deleteUserQuery, [userId]);
     } catch (error) {
       logger.error({ error, type: 'gdpr_user_delete_failed', userId });
       throw error;
@@ -207,23 +199,14 @@ export async function anonymizeUserData(userId: string): Promise<void> {
       throw new Error('User not found');
     }
 
-    // Anonymize user profile
-    const updateQuery = `
-      UPDATE users 
-      SET 
-        name = 'Deleted User',
-        telegramId = $anonymizedId,
-        bio = NULL,
-        photos = [],
-        age = NULL,
-        city = NULL
-      WHERE id = $id;
-    `;
-
-    const anonymizedId = `deleted-${userId}-${Date.now()}`;
-    await ydbClient.executeQuery(updateQuery, {
-      id: userId,
-      anonymizedId,
+    // Anonymize user profile using repository
+    await userRepository.updateUser(userId, {
+      firstName: 'Deleted',
+      lastName: 'User',
+      bio: null,
+      photoUrl: null,
+      age: null,
+      city: null,
     });
 
     logger.info({ type: 'gdpr_data_anonymization_completed', userId });

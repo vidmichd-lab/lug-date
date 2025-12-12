@@ -3,7 +3,7 @@
  * Handles all database operations for users
  */
 
-import { ydbClient } from '../db/connection';
+import { postgresClient } from '../db/postgresConnection';
 import { logger } from '../logger';
 import type { User } from '@dating-app/shared';
 
@@ -14,24 +14,39 @@ export class UserRepository {
   async upsertUser(user: User): Promise<User> {
     try {
       const query = `
-        UPSERT INTO users (id, telegramId, username, firstName, lastName, photoUrl, bio, age, createdAt, updatedAt)
-        VALUES ($id, $telegramId, $username, $firstName, $lastName, $photoUrl, $bio, $age, $createdAt, $updatedAt);
+        INSERT INTO users (id, telegram_id, username, first_name, last_name, photo_url, bio, age, city, gender, interests, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        ON CONFLICT (id) DO UPDATE SET
+          telegram_id = EXCLUDED.telegram_id,
+          username = EXCLUDED.username,
+          first_name = EXCLUDED.first_name,
+          last_name = EXCLUDED.last_name,
+          photo_url = EXCLUDED.photo_url,
+          bio = EXCLUDED.bio,
+          age = EXCLUDED.age,
+          city = EXCLUDED.city,
+          gender = EXCLUDED.gender,
+          interests = EXCLUDED.interests,
+          updated_at = EXCLUDED.updated_at;
       `;
 
-      const params = {
-        id: user.id,
-        telegramId: user.telegramId,
-        username: user.username || null,
-        firstName: user.firstName,
-        lastName: user.lastName || null,
-        photoUrl: user.photoUrl || null,
-        bio: user.bio || null,
-        age: user.age || null,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      };
+      const params = [
+        user.id,
+        user.telegramId,
+        user.username || null,
+        user.firstName,
+        user.lastName || null,
+        user.photoUrl || null,
+        user.bio || null,
+        user.age || null,
+        (user as any).city || null,
+        (user as any).gender || null,
+        JSON.stringify((user as any).interests || []),
+        user.createdAt || new Date(),
+        user.updatedAt || new Date(),
+      ];
 
-      await ydbClient.executeQuery(query, params);
+      await postgresClient.executeQuery(query, params);
       logger.info({ type: 'user_upserted', userId: user.id });
 
       return user;
@@ -47,12 +62,47 @@ export class UserRepository {
   async getUserById(userId: string): Promise<User | null> {
     try {
       const query = `
-        SELECT * FROM users WHERE id = $id;
+        SELECT 
+          id,
+          telegram_id as "telegramId",
+          username,
+          first_name as "firstName",
+          last_name as "lastName",
+          photo_url as "photoUrl",
+          bio,
+          age,
+          city,
+          gender,
+          interests,
+          created_at as "createdAt",
+          updated_at as "updatedAt"
+        FROM users 
+        WHERE id = $1;
       `;
 
-      const results = await ydbClient.executeQuery<User>(query, { id: userId });
+      const results = await postgresClient.executeQuery<any>(query, [userId]);
 
-      return results[0] || null;
+      if (results.length === 0) {
+        return null;
+      }
+
+      // Map snake_case to camelCase
+      const row = results[0];
+      return {
+        id: row.id,
+        telegramId: parseInt(row.telegramId, 10),
+        username: row.username,
+        firstName: row.firstName,
+        lastName: row.lastName,
+        photoUrl: row.photoUrl,
+        bio: row.bio,
+        age: row.age ? parseInt(row.age, 10) : null,
+        city: row.city,
+        gender: row.gender,
+        interests: row.interests || [],
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      } as User;
     } catch (error) {
       logger.error({ error, type: 'user_get_failed', userId });
       throw error;
@@ -65,12 +115,46 @@ export class UserRepository {
   async getUserByTelegramId(telegramId: number): Promise<User | null> {
     try {
       const query = `
-        SELECT * FROM users WHERE telegramId = $telegramId;
+        SELECT 
+          id,
+          telegram_id as "telegramId",
+          username,
+          first_name as "firstName",
+          last_name as "lastName",
+          photo_url as "photoUrl",
+          bio,
+          age,
+          city,
+          gender,
+          interests,
+          created_at as "createdAt",
+          updated_at as "updatedAt"
+        FROM users 
+        WHERE telegram_id = $1;
       `;
 
-      const results = await ydbClient.executeQuery<User>(query, { telegramId });
+      const results = await postgresClient.executeQuery<any>(query, [telegramId]);
 
-      return results[0] || null;
+      if (results.length === 0) {
+        return null;
+      }
+
+      const row = results[0];
+      return {
+        id: row.id,
+        telegramId: parseInt(row.telegramId, 10),
+        username: row.username,
+        firstName: row.firstName,
+        lastName: row.lastName,
+        photoUrl: row.photoUrl,
+        bio: row.bio,
+        age: row.age ? parseInt(row.age, 10) : null,
+        city: row.city,
+        gender: row.gender,
+        interests: row.interests || [],
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      } as User;
     } catch (error) {
       logger.error({ error, type: 'user_get_by_telegram_failed', telegramId });
       throw error;
@@ -83,17 +167,42 @@ export class UserRepository {
   async getAllUsers(limit: number = 50, offset: number = 0): Promise<User[]> {
     try {
       const query = `
-        SELECT * FROM users 
-        ORDER BY createdAt DESC
-        LIMIT $limit OFFSET $offset;
+        SELECT 
+          id,
+          telegram_id as "telegramId",
+          username,
+          first_name as "firstName",
+          last_name as "lastName",
+          photo_url as "photoUrl",
+          bio,
+          age,
+          city,
+          gender,
+          interests,
+          created_at as "createdAt",
+          updated_at as "updatedAt"
+        FROM users 
+        ORDER BY created_at DESC
+        LIMIT $1 OFFSET $2;
       `;
 
-      const results = await ydbClient.executeQuery<User>(query, {
-        limit,
-        offset,
-      });
+      const results = await postgresClient.executeQuery<any>(query, [limit, offset]);
 
-      return results;
+      return results.map((row) => ({
+        id: row.id,
+        telegramId: parseInt(row.telegramId, 10),
+        username: row.username,
+        firstName: row.firstName,
+        lastName: row.lastName,
+        photoUrl: row.photoUrl,
+        bio: row.bio,
+        age: row.age ? parseInt(row.age, 10) : null,
+        city: row.city,
+        gender: row.gender,
+        interests: row.interests || [],
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      })) as User[];
     } catch (error) {
       logger.error({ error, type: 'users_get_all_failed' });
       throw error;
@@ -107,12 +216,41 @@ export class UserRepository {
   async getAllUsersUnpaginated(): Promise<User[]> {
     try {
       const query = `
-        SELECT * FROM users 
-        ORDER BY createdAt DESC;
+        SELECT 
+          id,
+          telegram_id as "telegramId",
+          username,
+          first_name as "firstName",
+          last_name as "lastName",
+          photo_url as "photoUrl",
+          bio,
+          age,
+          city,
+          gender,
+          interests,
+          created_at as "createdAt",
+          updated_at as "updatedAt"
+        FROM users 
+        ORDER BY created_at DESC;
       `;
 
-      const results = await ydbClient.executeQuery<User>(query);
-      return results;
+      const results = await postgresClient.executeQuery<any>(query);
+
+      return results.map((row) => ({
+        id: row.id,
+        telegramId: parseInt(row.telegramId, 10),
+        username: row.username,
+        firstName: row.firstName,
+        lastName: row.lastName,
+        photoUrl: row.photoUrl,
+        bio: row.bio,
+        age: row.age ? parseInt(row.age, 10) : null,
+        city: row.city,
+        gender: row.gender,
+        interests: row.interests || [],
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      })) as User[];
     } catch (error) {
       logger.error({ error, type: 'users_get_all_unpaginated_failed' });
       throw error;
@@ -124,13 +262,11 @@ export class UserRepository {
    */
   async getUsersCount(): Promise<number> {
     try {
-      const query = `
-        SELECT COUNT(*) as count FROM users;
-      `;
+      const query = `SELECT COUNT(*) as count FROM users;`;
 
-      const results = await ydbClient.executeQuery<{ count: number }>(query);
+      const results = await postgresClient.executeQuery<{ count: string }>(query);
 
-      return results[0]?.count || 0;
+      return parseInt(results[0]?.count || '0', 10);
     } catch (error) {
       logger.error({ error, type: 'users_count_failed' });
       throw error;
@@ -143,40 +279,52 @@ export class UserRepository {
   async updateUser(userId: string, updates: Partial<User>): Promise<User> {
     try {
       const setClause: string[] = [];
-      const params: Record<string, any> = { id: userId };
+      const params: any[] = [];
+      let paramIndex = 1;
 
       if (updates.firstName !== undefined) {
-        setClause.push('firstName = $firstName');
-        params.firstName = updates.firstName;
+        setClause.push(`first_name = $${paramIndex++}`);
+        params.push(updates.firstName);
       }
       if (updates.lastName !== undefined) {
-        setClause.push('lastName = $lastName');
-        params.lastName = updates.lastName;
+        setClause.push(`last_name = $${paramIndex++}`);
+        params.push(updates.lastName);
       }
       if (updates.photoUrl !== undefined) {
-        setClause.push('photoUrl = $photoUrl');
-        params.photoUrl = updates.photoUrl;
+        setClause.push(`photo_url = $${paramIndex++}`);
+        params.push(updates.photoUrl);
       }
       if (updates.bio !== undefined) {
-        setClause.push('bio = $bio');
-        params.bio = updates.bio;
+        setClause.push(`bio = $${paramIndex++}`);
+        params.push(updates.bio);
       }
       if (updates.age !== undefined) {
-        setClause.push('age = $age');
-        params.age = updates.age;
+        setClause.push(`age = $${paramIndex++}`);
+        params.push(updates.age);
       }
-      // Note: isBanned and isModerated would need to be stored in a JSON field or separate table
-      // For now, we'll skip them in the update query as they're not in the schema
-      // TODO: Add isBanned and isModerated fields to users table schema
+      if (updates.city !== undefined) {
+        setClause.push(`city = $${paramIndex++}`);
+        params.push(updates.city);
+      }
+      if (updates.gender !== undefined) {
+        setClause.push(`gender = $${paramIndex++}`);
+        params.push(updates.gender);
+      }
+      if (updates.interests !== undefined) {
+        setClause.push(`interests = $${paramIndex++}`);
+        params.push(updates.interests);
+      }
 
-      setClause.push('updatedAt = $updatedAt');
-      params.updatedAt = new Date();
+      setClause.push(`updated_at = $${paramIndex++}`);
+      params.push(new Date());
+
+      params.push(userId); // For WHERE clause
 
       const query = `
-        UPDATE users SET ${setClause.join(', ')} WHERE id = $id;
+        UPDATE users SET ${setClause.join(', ')} WHERE id = $${paramIndex};
       `;
 
-      await ydbClient.executeQuery(query, params);
+      await postgresClient.executeQuery(query, params);
 
       // Fetch updated user
       const updatedUser = await this.getUserById(userId);

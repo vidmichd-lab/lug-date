@@ -99,4 +99,3 @@ export const InterestsSelectorModal: FC<InterestsSelectorModalProps> = ({
     </div>
   );
 };
-

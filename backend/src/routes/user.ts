@@ -85,10 +85,34 @@ router.get(
         });
       }
 
+      // Transform user to profile format with all required fields
+      // Frontend expects: name, age, photo, goal, job, company, bio, interests, city, gender, birthDate, settings
+      const profile = {
+        id: user.id,
+        name: `${user.firstName}${user.lastName ? ' ' + user.lastName : ''}`,
+        age: user.age || 0, // Frontend expects number, not null
+        photo: user.photoUrl || '',
+        goal: null, // Will be set by user
+        job: null,
+        company: null,
+        bio: user.bio || null,
+        interests: (user as any).interests || [],
+        city: (user as any).city || null,
+        gender: (user as any).gender || null,
+        birthDate: null, // Will be set by user during registration
+        settings: {
+          isOnline: false,
+          showMeetingCounter: true,
+          showAge: true,
+          notifyAboutMatches: true,
+          notifyAboutUpdates: true,
+        },
+      };
+
       res.json({
         success: true,
         data: {
-          profile: user,
+          profile,
         },
       });
     } catch (error) {

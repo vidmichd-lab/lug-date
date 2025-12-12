@@ -5,6 +5,7 @@
 
 import { Component, ErrorInfo, ReactNode } from 'react';
 import styles from './ErrorBoundary.module.css';
+import { debugLog } from '../../utils/debugLogger';
 
 interface Props {
   children: ReactNode;
@@ -34,14 +35,30 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    // #region agent log
+    debugLog({
+      location: 'ErrorBoundary.tsx:36',
+      message: 'ErrorBoundary caught error',
+      data: {
+        errorMessage: error.message,
+        errorName: error.name,
+        componentStack: errorInfo.componentStack?.substring(0, 200),
+      },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'run1',
+      hypothesisId: 'F',
+    });
+    // #endregion
+
     // Log error to monitoring service
     console.error('ErrorBoundary caught an error:', error, errorInfo);
-    
+
     // Call optional error handler
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
     }
-    
+
     // Send to error monitoring (if configured)
     if (window.Telegram?.WebApp) {
       // Could send to Sentry/Catcher here
@@ -82,10 +99,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <button onClick={this.handleReset} className={styles.button}>
               Попробовать снова
             </button>
-            <button
-              onClick={() => window.location.reload()}
-              className={styles.button}
-            >
+            <button onClick={() => window.location.reload()} className={styles.button}>
               Обновить страницу
             </button>
           </div>
@@ -96,4 +110,3 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
-

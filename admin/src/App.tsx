@@ -6,6 +6,7 @@ import { SettingsPage } from './pages/SettingsPage';
 import { LoginPage } from './pages/LoginPage';
 import './App.css';
 import styles from './App.module.css';
+import { debugLog } from './utils/debugLogger';
 
 type Page = 'dashboard' | 'users' | 'events' | 'settings';
 
@@ -15,9 +16,35 @@ function App() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
+    // #region agent log
+    import('./utils/debugLogger').then(({ debugLog }) => {
+      debugLog({
+        location: 'admin/App.tsx:17',
+        message: 'Admin auth check started',
+        data: { timestamp: Date.now() },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'K',
+      });
+    });
+    // #endregion
+
     // Check if user is already logged in
     const checkAuth = async () => {
       const token = localStorage.getItem('admin_token');
+
+      // #region agent log
+      debugLog({
+        location: 'admin/App.tsx:34',
+        message: 'Token check',
+        data: { hasToken: !!token, tokenLength: token?.length || 0 },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'K',
+      });
+      // #endregion
 
       // If no token, show login immediately
       if (!token || token.trim().length === 0) {
@@ -25,6 +52,17 @@ function App() {
         setIsAuthenticated(false);
         setIsCheckingAuth(false);
         console.log('🔍 No token found, showing login form');
+        // #region agent log
+        debugLog({
+          location: 'admin/App.tsx:57',
+          message: 'No token - showing login',
+          data: { success: true },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'K',
+        });
+        // #endregion
         return;
       }
 

@@ -28,4 +28,3 @@ export const OnboardingProgress: FC<OnboardingProgressProps> = ({ currentStep, t
     </div>
   );
 };
-

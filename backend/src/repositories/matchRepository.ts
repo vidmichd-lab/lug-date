@@ -3,7 +3,7 @@
  * Handles all database operations for matches
  */
 
-import { ydbClient } from '../db/connection';
+import { postgresClient } from '../db/postgresConnection';
 import { logger } from '../logger';
 import type { Match } from '@dating-app/shared';
 
@@ -14,19 +14,19 @@ export class MatchRepository {
   async createMatch(match: Match): Promise<Match> {
     try {
       const query = `
-        INSERT INTO matches (id, userId1, userId2, eventId, createdAt)
-        VALUES ($id, $userId1, $userId2, $eventId, $createdAt);
+        INSERT INTO matches (id, user_id1, user_id2, event_id, created_at)
+        VALUES ($1, $2, $3, $4, $5);
       `;
 
-      const params = {
-        id: match.id,
-        userId1: match.userId1,
-        userId2: match.userId2,
-        eventId: match.eventId || null,
-        createdAt: match.createdAt,
-      };
+      const params = [
+        match.id,
+        match.userId1,
+        match.userId2,
+        match.eventId || null,
+        match.createdAt || new Date(),
+      ];
 
-      await ydbClient.executeQuery(query, params);
+      await postgresClient.executeQuery(query, params);
       logger.info({ type: 'match_created', matchId: match.id });
 
       return match;
@@ -42,10 +42,17 @@ export class MatchRepository {
   async getMatchById(matchId: string): Promise<Match | null> {
     try {
       const query = `
-        SELECT * FROM matches WHERE id = $id;
+        SELECT 
+          id,
+          user_id1 as "userId1",
+          user_id2 as "userId2",
+          event_id as "eventId",
+          created_at as "createdAt"
+        FROM matches 
+        WHERE id = $1;
       `;
 
-      const results = await ydbClient.executeQuery<Match>(query, { id: matchId });
+      const results = await postgresClient.executeQuery<any>(query, [matchId]);
 
       return results[0] || null;
     } catch (error) {
@@ -56,8 +63,7 @@ export class MatchRepository {
 
   /**
    * Get matches for user
-   * Uses composite indexes (userId1, createdAt) and (userId2, createdAt) for optimal performance
-   * Note: YDB will use indexes for both parts of OR condition
+   * Uses composite indexes (user_id1, created_at) and (user_id2, created_at) for optimal performance
    */
   async getMatchesByUserId(
     userId: string,
@@ -65,20 +71,20 @@ export class MatchRepository {
     offset: number = 0
   ): Promise<Match[]> {
     try {
-      // YDB can use both composite indexes idx_matches_user1_created and idx_matches_user2_created
-      // for the OR condition, making this query efficient
       const query = `
-        SELECT * FROM matches 
-        WHERE userId1 = $userId OR userId2 = $userId
-        ORDER BY createdAt DESC
-        LIMIT $limit OFFSET $offset;
+        SELECT 
+          id,
+          user_id1 as "userId1",
+          user_id2 as "userId2",
+          event_id as "eventId",
+          created_at as "createdAt"
+        FROM matches 
+        WHERE user_id1 = $1 OR user_id2 = $1
+        ORDER BY created_at DESC
+        LIMIT $2 OFFSET $3;
       `;
 
-      const results = await ydbClient.executeQuery<Match>(query, {
-        userId,
-        limit,
-        offset,
-      });
+      const results = await postgresClient.executeQuery<any>(query, [userId, limit, offset]);
 
       return results;
     } catch (error) {
@@ -89,24 +95,22 @@ export class MatchRepository {
 
   /**
    * Check if match exists between two users
-   * Uses composite index (userId1, userId2) for optimal performance
+   * Uses composite index (user_id1, user_id2) for optimal performance
    */
   async matchExists(userId1: string, userId2: string): Promise<boolean> {
     try {
-      // Use composite index idx_matches_user1_user2 for faster lookup
-      // Check both directions: (userId1, userId2) and (userId2, userId1)
       const query = `
         SELECT COUNT(*) as count FROM matches 
-        WHERE (userId1 = $userId1 AND userId2 = $userId2)
-           OR (userId1 = $userId2 AND userId2 = $userId1);
+        WHERE (user_id1 = $1 AND user_id2 = $2)
+           OR (user_id1 = $2 AND user_id2 = $1);
       `;
 
-      const results = await ydbClient.executeQuery<{ count: number }>(query, {
+      const results = await postgresClient.executeQuery<{ count: string }>(query, [
         userId1,
         userId2,
-      });
+      ]);
 
-      return (results[0]?.count || 0) > 0;
+      return parseInt(results[0]?.count || '0', 10) > 0;
     } catch (error) {
       logger.error({ error, type: 'match_exists_check_failed' });
       throw error;
@@ -120,11 +124,17 @@ export class MatchRepository {
   async getAllMatches(): Promise<Match[]> {
     try {
       const query = `
-        SELECT * FROM matches 
-        ORDER BY createdAt DESC;
+        SELECT 
+          id,
+          user_id1 as "userId1",
+          user_id2 as "userId2",
+          event_id as "eventId",
+          created_at as "createdAt"
+        FROM matches 
+        ORDER BY created_at DESC;
       `;
 
-      const results = await ydbClient.executeQuery<Match>(query);
+      const results = await postgresClient.executeQuery<any>(query);
       return results;
     } catch (error) {
       logger.error({ error, type: 'matches_get_all_failed' });

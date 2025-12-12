@@ -38,4 +38,3 @@ export const IconFromFigma: FC<IconFromFigmaProps> = ({ svgPath, size = 24, clas
     </div>
   );
 };
-

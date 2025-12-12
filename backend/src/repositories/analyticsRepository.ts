@@ -3,9 +3,10 @@
  * Handles all analytics queries for admin dashboard
  */
 
-import { ydbClient } from '../db/connection';
+import { postgresClient } from '../db/postgresConnection';
 import { logger } from '../logger';
 import { userRepository } from './userRepository';
+import { eventRepository } from './eventRepository';
 
 export interface UserStats {
   total: number;
@@ -80,28 +81,28 @@ export class AnalyticsRepository {
   async getUserStats(): Promise<UserStats> {
     try {
       // Total users
-      const totalResult = await ydbClient.executeQuery<{ count: number }>(
+      const totalResult = await postgresClient.executeQuery<{ count: string }>(
         'SELECT COUNT(*) as count FROM users'
       );
-      const total = totalResult[0]?.count || 0;
+      const total = parseInt(totalResult[0]?.count || '0', 10);
 
       // New users this week
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
-      const newThisWeekResult = await ydbClient.executeQuery<{ count: number }>(
-        `SELECT COUNT(*) as count FROM users WHERE createdAt >= $weekAgo`,
-        { weekAgo }
+      const newThisWeekResult = await postgresClient.executeQuery<{ count: string }>(
+        'SELECT COUNT(*) as count FROM users WHERE created_at >= $1',
+        [weekAgo]
       );
-      const newThisWeek = newThisWeekResult[0]?.count || 0;
+      const newThisWeek = parseInt(newThisWeekResult[0]?.count || '0', 10);
 
       // Growth (compare with previous week)
       const twoWeeksAgo = new Date();
       twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-      const previousWeekResult = await ydbClient.executeQuery<{ count: number }>(
-        `SELECT COUNT(*) as count FROM users WHERE createdAt >= $twoWeeksAgo AND createdAt < $weekAgo`,
-        { twoWeeksAgo, weekAgo }
+      const previousWeekResult = await postgresClient.executeQuery<{ count: string }>(
+        'SELECT COUNT(*) as count FROM users WHERE created_at >= $1 AND created_at < $2',
+        [twoWeeksAgo, weekAgo]
       );
-      const previousWeek = previousWeekResult[0]?.count || 0;
+      const previousWeek = parseInt(previousWeekResult[0]?.count || '0', 10);
       const growth = previousWeek > 0 ? ((newThisWeek - previousWeek) / previousWeek) * 100 : 0;
 
       return {
@@ -123,17 +124,17 @@ export class AnalyticsRepository {
       const now = new Date();
 
       // Total events
-      const totalResult = await ydbClient.executeQuery<{ count: number }>(
+      const totalResult = await postgresClient.executeQuery<{ count: string }>(
         'SELECT COUNT(*) as count FROM events'
       );
-      const total = totalResult[0]?.count || 0;
+      const total = parseInt(totalResult[0]?.count || '0', 10);
 
       // Active events (date >= now or date is null)
-      const activeResult = await ydbClient.executeQuery<{ count: number }>(
-        `SELECT COUNT(*) as count FROM events WHERE date IS NULL OR date >= $now`,
-        { now }
+      const activeResult = await postgresClient.executeQuery<{ count: string }>(
+        'SELECT COUNT(*) as count FROM events WHERE date IS NULL OR date >= $1',
+        [now]
       );
-      const active = activeResult[0]?.count || 0;
+      const active = parseInt(activeResult[0]?.count || '0', 10);
 
       // Past events
       const past = total - active;
@@ -155,37 +156,37 @@ export class AnalyticsRepository {
   async getMatchStats(): Promise<MatchStats> {
     try {
       // Total matches
-      const totalResult = await ydbClient.executeQuery<{ count: number }>(
+      const totalResult = await postgresClient.executeQuery<{ count: string }>(
         'SELECT COUNT(*) as count FROM matches'
       );
-      const total = totalResult[0]?.count || 0;
+      const total = parseInt(totalResult[0]?.count || '0', 10);
 
       // Matches today
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
-      const todayResult = await ydbClient.executeQuery<{ count: number }>(
-        `SELECT COUNT(*) as count FROM matches WHERE createdAt >= $todayStart`,
-        { todayStart }
+      const todayResult = await postgresClient.executeQuery<{ count: string }>(
+        'SELECT COUNT(*) as count FROM matches WHERE created_at >= $1',
+        [todayStart]
       );
-      const today = todayResult[0]?.count || 0;
+      const today = parseInt(todayResult[0]?.count || '0', 10);
 
       // Matches this week
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
-      const thisWeekResult = await ydbClient.executeQuery<{ count: number }>(
-        `SELECT COUNT(*) as count FROM matches WHERE createdAt >= $weekAgo`,
-        { weekAgo }
+      const thisWeekResult = await postgresClient.executeQuery<{ count: string }>(
+        'SELECT COUNT(*) as count FROM matches WHERE created_at >= $1',
+        [weekAgo]
       );
-      const thisWeek = thisWeekResult[0]?.count || 0;
+      const thisWeek = parseInt(thisWeekResult[0]?.count || '0', 10);
 
       // Growth (compare with previous week)
       const twoWeeksAgo = new Date();
       twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-      const previousWeekResult = await ydbClient.executeQuery<{ count: number }>(
-        `SELECT COUNT(*) as count FROM matches WHERE createdAt >= $twoWeeksAgo AND createdAt < $weekAgo`,
-        { twoWeeksAgo, weekAgo }
+      const previousWeekResult = await postgresClient.executeQuery<{ count: string }>(
+        'SELECT COUNT(*) as count FROM matches WHERE created_at >= $1 AND created_at < $2',
+        [twoWeeksAgo, weekAgo]
       );
-      const previousWeek = previousWeekResult[0]?.count || 0;
+      const previousWeek = parseInt(previousWeekResult[0]?.count || '0', 10);
       const growth = previousWeek > 0 ? ((thisWeek - previousWeek) / previousWeek) * 100 : 0;
 
       return {
@@ -205,18 +206,17 @@ export class AnalyticsRepository {
    */
   async getConversionRates(): Promise<ConversionRate> {
     try {
-      // Total views (approximate - would need views table in real implementation)
-      // For now, using likes as proxy
-      const likesResult = await ydbClient.executeQuery<{ count: number }>(
+      // Total likes
+      const likesResult = await postgresClient.executeQuery<{ count: string }>(
         'SELECT COUNT(*) as count FROM likes'
       );
-      const likes = likesResult[0]?.count || 0;
+      const likes = parseInt(likesResult[0]?.count || '0', 10);
 
       // Total matches
-      const matchesResult = await ydbClient.executeQuery<{ count: number }>(
+      const matchesResult = await postgresClient.executeQuery<{ count: string }>(
         'SELECT COUNT(*) as count FROM matches'
       );
-      const matches = matchesResult[0]?.count || 0;
+      const matches = parseInt(matchesResult[0]?.count || '0', 10);
 
       // Estimate views (assuming 10 views per like on average)
       const views = likes * 10;
@@ -253,33 +253,31 @@ export class AnalyticsRepository {
         nextDate.setDate(nextDate.getDate() + 1);
 
         // Registrations on this date
-        const registrationsResult = await ydbClient.executeQuery<{ count: number }>(
-          `SELECT COUNT(*) as count FROM users WHERE createdAt >= $date AND createdAt < $nextDate`,
-          { date, nextDate }
+        const registrationsResult = await postgresClient.executeQuery<{ count: string }>(
+          'SELECT COUNT(*) as count FROM users WHERE created_at >= $1 AND created_at < $2',
+          [date, nextDate]
         );
-        const registrations = registrationsResult[0]?.count || 0;
+        const registrations = parseInt(registrationsResult[0]?.count || '0', 10);
 
         // Active users (users who had activity - simplified: users with matches or likes)
-        // In real implementation, would track user activity separately
-        // YDB doesn't support UNION ALL in subqueries easily, so we'll count matches and likes separately
-        const matchesActiveResult = await ydbClient.executeQuery<{ userId1: string }>(
-          `SELECT DISTINCT userId1 FROM matches WHERE createdAt >= $date AND createdAt < $nextDate`,
-          { date, nextDate }
+        const matchesActiveResult = await postgresClient.executeQuery<{ user_id1: string }>(
+          'SELECT DISTINCT user_id1 FROM matches WHERE created_at >= $1 AND created_at < $2',
+          [date, nextDate]
         );
-        const matchesActive2Result = await ydbClient.executeQuery<{ userId2: string }>(
-          `SELECT DISTINCT userId2 FROM matches WHERE createdAt >= $date AND createdAt < $nextDate`,
-          { date, nextDate }
+        const matchesActive2Result = await postgresClient.executeQuery<{ user_id2: string }>(
+          'SELECT DISTINCT user_id2 FROM matches WHERE created_at >= $1 AND created_at < $2',
+          [date, nextDate]
         );
-        const likesActiveResult = await ydbClient.executeQuery<{ fromUserId: string }>(
-          `SELECT DISTINCT fromUserId FROM likes WHERE createdAt >= $date AND createdAt < $nextDate`,
-          { date, nextDate }
+        const likesActiveResult = await postgresClient.executeQuery<{ from_user_id: string }>(
+          'SELECT DISTINCT from_user_id FROM likes WHERE created_at >= $1 AND created_at < $2',
+          [date, nextDate]
         );
-        
+
         // Combine unique user IDs
         const activeUserIds = new Set<string>();
-        matchesActiveResult.forEach(r => activeUserIds.add(r.userId1));
-        matchesActive2Result.forEach(r => activeUserIds.add(r.userId2));
-        likesActiveResult.forEach(r => activeUserIds.add(r.fromUserId));
+        matchesActiveResult.forEach((r) => activeUserIds.add(r.user_id1));
+        matchesActive2Result.forEach((r) => activeUserIds.add(r.user_id2));
+        likesActiveResult.forEach((r) => activeUserIds.add(r.from_user_id));
         const active = activeUserIds.size;
 
         data.push({
@@ -302,27 +300,24 @@ export class AnalyticsRepository {
   async getTopEvents(limit: number = 10): Promise<EventTopData[]> {
     try {
       // Get all events
-      const eventsResult = await ydbClient.executeQuery<{
-        id: string;
-        title: string;
-      }>('SELECT id, title FROM events');
+      const events = await eventRepository.getAllEvents(1000, 0);
 
       const eventsData: EventTopData[] = [];
 
-      for (const event of eventsResult) {
+      for (const event of events) {
         // Count likes for this event
-        const likesResult = await ydbClient.executeQuery<{ count: number }>(
-          `SELECT COUNT(*) as count FROM likes WHERE eventId = $eventId`,
-          { eventId: event.id }
+        const likesResult = await postgresClient.executeQuery<{ count: string }>(
+          'SELECT COUNT(*) as count FROM likes WHERE event_id = $1',
+          [event.id]
         );
-        const likes = likesResult[0]?.count || 0;
+        const likes = parseInt(likesResult[0]?.count || '0', 10);
 
         // Count matches for this event
-        const matchesResult = await ydbClient.executeQuery<{ count: number }>(
-          `SELECT COUNT(*) as count FROM matches WHERE eventId = $eventId`,
-          { eventId: event.id }
+        const matchesResult = await postgresClient.executeQuery<{ count: string }>(
+          'SELECT COUNT(*) as count FROM matches WHERE event_id = $1',
+          [event.id]
         );
-        const matches = matchesResult[0]?.count || 0;
+        const matches = parseInt(matchesResult[0]?.count || '0', 10);
 
         // Estimate views (likes * 10)
         const views = likes * 10;
@@ -350,17 +345,17 @@ export class AnalyticsRepository {
   async getFunnelData(): Promise<FunnelData[]> {
     try {
       // Estimate views (would need views table in real implementation)
-      const likesResult = await ydbClient.executeQuery<{ count: number }>(
+      const likesResult = await postgresClient.executeQuery<{ count: string }>(
         'SELECT COUNT(*) as count FROM likes'
       );
-      const likes = likesResult[0]?.count || 0;
+      const likes = parseInt(likesResult[0]?.count || '0', 10);
       const views = likes * 10;
 
       // Get matches
-      const matchesResult = await ydbClient.executeQuery<{ count: number }>(
+      const matchesResult = await postgresClient.executeQuery<{ count: string }>(
         'SELECT COUNT(*) as count FROM matches'
       );
-      const matches = matchesResult[0]?.count || 0;
+      const matches = parseInt(matchesResult[0]?.count || '0', 10);
 
       return [
         {
@@ -394,11 +389,10 @@ export class AnalyticsRepository {
       const data: ActivityHeatmapData[] = [];
 
       // Get all matches once and process in JavaScript
-      // This is not ideal for large datasets, but YDB doesn't support EXTRACT easily
-      let allMatches: { createdAt: Date }[] = [];
+      let allMatches: { created_at: Date }[] = [];
       try {
-        allMatches = await ydbClient.executeQuery<{ createdAt: Date }>(
-          'SELECT createdAt FROM matches'
+        allMatches = await postgresClient.executeQuery<{ created_at: Date }>(
+          'SELECT created_at FROM matches'
         );
       } catch (error) {
         logger.warn({ error, type: 'analytics_heatmap_matches_fetch_failed' });
@@ -407,8 +401,8 @@ export class AnalyticsRepository {
       for (let day = 0; day < 7; day++) {
         for (let hour = 0; hour < 24; hour++) {
           // Filter matches by day/hour in JavaScript
-          const value = allMatches.filter(m => {
-            const matchDate = new Date(m.createdAt);
+          const value = allMatches.filter((m) => {
+            const matchDate = new Date(m.created_at);
             const matchDay = (matchDate.getDay() + 6) % 7; // Convert to Monday=0, Sunday=6
             const matchHour = matchDate.getHours();
             return matchDay === day && matchHour === hour;
@@ -446,39 +440,36 @@ export class AnalyticsRepository {
    */
   async getRecentMatches(limit: number = 10): Promise<RecentMatch[]> {
     try {
-      const matchesResult = await ydbClient.executeQuery<{
+      const matchesResult = await postgresClient.executeQuery<{
         id: string;
-        userId1: string;
-        userId2: string;
-        eventId?: string;
-        createdAt: Date;
+        user_id1: string;
+        user_id2: string;
+        event_id?: string;
+        created_at: Date;
       }>(
-        `SELECT id, userId1, userId2, eventId, createdAt 
+        `SELECT id, user_id1, user_id2, event_id, created_at 
          FROM matches 
-         ORDER BY createdAt DESC 
-         LIMIT $limit`,
-        { limit }
+         ORDER BY created_at DESC 
+         LIMIT $1`,
+        [limit]
       );
 
       const recentMatches: RecentMatch[] = [];
 
       for (const match of matchesResult) {
         // Get user details
-        const user1 = await userRepository.getUserById(match.userId1);
-        const user2 = await userRepository.getUserById(match.userId2);
+        const user1 = await userRepository.getUserById(match.user_id1);
+        const user2 = await userRepository.getUserById(match.user_id2);
 
         if (!user1 || !user2) {
           continue;
         }
 
-        // Get event details if eventId exists
+        // Get event details if event_id exists
         let eventTitle: string | undefined;
-        if (match.eventId) {
-          const eventResult = await ydbClient.executeQuery<{ title: string }>(
-            `SELECT title FROM events WHERE id = $eventId`,
-            { eventId: match.eventId }
-          );
-          eventTitle = eventResult[0]?.title;
+        if (match.event_id) {
+          const event = await eventRepository.getEventById(match.event_id);
+          eventTitle = event?.title;
         }
 
         recentMatches.push({
@@ -491,9 +482,9 @@ export class AnalyticsRepository {
             id: user2.id,
             name: `${user2.firstName} ${user2.lastName || ''}`.trim(),
           },
-          eventId: match.eventId,
+          eventId: match.event_id,
           eventTitle,
-          createdAt: match.createdAt,
+          createdAt: match.created_at,
         });
       }
 
@@ -509,35 +500,31 @@ export class AnalyticsRepository {
    */
   async getOnlineUsersCount(): Promise<number> {
     try {
-      // Simplified: count users who had activity in last 5 minutes
-      // In real implementation, would track user sessions
       const fiveMinutesAgo = new Date();
       fiveMinutesAgo.setMinutes(fiveMinutesAgo.getMinutes() - 5);
 
-      // YDB doesn't support UNION ALL in subqueries easily, so we'll query separately
-      const matches1Result = await ydbClient.executeQuery<{ userId1: string }>(
-        `SELECT DISTINCT userId1 FROM matches WHERE createdAt >= $fiveMinutesAgo`,
-        { fiveMinutesAgo }
+      const matches1Result = await postgresClient.executeQuery<{ user_id1: string }>(
+        'SELECT DISTINCT user_id1 FROM matches WHERE created_at >= $1',
+        [fiveMinutesAgo]
       );
-      const matches2Result = await ydbClient.executeQuery<{ userId2: string }>(
-        `SELECT DISTINCT userId2 FROM matches WHERE createdAt >= $fiveMinutesAgo`,
-        { fiveMinutesAgo }
+      const matches2Result = await postgresClient.executeQuery<{ user_id2: string }>(
+        'SELECT DISTINCT user_id2 FROM matches WHERE created_at >= $1',
+        [fiveMinutesAgo]
       );
-      const likesResult = await ydbClient.executeQuery<{ fromUserId: string }>(
-        `SELECT DISTINCT fromUserId FROM likes WHERE createdAt >= $fiveMinutesAgo`,
-        { fiveMinutesAgo }
+      const likesResult = await postgresClient.executeQuery<{ from_user_id: string }>(
+        'SELECT DISTINCT from_user_id FROM likes WHERE created_at >= $1',
+        [fiveMinutesAgo]
       );
 
       // Combine unique user IDs
       const activeUserIds = new Set<string>();
-      matches1Result.forEach(r => activeUserIds.add(r.userId1));
-      matches2Result.forEach(r => activeUserIds.add(r.userId2));
-      likesResult.forEach(r => activeUserIds.add(r.fromUserId));
+      matches1Result.forEach((r) => activeUserIds.add(r.user_id1));
+      matches2Result.forEach((r) => activeUserIds.add(r.user_id2));
+      likesResult.forEach((r) => activeUserIds.add(r.from_user_id));
 
       return activeUserIds.size;
     } catch (error) {
       logger.error({ error, type: 'analytics_online_users_failed' });
-      // Return 0 if query fails
       return 0;
     }
   }
@@ -545,4 +532,3 @@ export class AnalyticsRepository {
 
 // Export singleton instance
 export const analyticsRepository = new AnalyticsRepository();
-

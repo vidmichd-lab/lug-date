@@ -43,7 +43,42 @@ router.get(
       }
 
       // Get current user to filter out already liked items
-      const currentUser = await userRepository.getUserByTelegramId(telegramId);
+      let currentUser = await userRepository.getUserByTelegramId(telegramId);
+
+      // In development mode, auto-create mock user if it doesn't exist
+      if (
+        !currentUser &&
+        process.env.NODE_ENV === 'development' &&
+        process.env.ALLOW_DEV_AUTH_BYPASS === 'true' &&
+        req.telegramUser
+      ) {
+        const mockUserId = `dev-user-${telegramId}`;
+        const mockUser = {
+          id: mockUserId,
+          telegramId: telegramId,
+          username: req.telegramUser.username || 'dev_user',
+          firstName: req.telegramUser.firstName || 'Dev',
+          lastName: req.telegramUser.lastName || 'User',
+          photoUrl: null,
+          bio: null,
+          age: null,
+          city: null,
+          gender: null,
+          interests: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        await userRepository.upsertUser(mockUser);
+        currentUser = await userRepository.getUserByTelegramId(telegramId);
+
+        logger.info({
+          type: 'dev_user_created',
+          userId: mockUserId,
+          telegramId: telegramId,
+        });
+      }
+
       if (!currentUser) {
         return res.status(404).json({
           success: false,
@@ -59,16 +94,20 @@ router.get(
       if (type === 'events') {
         // Fetch events
         const events = category
-          ? await eventRepository.getEventsByCategory(category as string, Number(limit), Number(offset))
+          ? await eventRepository.getEventsByCategory(
+              category as string,
+              Number(limit),
+              Number(offset)
+            )
           : await eventRepository.getEvents(Number(limit), Number(offset));
 
         // Get user's likes to filter out already liked events
         const userLikes = await likeRepository.getSavedEventsByUserId(currentUser.id, 1000, 0);
-        const likedEventIds = new Set(userLikes.map(like => like.eventId).filter(Boolean));
+        const likedEventIds = new Set(userLikes.map((like) => like.eventId).filter(Boolean));
 
         cards = events
-          .filter(event => !likedEventIds.has(event.id))
-          .map(event => ({
+          .filter((event) => !likedEventIds.has(event.id))
+          .map((event) => ({
             id: event.id,
             type: 'event',
             title: event.title,
@@ -155,8 +194,8 @@ router.post(
           // Check if other users liked this event - create matches
           const eventLikes = await likeRepository.getLikesByEventId(cardId);
           const otherUserIds = eventLikes
-            .filter(like => like.fromUserId !== currentUser.id)
-            .map(like => like.fromUserId);
+            .filter((like) => like.fromUserId !== currentUser.id)
+            .map((like) => like.fromUserId);
 
           // Create matches with other users who liked this event
           for (const otherUserId of otherUserIds) {
@@ -197,7 +236,7 @@ router.post(
           // Check for mutual like - create match
           const mutualLikes = await likeRepository.getMutualLikes(currentUser.id, targetUser.id);
           const hasMutualLike = mutualLikes.some(
-            like => like.fromUserId === targetUser.id && like.toUserId === currentUser.id
+            (like) => like.fromUserId === targetUser.id && like.toUserId === currentUser.id
           );
 
           if (hasMutualLike) {
@@ -236,4 +275,3 @@ router.post(
 );
 
 export default router;
-

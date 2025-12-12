@@ -6,4 +6,3 @@ export interface OnboardingAuthSelectionProps {
   onTelegramAuth: () => void;
   onContinueGuest: () => void;
 }
-

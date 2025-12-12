@@ -11,4 +11,3 @@ export interface DateOfBirthScreenProps {
 }
 
 export type DateValidationError = 'invalid-date' | 'under-age' | 'future-date' | null;
-

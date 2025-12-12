@@ -59,4 +59,3 @@ export const CitySelectorModal: FC<CitySelectorModalProps> = ({
     </div>
   );
 };
-

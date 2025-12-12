@@ -3,7 +3,7 @@
  * Handles database operations for admins and admin sessions
  */
 
-import { ydbClient } from '../db/connection';
+import { postgresClient } from '../db/postgresConnection';
 import { logger } from '../logger';
 
 export interface Admin {
@@ -24,16 +24,32 @@ export interface AdminSession {
 
 export const adminRepository = {
   /**
-   * Find admin by email
+   * Find admin by email (username)
    */
   async findByEmail(email: string): Promise<Admin | null> {
     try {
       const query = `
-        SELECT * FROM admins
-        WHERE email = $email
+        SELECT 
+          id,
+          username as email,
+          password_hash as "passwordHash",
+          created_at as "createdAt",
+          updated_at as "updatedAt"
+        FROM admin_users
+        WHERE username = $1
       `;
-      const result = await ydbClient.executeQuery<Admin>(query, { email });
-      return result[0] || null;
+      const result = await postgresClient.executeQuery<any>(query, [email]);
+      if (result.length === 0) {
+        return null;
+      }
+      const row = result[0];
+      return {
+        id: row.id,
+        email: row.email,
+        passwordHash: row.passwordHash,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      };
     } catch (error) {
       logger.error({ error, type: 'admin_find_by_email_failed', email });
       throw error;
@@ -46,11 +62,27 @@ export const adminRepository = {
   async findById(id: string): Promise<Admin | null> {
     try {
       const query = `
-        SELECT * FROM admins
-        WHERE id = $id
+        SELECT 
+          id,
+          username as email,
+          password_hash as "passwordHash",
+          created_at as "createdAt",
+          updated_at as "updatedAt"
+        FROM admin_users
+        WHERE id = $1
       `;
-      const result = await ydbClient.executeQuery<Admin>(query, { id });
-      return result[0] || null;
+      const result = await postgresClient.executeQuery<any>(query, [id]);
+      if (result.length === 0) {
+        return null;
+      }
+      const row = result[0];
+      return {
+        id: row.id,
+        email: row.email,
+        passwordHash: row.passwordHash,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      };
     } catch (error) {
       logger.error({ error, type: 'admin_find_by_id_failed', id });
       throw error;
@@ -68,17 +100,11 @@ export const adminRepository = {
       const now = new Date();
 
       const query = `
-        INSERT INTO admins (id, email, password_hash, created_at, updated_at)
-        VALUES ($id, $email, $passwordHash, $createdAt, $updatedAt)
+        INSERT INTO admin_users (id, username, password_hash, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5)
       `;
 
-      await ydbClient.executeQuery(query, {
-        id,
-        email: admin.email,
-        passwordHash: admin.passwordHash,
-        createdAt: now,
-        updatedAt: now,
-      });
+      await postgresClient.executeQuery(query, [id, admin.email, admin.passwordHash, now, now]);
 
       logger.info({ type: 'admin_created', adminId: id, email: admin.email });
 
@@ -105,16 +131,16 @@ export const adminRepository = {
 
       const query = `
         INSERT INTO admin_sessions (id, admin_id, refresh_token, expires_at, created_at)
-        VALUES ($id, $adminId, $refreshToken, $expiresAt, $createdAt)
+        VALUES ($1, $2, $3, $4, $5)
       `;
 
-      await ydbClient.executeQuery(query, {
+      await postgresClient.executeQuery(query, [
         id,
-        adminId: session.adminId,
-        refreshToken: session.refreshToken,
-        expiresAt: session.expiresAt,
-        createdAt: now,
-      });
+        session.adminId,
+        session.refreshToken,
+        session.expiresAt,
+        now,
+      ]);
 
       logger.info({ type: 'admin_session_created', sessionId: id, adminId: session.adminId });
 
@@ -137,11 +163,20 @@ export const adminRepository = {
   async findSessionByToken(refreshToken: string): Promise<AdminSession | null> {
     try {
       const query = `
-        SELECT * FROM admin_sessions
-        WHERE refresh_token = $refreshToken
+        SELECT 
+          id,
+          admin_id as "adminId",
+          refresh_token as "refreshToken",
+          expires_at as "expiresAt",
+          created_at as "createdAt"
+        FROM admin_sessions
+        WHERE refresh_token = $1
       `;
-      const result = await ydbClient.executeQuery<AdminSession>(query, { refreshToken });
-      return result[0] || null;
+      const result = await postgresClient.executeQuery<any>(query, [refreshToken]);
+      if (result.length === 0) {
+        return null;
+      }
+      return result[0];
     } catch (error) {
       logger.error({ error, type: 'admin_session_find_failed' });
       throw error;
@@ -157,29 +192,32 @@ export const adminRepository = {
   ): Promise<void> {
     try {
       const setParts: string[] = [];
-      const params: Record<string, any> = { id };
+      const params: any[] = [];
+      let paramIndex = 1;
 
       if (updates.refreshToken !== undefined) {
-        setParts.push('refresh_token = $refreshToken');
-        params.refreshToken = updates.refreshToken;
+        setParts.push(`refresh_token = $${paramIndex++}`);
+        params.push(updates.refreshToken);
       }
 
       if (updates.expiresAt !== undefined) {
-        setParts.push('expires_at = $expiresAt');
-        params.expiresAt = updates.expiresAt;
+        setParts.push(`expires_at = $${paramIndex++}`);
+        params.push(updates.expiresAt);
       }
 
       if (setParts.length === 0) {
         return; // Nothing to update
       }
 
+      params.push(id); // For WHERE clause
+
       const query = `
         UPDATE admin_sessions
         SET ${setParts.join(', ')}
-        WHERE id = $id
+        WHERE id = $${paramIndex}
       `;
 
-      await ydbClient.executeQuery(query, params);
+      await postgresClient.executeQuery(query, params);
       logger.info({ type: 'admin_session_updated', sessionId: id });
     } catch (error) {
       logger.error({ error, type: 'admin_session_update_failed', sessionId: id });
@@ -194,9 +232,9 @@ export const adminRepository = {
     try {
       const query = `
         DELETE FROM admin_sessions
-        WHERE refresh_token = $refreshToken
+        WHERE refresh_token = $1
       `;
-      await ydbClient.executeQuery(query, { refreshToken });
+      await postgresClient.executeQuery(query, [refreshToken]);
       logger.info({ type: 'admin_session_deleted' });
     } catch (error) {
       logger.error({ error, type: 'admin_session_delete_failed' });
@@ -211,9 +249,9 @@ export const adminRepository = {
     try {
       const query = `
         DELETE FROM admin_sessions
-        WHERE admin_id = $adminId
+        WHERE admin_id = $1
       `;
-      await ydbClient.executeQuery(query, { adminId });
+      await postgresClient.executeQuery(query, [adminId]);
       logger.info({ type: 'admin_sessions_deleted_all', adminId });
     } catch (error) {
       logger.error({ error, type: 'admin_sessions_delete_all_failed', adminId });
@@ -228,12 +266,12 @@ export const adminRepository = {
     try {
       const query = `
         DELETE FROM admin_sessions
-        WHERE expires_at < CurrentUtcTimestamp()
+        WHERE expires_at < NOW()
       `;
-      await ydbClient.executeQuery(query);
-      logger.info({ type: 'admin_sessions_cleaned' });
-      // Note: YDB doesn't return affected rows count easily, so we return 0
-      return 0;
+      const result = await postgresClient.executeQuery<{ rowCount?: number }>(query);
+      const deleted = (result as any).rowCount || 0;
+      logger.info({ type: 'admin_sessions_cleaned', deleted });
+      return deleted;
     } catch (error) {
       logger.error({ error, type: 'admin_sessions_clean_failed' });
       throw error;

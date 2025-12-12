@@ -81,4 +81,3 @@ export function validateDateOfBirth(
 
   return { isValid: true, error: null, age };
 }
-

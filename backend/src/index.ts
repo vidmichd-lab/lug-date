@@ -33,7 +33,7 @@ import {
 import { tracingMiddleware, getTraceContext } from './middleware/tracing';
 import { logger } from './logger';
 import { sendCriticalAlert } from './alerts';
-import { initYDB, ydbClient } from './db/connection';
+import { initPostgreSQL, postgresClient } from './db/postgresConnection';
 import { initObjectStorage } from './services/objectStorage';
 
 // Initialize error monitoring (Yandex Cloud Logging + Catcher)
@@ -45,6 +45,7 @@ logger.info({
   nodeEnv: config.nodeEnv,
   port: config.port,
   version: '1.0.0',
+  databaseConnectionString: config.database.connectionString ? 'configured' : 'not configured',
   databaseEndpoint: config.database.endpoint ? 'configured' : 'not configured',
   databaseName: config.database.database || 'not configured',
   hasTelegramToken: !!config.telegram.botToken,
@@ -56,14 +57,46 @@ logger.info({
   message: 'Application starting...',
 });
 
-// Initialize YDB connection
+// #region agent log
+fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    location: 'index.ts:59',
+    message: 'Backend initialization - before YDB init',
+    data: { nodeEnv: config.nodeEnv, port: config.port },
+    timestamp: Date.now(),
+    sessionId: 'debug-session',
+    runId: 'run1',
+    hypothesisId: 'G',
+  }),
+}).catch(() => {});
+// #endregion
+
+// Initialize PostgreSQL connection
 // Migrations are now run separately via `npm run migrate` command
 // This prevents issues with parallel migration execution in scaled environments
-initYDB()
+initPostgreSQL()
   .then(async () => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'index.ts:70',
+        message: 'PostgreSQL init successful',
+        data: { success: true },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'G',
+      }),
+    }).catch(() => {});
+    // #endregion
+
     // Check migration status (but don't run migrations automatically)
     try {
-      const { getMigrationStatus } = await import('./db/migrations');
+      const { getMigrationStatus } = await import('./db/postgresMigrations');
       const status = await getMigrationStatus();
 
       if (status.pending.length > 0) {
@@ -72,11 +105,41 @@ initYDB()
           pending: status.pending,
           message: `There are ${status.pending.length} pending migrations. Run 'npm run migrate' to apply them.`,
         });
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            location: 'index.ts:75',
+            message: 'Migrations pending',
+            data: { pendingCount: status.pending.length },
+            timestamp: Date.now(),
+            sessionId: 'debug-session',
+            runId: 'run1',
+            hypothesisId: 'G',
+          }),
+        }).catch(() => {});
+        // #endregion
       } else {
         logger.info({
           type: 'migrations_up_to_date',
           message: 'All migrations are up to date',
         });
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            location: 'index.ts:88',
+            message: 'Migrations up to date',
+            data: { success: true },
+            timestamp: Date.now(),
+            sessionId: 'debug-session',
+            runId: 'run1',
+            hypothesisId: 'G',
+          }),
+        }).catch(() => {});
+        // #endregion
       }
     } catch (error) {
       logger.warn({
@@ -84,15 +147,46 @@ initYDB()
         type: 'migration_status_check_failed',
         message: 'Could not check migration status',
       });
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'index.ts:101',
+          message: 'Migration status check failed',
+          data: { errorMessage: error instanceof Error ? error.message : String(error) },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'G',
+        }),
+      }).catch(() => {});
+      // #endregion
       // Don't fail startup - just log warning
     }
   })
   .catch((error) => {
     logger.error({
       error,
-      type: 'ydb_init_failed_on_startup',
-      message: 'YDB connection failed, but server will continue. Health check will show DB status.',
+      type: 'postgres_init_failed_on_startup',
+      message:
+        'PostgreSQL connection failed, but server will continue. Health check will show DB status.',
     });
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'index.ts:118',
+        message: 'PostgreSQL init failed on startup',
+        data: { errorMessage: error instanceof Error ? error.message : String(error) },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'G',
+      }),
+    }).catch(() => {});
+    // #endregion
     // Don't exit - allow server to start and handle requests
     // This ensures container doesn't crash and health check works
   });
@@ -277,11 +371,26 @@ app.get('/', (req, res) => {
 app.get('/health', (req, res) => {
   // Health check endpoint - should always respond even if DB is not connected
   // This ensures container health checks pass
-  const ydbStatus = ydbClient?.getConnectionStatus() ? 'connected' : 'disconnected';
+  const postgresStatus = postgresClient?.getConnectionStatus() ? 'connected' : 'disconnected';
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      location: 'index.ts:370',
+      message: 'Health check called',
+      data: { postgresStatus, hasPostgresClient: !!postgresClient },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'run1',
+      hypothesisId: 'H',
+    }),
+  }).catch(() => {});
+  // #endregion
   res.json({
     status: 'ok',
     service: 'backend',
-    database: ydbStatus,
+    database: postgresStatus,
     timestamp: new Date().toISOString(),
   });
 });
@@ -461,6 +570,22 @@ const isMainModule = require.main === module;
 const shouldStartServer = !isServerless && (isMainModule || process.env.CONTAINER_MODE === 'true');
 
 if (shouldStartServer) {
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      location: 'index.ts:463',
+      message: 'Starting server',
+      data: { port: PORT, shouldStartServer, isMainModule, isServerless },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'run1',
+      hypothesisId: 'H',
+    }),
+  }).catch(() => {});
+  // #endregion
+
   // Ensure server starts even if there are async initialization errors
   const server = app.listen(PORT, '0.0.0.0', () => {
     logger.info({
@@ -473,6 +598,21 @@ if (shouldStartServer) {
       containerMode: process.env.CONTAINER_MODE === 'true',
       message: `Backend server running on port ${PORT} in ${config.nodeEnv} mode`,
     });
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'index.ts:476',
+        message: 'Server started successfully',
+        data: { port: PORT, environment: config.nodeEnv },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'H',
+      }),
+    }).catch(() => {});
+    // #endregion
   });
 
   // Handle server errors gracefully

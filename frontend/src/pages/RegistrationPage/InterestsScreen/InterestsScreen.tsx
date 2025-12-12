@@ -111,4 +111,3 @@ export const InterestsScreen: React.FC<InterestsScreenProps> = ({
     </div>
   );
 };
-

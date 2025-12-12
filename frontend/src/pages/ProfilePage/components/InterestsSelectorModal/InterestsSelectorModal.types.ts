@@ -8,4 +8,3 @@ export interface InterestsSelectorModalProps {
   onSelect: (interestIds: string[]) => void;
   onClose: () => void;
 }
-

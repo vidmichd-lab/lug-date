@@ -12,4 +12,3 @@ export interface NotificationCardProps {
   onConfirmMeeting: () => void;
   onArchive: () => void;
 }
-

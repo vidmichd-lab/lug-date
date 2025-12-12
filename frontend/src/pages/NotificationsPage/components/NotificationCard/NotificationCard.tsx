@@ -159,4 +159,3 @@ export const NotificationCard: FC<NotificationCardProps> = ({
     </div>
   );
 };
-

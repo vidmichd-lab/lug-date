@@ -33,9 +33,10 @@ if (envPath) {
 }
 
 export interface DatabaseConfig {
-  endpoint: string;
-  database: string;
+  endpoint?: string;
+  database?: string;
   token?: string;
+  connectionString?: string; // PostgreSQL connection string
 }
 
 export interface Config {
@@ -62,8 +63,9 @@ function getConfig(): Config {
     nodeEnv,
     port: Number(process.env.PORT || process.env.API_PORT || 4000),
     database: {
-      // Production uses production database
-      // Development uses test database
+      // PostgreSQL connection string (priority)
+      connectionString: process.env.DATABASE_URL || process.env.POSTGRES_CONNECTION_STRING || '',
+      // YDB config (for backward compatibility, deprecated)
       endpoint: (isProduction
         ? process.env.YDB_ENDPOINT_PROD || process.env.YDB_ENDPOINT || ''
         : process.env.YDB_ENDPOINT_DEV || process.env.YDB_ENDPOINT || ''

@@ -6,4 +6,3 @@ export type {
   NotificationsPageProps,
   GetNotificationsResponse,
 } from './NotificationsPage.types';
-

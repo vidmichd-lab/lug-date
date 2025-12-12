@@ -3,6 +3,8 @@
  * Handles all API requests with authentication, error handling, and retries
  */
 
+import { debugLog } from '../utils/debugLogger';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 export interface ApiResponse<T> {
@@ -31,10 +33,37 @@ class ApiClient {
    * Get Telegram initData for authentication
    */
   private getInitData(): string | null {
+    // #region agent log
+    debugLog({
+      location: 'client.ts:33',
+      message: 'getInitData() called',
+      data: {
+        hasWindow: typeof window !== 'undefined',
+        hasTelegram: typeof window !== 'undefined' && !!window.Telegram,
+        hasWebApp: typeof window !== 'undefined' && !!window.Telegram?.WebApp,
+      },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'run1',
+      hypothesisId: 'D',
+    });
+    // #endregion
+
     if (typeof window === 'undefined' || !window.Telegram?.WebApp) {
       if (import.meta.env.DEV) {
         console.warn('Telegram WebApp not available');
       }
+      // #region agent log
+      debugLog({
+        location: 'client.ts:54',
+        message: 'getInitData() - WebApp not available',
+        data: { hasWindow: typeof window !== 'undefined' },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'D',
+      });
+      // #endregion
       return null;
     }
 
@@ -43,8 +72,31 @@ class ApiClient {
       if (import.meta.env.DEV) {
         console.warn('Telegram initData not available');
       }
+      // #region agent log
+      debugLog({
+        location: 'client.ts:72',
+        message: 'getInitData() - initData not available',
+        data: { hasWebApp: true },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'D',
+      });
+      // #endregion
       return null;
     }
+
+    // #region agent log
+    debugLog({
+      location: 'client.ts:86',
+      message: 'getInitData() - initData found',
+      data: { initDataLength: initData.length },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'run1',
+      hypothesisId: 'D',
+    });
+    // #endregion
 
     return initData;
   }
@@ -80,6 +132,18 @@ class ApiClient {
   private async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
     const contentType = response.headers.get('content-type');
     const isJson = contentType?.includes('application/json');
+
+    // #region agent log
+    debugLog({
+      location: 'client.ts:146',
+      message: 'handleResponse called',
+      data: { status: response.status, statusText: response.statusText, isJson, ok: response.ok },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'run1',
+      hypothesisId: 'F',
+    });
+    // #endregion
 
     if (!response.ok) {
       // Handle error response
@@ -153,12 +217,41 @@ class ApiClient {
     const retries = options.retries ?? 0;
     const maxRetries = 3;
 
+    // #region agent log
+    debugLog({
+      location: 'client.ts:214',
+      message: 'API request started',
+      data: {
+        url,
+        method: options.method || 'GET',
+        hasAuth: options.requireAuth !== false,
+        baseUrl: this.baseUrl,
+      },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'run1',
+      hypothesisId: 'F',
+    });
+    // #endregion
+
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         const response = await fetch(url, {
           ...options,
           headers: this.buildHeaders(options),
         });
+
+        // #region agent log
+        debugLog({
+          location: 'client.ts:245',
+          message: 'API response received',
+          data: { status: response.status, statusText: response.statusText, attempt },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'F',
+        });
+        // #endregion
 
         const result = await this.handleResponse<T>(response);
 

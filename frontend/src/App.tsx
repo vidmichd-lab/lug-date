@@ -14,6 +14,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { RegistrationGuard } from './components/RegistrationGuard';
 import { initPerformanceMonitoring } from './utils/performance';
 import { useOnboardingStore } from './stores';
+import { debugLog } from './utils/debugLogger';
 
 function AppContent() {
   const { isCompleted } = useOnboardingStore();
@@ -84,14 +85,94 @@ function AppContent() {
 
 function App() {
   useEffect(() => {
+    // #region agent log
+    debugLog({
+      location: 'App.tsx:87',
+      message: 'App useEffect started',
+      data: {
+        hasTelegram: typeof window !== 'undefined' && !!window.Telegram,
+        hasWebApp: typeof window !== 'undefined' && !!window.Telegram?.WebApp,
+      },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'run1',
+      hypothesisId: 'C',
+    });
+    // #endregion
+
     // Initialize Telegram Web App
     if (window.Telegram?.WebApp) {
-      window.Telegram.WebApp.ready();
-      window.Telegram.WebApp.expand();
+      try {
+        window.Telegram.WebApp.ready();
+        window.Telegram.WebApp.expand();
+        // #region agent log
+        debugLog({
+          location: 'App.tsx:110',
+          message: 'Telegram WebApp initialized',
+          data: {
+            hasInitData: !!window.Telegram.WebApp.initData,
+            initDataLength: window.Telegram.WebApp.initData?.length || 0,
+          },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'C',
+        });
+        // #endregion
+      } catch (error) {
+        // #region agent log
+        debugLog({
+          location: 'App.tsx:125',
+          message: 'Telegram WebApp init failed',
+          data: { errorMessage: error instanceof Error ? error.message : String(error) },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'C',
+        });
+        // #endregion
+      }
+    } else {
+      // #region agent log
+      debugLog({
+        location: 'App.tsx:137',
+        message: 'Telegram WebApp not available',
+        data: { hasWindow: typeof window !== 'undefined' },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'C',
+      });
+      // #endregion
     }
 
     // Initialize performance monitoring
-    initPerformanceMonitoring();
+    try {
+      initPerformanceMonitoring();
+      // #region agent log
+      debugLog({
+        location: 'App.tsx:152',
+        message: 'Performance monitoring initialized',
+        data: { success: true },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'C',
+      });
+      // #endregion
+    } catch (error) {
+      // #region agent log
+      debugLog({
+        location: 'App.tsx:164',
+        message: 'Performance monitoring failed',
+        data: { errorMessage: error instanceof Error ? error.message : String(error) },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'C',
+      });
+      // #endregion
+    }
   }, []);
 
   return (
@@ -108,4 +189,3 @@ function App() {
 }
 
 export default App;
-

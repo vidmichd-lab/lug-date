@@ -38,4 +38,3 @@ export const DeleteAccountModal: FC<DeleteAccountModalProps> = ({ onConfirm, onC
     </div>
   );
 };
-

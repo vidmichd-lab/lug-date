@@ -27,12 +27,20 @@ export const SettingsScreen: FC<SettingsScreenProps> = ({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { resetOnboarding } = useOnboardingStore();
-  const [settings, setSettings] = useState(profile.settings);
+  const [settings, setSettings] = useState(
+    profile.settings || {
+      isOnline: false,
+      showMeetingCounter: true,
+      showAge: true,
+      notifyAboutMatches: true,
+      notifyAboutUpdates: true,
+    }
+  );
   const [city, setCity] = useState(profile.city);
   const [showCityModal, setShowCityModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showSupportPopup, setShowSupportPopup] = useState(false);
-  
+
   // Get username from Telegram WebApp
   // Check if current user is dvtel (developer account)
   const getUsername = useCallback(() => {
@@ -41,10 +49,10 @@ export const SettingsScreen: FC<SettingsScreenProps> = ({
     }
     return null;
   }, []);
-  
+
   const username = getUsername();
   const isDevAccount = username === 'dvtel';
-  
+
   const handleResetOnboarding = useCallback(() => {
     if (confirm('Сбросить онбординг? Вы вернетесь к началу процесса регистрации.')) {
       resetOnboarding();
@@ -74,8 +82,19 @@ export const SettingsScreen: FC<SettingsScreenProps> = ({
   return (
     <div className={styles.container}>
       <div className={styles.settingsHeader}>
-        <button className={styles.backButton} onClick={onBack} type="button" aria-label={t('common.back')}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <button
+          className={styles.backButton}
+          onClick={onBack}
+          type="button"
+          aria-label={t('common.back')}
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
             <path
               d="M15 18L9 12L15 6"
               stroke="currentColor"

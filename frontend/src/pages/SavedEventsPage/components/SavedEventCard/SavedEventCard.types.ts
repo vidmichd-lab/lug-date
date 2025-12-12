@@ -9,4 +9,3 @@ export interface SavedEventCardProps {
   onRemove: () => void;
   onOpenLink: () => void;
 }
-

@@ -41,14 +41,20 @@ export const ProfileEdit: FC<ProfileEditProps> = ({ profile, onSave, onBack }) =
     bio: profile.bio || '',
     job: profile.job || '',
     company: profile.company || '',
-    interests: [...profile.interests],
+    interests: [...(profile.interests || [])],
     city: profile.city,
     gender: profile.gender,
-    birthDate: {
-      day: String(profile.birthDate.day).padStart(2, '0'),
-      month: String(profile.birthDate.month).padStart(2, '0'),
-      year: String(profile.birthDate.year),
-    },
+    birthDate: profile.birthDate
+      ? {
+          day: String(profile.birthDate.day).padStart(2, '0'),
+          month: String(profile.birthDate.month).padStart(2, '0'),
+          year: String(profile.birthDate.year),
+        }
+      : {
+          day: '',
+          month: '',
+          year: '',
+        },
   });
   const [photoUrl, setPhotoUrl] = useState(profile.photo);
   const [isUploading, setIsUploading] = useState(false);
@@ -75,15 +81,13 @@ export const ProfileEdit: FC<ProfileEditProps> = ({ profile, onSave, onBack }) =
       const userId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id?.toString() || '';
       if (!userId) throw new Error('User ID not available');
 
-      const response = await api.upload<{ photoUrls: { medium: { webp?: string; jpeg?: string } } }>(
-        '/api/v1/photos',
-        file,
-        { userId },
-        { requireAuth: true }
-      );
+      const response = await api.upload<{
+        photoUrls: { medium: { webp?: string; jpeg?: string } };
+      }>('/api/v1/photos', file, { userId }, { requireAuth: true });
 
       if (response.success && response.data?.photoUrls) {
-        const displayUrl = response.data.photoUrls.medium.webp || response.data.photoUrls.medium.jpeg;
+        const displayUrl =
+          response.data.photoUrls.medium.webp || response.data.photoUrls.medium.jpeg;
         if (displayUrl) setPhotoUrl(displayUrl);
       }
     } catch (error) {
@@ -116,9 +120,18 @@ export const ProfileEdit: FC<ProfileEditProps> = ({ profile, onSave, onBack }) =
     const dayStr = String(day || '');
     const monthStr = String(month || '');
     const yearStr = String(year || '');
-    if (dayStr && monthStr && yearStr && dayStr.length === 2 && monthStr.length === 2 && yearStr.length === 4) {
+    if (
+      dayStr &&
+      monthStr &&
+      yearStr &&
+      dayStr.length === 2 &&
+      monthStr.length === 2 &&
+      yearStr.length === 4
+    ) {
       const validation = validateDateOfBirth(dayStr, monthStr, yearStr);
-      setDateError(validation.error ? t(`registration.dateOfBirth.errors.${validation.error}`) : null);
+      setDateError(
+        validation.error ? t(`registration.dateOfBirth.errors.${validation.error}`) : null
+      );
     } else {
       setDateError(null);
     }
@@ -151,8 +164,19 @@ export const ProfileEdit: FC<ProfileEditProps> = ({ profile, onSave, onBack }) =
   return (
     <div className={styles.container}>
       <div className={styles.editProfileHeader}>
-        <button className={styles.backButton} onClick={onBack} type="button" aria-label={t('common.back')}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <button
+          className={styles.backButton}
+          onClick={onBack}
+          type="button"
+          aria-label={t('common.back')}
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
             <path
               d="M15 18L9 12L15 6"
               stroke="currentColor"
@@ -185,7 +209,13 @@ export const ProfileEdit: FC<ProfileEditProps> = ({ profile, onSave, onBack }) =
             disabled={isUploading}
             type="button"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
               <path
                 d="M23 19C23 19.5304 22.7893 20.0391 22.4142 20.4142C22.0391 20.7893 21.5304 21 21 21H3C2.46957 21 1.96086 20.7893 1.58579 20.4142C1.21071 20.0391 1 19.5304 1 19V5C1 4.46957 1.21071 3.96086 1.58579 3.58579C1.96086 3.21071 2.46957 3 3 3H9L11 5H21C21.5304 5 22.0391 5.21071 22.4142 5.58579C22.7893 5.96086 23 6.46957 23 7V19Z"
                 stroke="currentColor"
@@ -247,7 +277,13 @@ export const ProfileEdit: FC<ProfileEditProps> = ({ profile, onSave, onBack }) =
               onClick={() => setShowInterestsModal(true)}
               type="button"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
                 <path
                   d="M12 5V19M5 12H19"
                   stroke="currentColor"
@@ -348,7 +384,13 @@ export const ProfileEdit: FC<ProfileEditProps> = ({ profile, onSave, onBack }) =
           >
             <span className={styles.cityLabel}>{t('settings.city')}</span>
             <span className={styles.cityValue}>{selectedCity.name}</span>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
               <path
                 d="M9 18L15 12L9 6"
                 stroke="currentColor"
