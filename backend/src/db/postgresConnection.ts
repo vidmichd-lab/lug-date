@@ -199,11 +199,35 @@ class PostgreSQLClient {
     } catch (error) {
       this.isConnecting = false;
       this.isConnected = false;
+
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorCode = error instanceof Error && 'code' in error ? (error as any).code : undefined;
+      const errorStack = error instanceof Error ? error.stack : undefined;
+
+      // Provide more detailed error information
+      let diagnosticInfo = '';
+      if (errorCode === 'ENOTFOUND') {
+        diagnosticInfo = 'Host not found. Check if DATABASE_URL host is correct and accessible.';
+      } else if (errorCode === 'ETIMEDOUT' || errorCode === 'ECONNREFUSED') {
+        diagnosticInfo =
+          'Connection refused or timed out. Check if database is accessible and firewall rules allow connections.';
+      } else if (errorMessage.includes('password authentication failed')) {
+        diagnosticInfo = 'Password authentication failed. Check DATABASE_URL credentials.';
+      } else if (errorMessage.includes('database') && errorMessage.includes('does not exist')) {
+        diagnosticInfo = 'Database does not exist. Check DATABASE_URL database name.';
+      } else if (!config.database.connectionString) {
+        diagnosticInfo = 'DATABASE_URL environment variable is not set.';
+      }
+
       logger.error({
         error,
         type: 'postgres_connection_failed',
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
+        message: errorMessage,
+        code: errorCode,
+        stack: errorStack,
+        diagnosticInfo,
+        hasConnectionString: !!config.database.connectionString,
+        connectionStringLength: config.database.connectionString?.length || 0,
       });
       // #region agent log
       fetch('http://127.0.0.1:7242/ingest/fc744a59-a06c-4fb9-8d02-53af0df86fac', {
