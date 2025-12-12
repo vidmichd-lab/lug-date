@@ -43,7 +43,9 @@
     "deploy:admin": "npm run build:admin && tsx scripts/deploy-admin-to-storage.ts",
     "deploy:admin:clear": "CLEAR_BUCKET_BEFORE_UPLOAD=true npm run deploy:admin",
     "migrate": "npm run migrate --workspace=backend",
+    "migrate:postgres": "npm run migrate:postgres --workspace=backend",
     "migrate:status": "npm run migrate:status --workspace=backend",
+    "migrate:status:postgres": "npm run migrate:status:postgres --workspace=backend",
     "create:admin": "tsx scripts/create-admin.ts",
     "test:ydb": "tsx scripts/test-ydb-connection.ts",
     "prepare": "husky"
