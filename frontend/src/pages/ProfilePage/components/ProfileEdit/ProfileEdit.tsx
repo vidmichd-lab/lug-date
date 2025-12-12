@@ -201,6 +201,7 @@ export const ProfileEdit: FC<ProfileEditProps> = ({ profile, onSave, onBack }) =
             type="file"
             accept="image/*"
             onChange={handlePhotoUpdate}
+            aria-label={t('profile.updatePhoto')}
             style={{ display: 'none' }}
           />
           <button
