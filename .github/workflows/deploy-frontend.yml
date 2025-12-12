@@ -34,7 +34,23 @@ jobs:
         run: npm run build --workspace=shared
 
       - name: Build frontend
-        run: npm run build:frontend
+        env:
+          VITE_API_URL: ${{ secrets.BACKEND_URL }}
+        run: |
+          if [ -z "${VITE_API_URL}" ] || [ "${VITE_API_URL}" == "null" ]; then
+            echo "⚠️  WARNING: BACKEND_URL is not set. Frontend will use default API URL."
+          else
+            echo "✅ Building frontend with API URL: ${VITE_API_URL}"
+          fi
+          NODE_ENV=production npm run build --workspace=frontend
+
+      - name: Ensure frontend/dist exists
+        run: |
+          if [ ! -d "frontend/dist" ]; then
+            echo "❌ ERROR: frontend/dist directory does not exist after build"
+            exit 1
+          fi
+          echo "✅ frontend/dist directory exists"
 
       - name: Configure AWS CLI for Yandex Object Storage
         env:

@@ -103,26 +103,49 @@ jobs:
       - name: Build admin
         run: NODE_ENV=production npm run build --workspace=admin
 
-      - name: Update config.js with backend URL
-        if: env.BACKEND_URL != ''
+      - name: Ensure admin/dist exists
         run: |
-          echo "📝 Updating admin/public/config.js with backend URL: ${BACKEND_URL}"
-          cat > admin/public/config.js << EOF
-          // Runtime configuration for admin panel
-          // This file is loaded before the app starts
-          // You can override API URL by setting window.ADMIN_CONFIG before this script loads
-          window.ADMIN_CONFIG = window.ADMIN_CONFIG || {
-            // Backend URL - контейнер Yandex Serverless Containers
-            // Этот файл автоматически обновляется при деплое через GitHub Actions
-            API_URL: '${BACKEND_URL}'
-          };
-          EOF
+          if [ ! -d "admin/dist" ]; then
+            echo "❌ ERROR: admin/dist directory does not exist after build"
+            exit 1
+          fi
+          echo "✅ admin/dist directory exists"
 
-          # Also update dist/config.js
-          cp admin/public/config.js admin/dist/config.js
+      - name: Update config.js with backend URL
+        env:
+          BACKEND_URL: ${{ env.BACKEND_URL }}
+        run: |
+          # Create admin/public directory if it doesn't exist
+          mkdir -p admin/public
 
-          echo "✅ Updated config.js files"
-          cat admin/dist/config.js
+          if [ -n "${BACKEND_URL}" ] && [ "${BACKEND_URL}" != "null" ] && [ "${BACKEND_URL}" != "" ]; then
+            echo "📝 Updating admin/public/config.js with backend URL: ${BACKEND_URL}"
+            printf '%s\n' \
+              '// Runtime configuration for admin panel' \
+              '// This file is loaded before the app starts' \
+              '// You can override API URL by setting window.ADMIN_CONFIG before this script loads' \
+              'window.ADMIN_CONFIG = window.ADMIN_CONFIG || {' \
+              '  // Backend URL - контейнер Yandex Serverless Containers' \
+              "  API_URL: '${BACKEND_URL}'" \
+              '};' > admin/public/config.js
+
+            # Also update dist/config.js
+            cp admin/public/config.js admin/dist/config.js
+
+            echo "✅ Updated config.js files"
+            cat admin/dist/config.js
+          else
+            echo "⚠️  WARNING: BACKEND_URL is not available, config.js will use default from build"
+            # Ensure config.js exists even if BACKEND_URL is not available
+            if [ ! -f "admin/dist/config.js" ]; then
+              echo "⚠️  Creating default config.js"
+              mkdir -p admin/public
+              printf '%s\n' \
+                '// Runtime configuration for admin panel' \
+                'window.ADMIN_CONFIG = window.ADMIN_CONFIG || {};' > admin/public/config.js
+              cp admin/public/config.js admin/dist/config.js
+            fi
+          fi
 
       - name: Deploy Admin
         timeout-minutes: 15
