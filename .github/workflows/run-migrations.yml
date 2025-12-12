@@ -6,7 +6,8 @@ on:
     branches: [main]
     paths:
       - 'backend/src/db/migrations/**'
-      - 'backend/src/db/connection.ts'
+      - 'backend/src/db/postgresMigrations.ts'
+      - 'backend/src/db/postgresConnection.ts'
       - 'backend/src/config.ts'
       - '.github/workflows/run-migrations.yml'
 
@@ -40,170 +41,27 @@ jobs:
       - name: Build shared package
         run: npm run build --workspace=shared
 
-      - name: Run migrations
+      - name: Run PostgreSQL migrations
         timeout-minutes: 10
         env:
-          YC_SERVICE_ACCOUNT_KEY: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
-          YDB_ENDPOINT: ${{ secrets.YDB_ENDPOINT }}
-          YDB_DATABASE: ${{ secrets.YDB_DATABASE }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          cd backend
-
-          # Создаём временный файл с Service Account ключом
-          echo "$YC_SERVICE_ACCOUNT_KEY" > /tmp/yc-sa-key.json
-          chmod 600 /tmp/yc-sa-key.json
-
-          # Используем YC_SERVICE_ACCOUNT_KEY (JSON строка) напрямую
-          # Это имеет приоритет над файлом и metadata service в getCredentialsFromEnv
-          export YC_SERVICE_ACCOUNT_KEY="$YC_SERVICE_ACCOUNT_KEY"
-
-          # Также создаём файл как fallback
-          export YC_SERVICE_ACCOUNT_KEY_FILE="/tmp/yc-sa-key.json"
-
-          echo "✅ Using YC_SERVICE_ACCOUNT_KEY (JSON string) - has priority over metadata service"
-
-          # Явно отключаем metadata service (недоступен в GitHub Actions)
-          # YDB SDK проверяет эти переменные перед обращением к metadata service
-          export YDB_METADATA_CREDENTIALS="0"
-          export METADATA_URL=""
-          export GCE_METADATA_HOST=""
-          unset METADATA_URL
-          unset GCE_METADATA_HOST
-
-          # Дополнительные переменные для отключения metadata service
-          export NO_PROXY="*"
-          export NO_METADATA="1"
-
-          # Skip driver.ready() check in CI - it can hang in GitHub Actions
-          # The driver will establish connection on first query instead
-          export YDB_SKIP_READY_CHECK="true"
-          echo "✅ Skipping driver.ready() check (YDB_SKIP_READY_CHECK=true) - connection will be established on first query"
-
-          # Проверяем переменные окружения
-          if [ -z "$YDB_ENDPOINT" ] || [ -z "$YDB_DATABASE" ]; then
-            echo "❌ ERROR: YDB_ENDPOINT or YDB_DATABASE is not set"
+          if [ -z "$DATABASE_URL" ]; then
+            echo "❌ ERROR: DATABASE_URL is not set"
+            echo "Please set DATABASE_URL in GitHub Secrets"
             exit 1
           fi
 
-          echo "🔌 Connecting to YDB..."
-          echo "Endpoint: $YDB_ENDPOINT"
-          echo "Database: $YDB_DATABASE"
-          echo "Service Account Key File: $YC_SERVICE_ACCOUNT_KEY_FILE"
+          echo "🔌 Connecting to PostgreSQL..."
+          echo "Database URL: ${DATABASE_URL:0:30}... (hidden for security)"
           echo ""
-          echo "📋 Database path format check:"
-          if [[ "$YDB_DATABASE" =~ ^/ru-central1/ ]]; then
-            echo "  ✅ Database path format is correct (starts with /ru-central1/)"
-            # Extract Cloud ID (first part) and database ID (second part) for verification
-            if [[ "$YDB_DATABASE" =~ ^/ru-central1/([^/]+)/(.+)$ ]]; then
-              CLOUD_ID_IN_PATH="${BASH_REMATCH[1]}"
-              DB_ID="${BASH_REMATCH[2]}"
-              echo "  ☁️  Cloud ID in path: $CLOUD_ID_IN_PATH"
-              echo "  🗄️  Database ID: $DB_ID"
-              echo ""
-              echo "  ⚠️  IMPORTANT: Path uses Cloud ID, NOT Folder ID!"
-              echo "     If you see 'Database not found' error, verify:"
-              echo "     1. Cloud ID in path ($CLOUD_ID_IN_PATH) is correct"
-              echo "     2. Database ID ($DB_ID) matches the database in Yandex Cloud Console"
-              echo "     3. Check database path in Console: https://console.cloud.yandex.ru/cloud?section=resources"
-              echo "        The path shown in Console should match: /ru-central1/$CLOUD_ID_IN_PATH/$DB_ID"
-            fi
-          else
-            echo "  ⚠️  WARNING: Database path should start with /ru-central1/"
-            echo "  Current path: $YDB_DATABASE"
-          fi
-          echo ""
-          echo "💡 If you see 'Database not found' error:"
-          echo "  1. Verify the database path in Yandex Cloud Console:"
-          echo "     - Open: https://console.cloud.yandex.ru/cloud?section=resources"
-          echo "     - Find your YDB database"
-          echo "     - Check the 'Database path' field - it should match: $YDB_DATABASE"
-          echo "  2. CRITICAL: Path uses Cloud ID (not Folder ID)!"
-          echo "     - Cloud ID format: /ru-central1/<cloud-id>/<database-id>"
-          echo "     - If your path uses Folder ID, it will fail!"
-          echo "     - To find Cloud ID: https://console.cloud.yandex.ru/cloud?section=overview"
-          echo "  3. Ensure Service Account has 'YDB Editor' role on the database"
-          echo "  4. Check Service Account key is valid and not expired"
-          echo "  5. Verify YDB_ENDPOINT is: grpcs://ydb.serverless.yandexcloud.net:2135"
-          echo "     (without ?database= parameter)"
-
-          # Проверяем, что файл создан
-          if [ ! -f "$YC_SERVICE_ACCOUNT_KEY_FILE" ]; then
-            echo "❌ ERROR: Service Account key file not found"
-            exit 1
-          fi
-
-          echo "✅ Service Account key file exists"
-
-          # Извлекаем Service Account ID из ключа
-          if command -v jq &> /dev/null; then
-            SERVICE_ACCOUNT_ID=$(jq -r '.service_account_id' "$YC_SERVICE_ACCOUNT_KEY_FILE" 2>/dev/null || echo "unknown")
-            echo "   Service Account ID: $SERVICE_ACCOUNT_ID"
-          fi
-
-          # Выводим полную информацию для диагностики
-          echo ""
-          echo "📊 Connection Details:"
-          echo "  Endpoint: $YDB_ENDPOINT"
-          echo "  Database Path: $YDB_DATABASE"
-          if [[ "$YDB_ENDPOINT" == *"?database="* ]]; then
-            echo "  ⚠️  WARNING: Endpoint already contains ?database= parameter"
-            echo "  Full endpoint: $YDB_ENDPOINT"
-            echo "  This might cause issues if YDB_DATABASE is also set"
-          else
-            # Формируем connectionString как в коде
-            if [[ "$YDB_ENDPOINT" == */ ]]; then
-              SEPARATOR="?"
-            else
-              SEPARATOR="/?"
-            fi
-            EXPECTED_CS="${YDB_ENDPOINT}${SEPARATOR}database=$(echo "$YDB_DATABASE" | jq -sRr @uri 2>/dev/null || echo "$YDB_DATABASE")"
-            echo "  Expected connectionString: ${EXPECTED_CS}"
-          fi
-          echo ""
-          echo "💡 If you see 'Database not found' error:"
-          echo "   1. Verify database path in Console matches exactly: $YDB_DATABASE"
-          echo "      - Open: https://console.cloud.yandex.ru/cloud?section=resources"
-          echo "      - Find your YDB database and check 'Database path' field"
-          echo "   2. CRITICAL: Ensure path uses Cloud ID, NOT Folder ID!"
-          echo "      - Correct: /ru-central1/<cloud-id>/<database-id>"
-          echo "      - Wrong: /ru-central1/<folder-id>/<database-id>"
-          echo "      - Find Cloud ID: https://console.cloud.yandex.ru/cloud?section=overview"
-          echo "   3. Ensure Service Account '$SERVICE_ACCOUNT_ID' has 'YDB Editor' role"
-          echo "   4. Wait 1-2 minutes after assigning roles (they apply with delay)"
-          echo "   5. Verify YDB_ENDPOINT is: grpcs://ydb.serverless.yandexcloud.net:2135"
-          echo "      (without ?database= parameter)"
-          echo ""
-
-          echo ""
-          echo "🚀 Running migrations..."
-          npm run migrate
+          echo "🚀 Running PostgreSQL migrations..."
+          NODE_ENV=production npm run migrate:postgres
 
       - name: Check migration status
         timeout-minutes: 3
         env:
-          YC_SERVICE_ACCOUNT_KEY: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
-          YDB_ENDPOINT: ${{ secrets.YDB_ENDPOINT }}
-          YDB_DATABASE: ${{ secrets.YDB_DATABASE }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          cd backend
-
-          # Создаём временный файл с Service Account ключом
-          echo "$YC_SERVICE_ACCOUNT_KEY" > /tmp/yc-sa-key.json
-          chmod 600 /tmp/yc-sa-key.json
-          export YC_SERVICE_ACCOUNT_KEY_FILE="/tmp/yc-sa-key.json"
-          # Оставляем YC_SERVICE_ACCOUNT_KEY для приоритета JSON строки над файлом
-          export YC_SERVICE_ACCOUNT_KEY="$YC_SERVICE_ACCOUNT_KEY"
-
-          # Явно отключаем metadata service (недоступен в GitHub Actions)
-          export YDB_METADATA_CREDENTIALS="0"
-          export METADATA_URL=""
-          export GCE_METADATA_HOST=""
-          export NO_METADATA="1"
-          unset METADATA_URL
-          unset GCE_METADATA_HOST
-
-          # Skip driver.ready() check in CI - it can hang in GitHub Actions
-          export YDB_SKIP_READY_CHECK="true"
-
           echo "📋 Checking migration status..."
-          npm run migrate:status
+          NODE_ENV=production npm run migrate:status:postgres

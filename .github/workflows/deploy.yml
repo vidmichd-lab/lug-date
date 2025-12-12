@@ -243,6 +243,15 @@ jobs:
       - name: Build admin
         run: NODE_ENV=production npm run build --workspace=admin
 
+      - name: Ensure admin/dist exists
+        run: |
+          if [ ! -d "admin/dist" ]; then
+            echo "❌ ERROR: admin/dist directory does not exist after build"
+            echo "Admin build may have failed"
+            exit 1
+          fi
+          echo "✅ admin/dist directory exists"
+
       - name: Run database migrations
         run: |
           export PATH=$PATH:$HOME/yandex-cloud/bin
@@ -318,6 +327,7 @@ jobs:
           YC_SERVICE_ACCOUNT_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
           YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
           YC_CONTAINER_ID: ${{ secrets.YC_CONTAINER_ID }}
+          YC_SERVICE_ACCOUNT_KEY: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
           ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
@@ -328,6 +338,15 @@ jobs:
           ADMIN_USERNAME="${ADMIN_USERNAME:-admin}"
           ADMIN_PASSWORD="${ADMIN_PASSWORD:-admin123}"
           ADMIN_TOKEN="${ADMIN_TOKEN:-admin-secret-token-change-in-production}"
+
+          # Encode YC_SERVICE_ACCOUNT_KEY to base64 for safe environment variable passing
+          YC_SERVICE_ACCOUNT_KEY_B64=""
+          if [ -n "${YC_SERVICE_ACCOUNT_KEY:-}" ]; then
+            YC_SERVICE_ACCOUNT_KEY_B64=$(printf '%s' "${YC_SERVICE_ACCOUNT_KEY}" | base64 -w 0)
+            echo "✅ YC_SERVICE_ACCOUNT_KEY encoded to base64 (length: ${#YC_SERVICE_ACCOUNT_KEY_B64})"
+          else
+            echo "⚠️  WARNING: YC_SERVICE_ACCOUNT_KEY is not set"
+          fi
 
           # Используем container-id если указан, иначе container-name с folder-id
           if [ -n "${YC_CONTAINER_ID}" ]; then
@@ -342,7 +361,7 @@ jobs:
               --environment CONTAINER_MODE=true \
               --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }} \
               --environment DATABASE_URL=${{ secrets.DATABASE_URL }} \
-              --environment YC_SERVICE_ACCOUNT_KEY='${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' \
+              --environment YC_SERVICE_ACCOUNT_KEY_B64="${YC_SERVICE_ACCOUNT_KEY_B64}" \
               --environment YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET }} \
               --environment YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY }} \
               --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY }} \
@@ -367,7 +386,7 @@ jobs:
               --environment CONTAINER_MODE=true \
               --environment TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }} \
               --environment DATABASE_URL=${{ secrets.DATABASE_URL }} \
-              --environment YC_SERVICE_ACCOUNT_KEY='${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' \
+              --environment YC_SERVICE_ACCOUNT_KEY_B64="${YC_SERVICE_ACCOUNT_KEY_B64}" \
               --environment YANDEX_STORAGE_BUCKET=${{ secrets.YANDEX_STORAGE_BUCKET }} \
               --environment YANDEX_STORAGE_ACCESS_KEY=${{ secrets.YANDEX_STORAGE_ACCESS_KEY }} \
               --environment YANDEX_STORAGE_SECRET_KEY=${{ secrets.YANDEX_STORAGE_SECRET_KEY }} \
@@ -497,6 +516,12 @@ jobs:
             exit 1
           fi
 
+          if [ ! -d "frontend/dist" ]; then
+            echo "❌ ERROR: frontend/dist directory does not exist"
+            echo "Frontend build may have failed"
+            exit 1
+          fi
+
           echo "📦 Deploying frontend to bucket: ${YANDEX_STORAGE_BUCKET}"
           yc storage s3 cp \
             frontend/dist/ \
@@ -565,11 +590,21 @@ jobs:
             exit 1
           fi
 
+          # Проверяем, что admin/dist существует
+          if [ ! -d "admin/dist" ]; then
+            echo "❌ ERROR: admin/dist directory does not exist"
+            echo "Admin build may have failed"
+            exit 1
+          fi
+
           # Проверяем и обновляем config.js с актуальным BACKEND_URL
           # ВАЖНО: Валидация config.js должна произойти ДО деплоя
           if [ -n "${BACKEND_URL}" ] && [ "${BACKEND_URL}" != "null" ]; then
             # Убеждаемся, что config.js содержит актуальный BACKEND_URL
             echo "🔍 Checking config.js for current backend URL: ${BACKEND_URL}"
+            
+            # Создаем директорию admin/public если её нет
+            mkdir -p admin/public
             
             # Обновляем admin/public/config.js с актуальным URL
             printf '%s\n' \
@@ -583,7 +618,7 @@ jobs:
             
             echo "✅ Updated admin/public/config.js with backend URL: ${BACKEND_URL}"
             
-            # Копируем в dist если его там нет или обновляем существующий
+            # Копируем в dist (обязательно после сборки)
             cp admin/public/config.js admin/dist/config.js
             echo "✅ Updated admin/dist/config.js with backend URL: ${BACKEND_URL}"
             
@@ -642,6 +677,12 @@ jobs:
             echo "⚠️  Warning: YC_BOT_FUNCTION_ID is not set in GitHub Secrets"
             echo "Skipping bot deployment. To deploy bot, add YC_BOT_FUNCTION_ID to GitHub Secrets."
             exit 0
+          fi
+
+          if [ ! -d "bot/dist" ]; then
+            echo "❌ ERROR: bot/dist directory does not exist"
+            echo "Bot build may have failed"
+            exit 1
           fi
 
           # Check bot/dist size
