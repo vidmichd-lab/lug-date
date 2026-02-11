@@ -14,7 +14,7 @@
   "dependencies": {
     "@dating-app/shared": "*",
     "@tanstack/react-query": "^5.90.11",
-    "axios": "^1.13.2",
+    "axios": "^1.13.5",
     "date-fns": "^3.6.0",
     "jspdf": "^2.5.2",
     "jspdf-autotable": "^3.8.4",
